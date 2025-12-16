@@ -42,7 +42,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
   winningNumbers,
   roundId,
   playerTickets = [],
-  ballCount = 30,
+  ballCount = 15,
   drawCount = 6,
   onComplete,
   autoStart = false,

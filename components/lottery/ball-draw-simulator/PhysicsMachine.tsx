@@ -18,10 +18,10 @@ interface PhysicsMachineProps {
 
 const BALL_RADIUS = 10
 const DAMPING = 0.960 // More realistic air resistance
-const WALL_BOUNCE = 0.70 // Slightly more elastic bounce
-const BALL_BOUNCE = 0.70 // Realistic ball-to-ball collision
-const GRAVITY = 0.25 // More realistic gravity
-const MIX_FORCE = 1.2 // Increased for more energetic mixing
+const WALL_BOUNCE = 0.50 // Slightly more elastic bounce
+const BALL_BOUNCE = 0.50 // Realistic ball-to-ball collision
+const GRAVITY = 0.15 // More realistic gravity
+const MIX_FORCE = 1 // Increased for more energetic mixing
 
 const PhysicsMachine: React.FC<PhysicsMachineProps> = ({
   width,

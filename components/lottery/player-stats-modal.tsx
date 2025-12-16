@@ -50,7 +50,7 @@ export function PlayerStatsModal() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="text-white bg-orange-500/60 border-white/10 hover:bg-orange-600/60 w-10 h-10 p-0" title="Stats">
+        <Button variant="outline" className="text-white bg-orange-500/60 border-white/10 hover:bg-slate-600/60 w-10 h-10 p-0" title="Stats">
           <BarChart3 className="w-5 h-5" />
         </Button>
       </DialogTrigger>

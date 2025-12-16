@@ -245,7 +245,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
             >
             <div className="absolute inset-0 animate-[spin_30s_linear_infinite] pointer-events-none">
               <span
-                className="absolute inset-0 bg-[url('/morbius/MorbiusLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-50"
+                className="absolute inset-0 bg-[url('/morbius/MorbiusLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-75"
               />
             </div>
             <PhysicsMachine
