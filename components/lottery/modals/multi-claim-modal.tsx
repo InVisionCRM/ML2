@@ -657,7 +657,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
     <Dialog open={open} onOpenChange={onOpenChange}>
       {!open && !onOpenChange && (
         <DialogTrigger asChild>
-          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0" title="Claim Winnings">
+          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-green-500/60 w-10 h-10 p-0" title="Claim Winnings">
             <Coins className="w-5 h-5" />
           </Button>
         </DialogTrigger>
