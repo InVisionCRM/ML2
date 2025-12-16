@@ -268,11 +268,18 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
             <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
 
             {/* Progress Border - Multicolor circular progress based on timer */}
-            <div className="absolute inset-0 pointer-events-none z-20">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
               <svg
-                className="w-full h-full transform -rotate-90"
+                className="transform -rotate-90"
                 viewBox="0 0 100 100"
-                style={{ width: `${visualSize + 12}px`, height: `${visualSize + 12}px` }}
+                style={{
+                  width: `${visualSize + 8}px`,
+                  height: `${visualSize + 8}px`,
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%) rotate(-90deg)'
+                }}
               >
                 <circle
                   cx="50"
