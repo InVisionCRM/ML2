@@ -371,20 +371,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
           <History className="w-5 h-5" />
         </Button>
 
-        {/* Tickets Button */}
-        {onBuyTicketsClick && (
-          <Button
-            variant="outline"
-            className="text-white bg-green-500/50 hover:bg-green-600/60 border-white/10 w-10 h-10 p-0"
-            title="Buy lottery tickets"
-            onClick={onBuyTicketsClick}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </Button>
-        )}
-
         {/* Claim winnings button */}
         <div>
           <MultiClaimModal />
@@ -405,6 +391,18 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
           <div>
             <PayoutBreakdownDialog totalPssh={totalPssh} />
           </div>
+        )}
+
+        {/* Tickets Button - Moved to last position */}
+        {onBuyTicketsClick && (
+          <Button
+            variant="outline"
+            className="text-white bg-green-500/50 hover:bg-green-600/60 border-white/10 px-4 py-2 h-10 min-w-[80px] font-bold"
+            title="Buy lottery tickets"
+            onClick={onBuyTicketsClick}
+          >
+            BUY
+          </Button>
         )}
       </div>
     </Card>
