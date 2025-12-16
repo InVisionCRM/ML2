@@ -267,33 +267,29 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
             {/* Reflection Overlay */}
             <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
 
-            {/* Progress Border - Multicolor circular progress based on timer */}
+            {/* Progress Border - Purple/Blue/Pink circular progress based on timer */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
               <svg
                 className="transform -rotate-90"
                 viewBox="0 0 100 100"
-                style={{ width: `${visualSize + 8}px`, height: `${visualSize + 8}px` }}
+                style={{ width: `${visualSize}px`, height: `${visualSize}px` }}
               >
                 <circle
                   cx="50"
                   cy="50"
-                  r="46"
-                  stroke="url(#rainbowGradient)"
-                  strokeWidth="3"
+                  r="49"
+                  stroke="url(#purpleBluePinkGradient)"
+                  strokeWidth="2"
                   fill="none"
                   strokeLinecap="round"
-                  strokeDasharray={`${(progressPercentage / 100) * 289} 289`}
+                  strokeDasharray={`${(progressPercentage / 100) * 307.9} 307.9`}
                   className="transition-all duration-1000 ease-linear"
                 />
                 <defs>
-                  <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#ff0000" />
-                    <stop offset="16.67%" stopColor="#ff8000" />
-                    <stop offset="33.33%" stopColor="#ffff00" />
-                    <stop offset="50%" stopColor="#80ff00" />
-                    <stop offset="66.67%" stopColor="#00ff00" />
-                    <stop offset="83.33%" stopColor="#00ff80" />
-                    <stop offset="100%" stopColor="#0080ff" />
+                  <linearGradient id="purpleBluePinkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="50%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#ec4899" />
                   </linearGradient>
                 </defs>
               </svg>
