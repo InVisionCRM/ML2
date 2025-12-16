@@ -244,7 +244,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
       {/* Round Winning Numbers Title */}
       <div className="absolute top-4 left-0 right-0 flex justify-center mt-1 z-10">
         <div className="text-xs sm:text-xs text-white/70 font-bold uppercase tracking-wide text-center">
-          Round <span className="text-sm sm:text-base text-green-600 font-extrabold">{roundId || '?'}</span> Winning Numbers
+          Round <span className="text-sm sm:text-base text-green-600 font-extrabold">{previousRoundId || roundId || '?'}</span> Winning Numbers
         </div>
       </div>
 
