@@ -835,6 +835,7 @@ export default function Home() {
                 winningNumbers={winningNumbers}
                 playerTickets={Array.isArray(playerTicketsWithTx) ? playerTicketsWithTx : []}
                 onBuyTicketsClick={() => setShowTicketAccordion(!showTicketAccordion)}
+                onShowDashboard={() => setShowBentoGridModal(true)}
                 onDrawStart={() => setIsDrawing(true)}
                 onDrawEnd={() => setIsDrawing(false)}
               />

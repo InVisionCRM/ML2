@@ -32,6 +32,7 @@ interface RoundTimerProps {
     transactionHash?: string
   }> // User's tickets for this round
   onBuyTicketsClick?: () => void // New prop for buy tickets button
+  onShowDashboard?: () => void // Callback to show dashboard modal
   onDrawStart?: () => void // Callback when ball draw starts
   onDrawEnd?: () => void // Callback when ball draw ends
 }
@@ -56,7 +57,7 @@ const getPhysicsMachineSize = () => {
   return { width: size, height: size }
 }
 
-export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], onBuyTicketsClick, onDrawStart, onDrawEnd }: RoundTimerProps) {
+export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], onBuyTicketsClick, onShowDashboard, onDrawStart, onDrawEnd }: RoundTimerProps) {
   // Convert BigInt to number once to avoid recreating dependencies
   const endTimeNum = Number(endTime)
   const fallbackNum = Number(fallbackRemaining)
@@ -376,10 +377,19 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
           <MultiClaimModal />
         </div>
 
-        {/* Player stats button */}
-        <div>
-          <PlayerStatsModal />
-        </div>
+        {/* Dashboard button */}
+        {onShowDashboard && (
+          <Button
+            variant="outline"
+            onClick={onShowDashboard}
+            className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0"
+            title="Dashboard"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </Button>
+        )}
 
         {/* Your tickets button */}
         <div>
