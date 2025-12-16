@@ -921,10 +921,6 @@ export default function Home() {
                   setShowBentoGridModal(false)
                   setShowRoundHistoryModal(true)
                 }}
-                onShowStats={() => {
-                  setShowBentoGridModal(false)
-                  setShowPlayerStats(true)
-                }}
                 onShowTickets={() => {
                   setShowBentoGridModal(false)
                   setShowTicketsModal(true)
@@ -937,7 +933,7 @@ export default function Home() {
                   setShowBentoGridModal(false)
                   setShowPayoutBreakdownModal(true)
                 }}
-                totalTickets={totalTickets}
+                totalTickets={Number(totalTickets)}
                 timeRemaining={Number(timeRemaining)}
                 burnedAmount={burnedAmount}
                 megaBank={megaBank}

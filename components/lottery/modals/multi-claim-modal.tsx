@@ -241,6 +241,11 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
     if (claimableRounds.length === 0) return
 
     // Double-check claimable status right before claiming to avoid "already claimed" errors
+    if (!publicClient) {
+      toast.error('Wallet not connected')
+      return
+    }
+
     try {
       const freshClaimableRounds = []
       for (const round of claimableRounds) {
