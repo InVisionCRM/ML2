@@ -74,10 +74,43 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
   const clampedMachineSize = Math.min(machineSize.width, 330) // keep globe large but responsive
   const visualSize = Math.min(clampedMachineSize + 5, 335) // wrapper only 5px larger than globe
 
-  // Calculate progress for timer-based border (assuming 5-minute rounds = 300 seconds)
+  // Smooth progress animation state
+  const [smoothProgress, setSmoothProgress] = useState(0)
+  const progressRef = useRef(0)
+  const animationRef = useRef<number | null>(null)
+
+  // Calculate target progress for timer-based border (assuming 5-minute rounds = 300 seconds)
   const totalRoundTime = 300 // 5 minutes in seconds
   const timeRemainingNum = Number(fallbackRemaining) // Convert BigInt to number
-  const progressPercentage = Math.max(0, Math.min(100, ((totalRoundTime - timeRemainingNum) / totalRoundTime) * 100))
+  const targetProgress = Math.max(0, Math.min(100, ((totalRoundTime - timeRemainingNum) / totalRoundTime) * 100))
+
+  // Ultra-smooth interpolation animation
+  useEffect(() => {
+    const animate = () => {
+      const diff = targetProgress - progressRef.current
+      const step = diff * 0.006 // Ultra-smooth: 0.6% per frame instead of 5%
+
+      if (Math.abs(diff) > 0.02) { // Finer threshold for smoother control
+        progressRef.current += step
+        setSmoothProgress(progressRef.current)
+        animationRef.current = requestAnimationFrame(animate)
+      } else {
+        progressRef.current = targetProgress
+        setSmoothProgress(targetProgress)
+      }
+    }
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+    }
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [targetProgress])
 
   useEffect(() => {
     if (winningNumbers.length > delayedWinningNumbers.length) {
@@ -282,8 +315,8 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
                   strokeWidth="2"
                   fill="none"
                   strokeLinecap="round"
-                  strokeDasharray={`${(progressPercentage / 100) * 307.9} 307.9`}
-                  className="transition-all duration-1000 ease-linear"
+                  strokeDasharray={`${(smoothProgress / 100) * 307.9} 307.9`}
+                  className="transition-all duration-300 ease-out"
                 />
                 <defs>
                   <linearGradient id="purpleBluePinkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
