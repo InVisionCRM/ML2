@@ -114,6 +114,32 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
     setTriggerDraw(false)
   }
 
+  // Trigger draw when winning numbers become available (round finalized)
+  useEffect(() => {
+    if (winningNumbers.length === 6 && !hasAnimatedRef.current) {
+      console.log('🎰 Round finalized! Starting ball draw animation with numbers:', winningNumbers)
+
+      // Reset animation state for new round
+      hasAnimatedRef.current = true
+      completedRef.current = false
+      setCurrentState(DrawState.IDLE)
+      resetDraw()
+
+      // Small delay before starting animation
+      const startTimeout = setTimeout(() => {
+        setCurrentState(DrawState.MIXING)
+      }, 500)
+
+      return () => clearTimeout(startTimeout)
+    } else if (winningNumbers.length === 0) {
+      // Reset when no winning numbers (new round started)
+      hasAnimatedRef.current = false
+      completedRef.current = false
+      setCurrentState(DrawState.IDLE)
+      resetDraw()
+    }
+  }, [winningNumbers, hasAnimatedRef, completedRef])
+
   // Ball draw orchestrator effect
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>
