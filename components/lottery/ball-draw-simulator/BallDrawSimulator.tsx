@@ -399,7 +399,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
               />
               {/* Reflection Overlay */}
               <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
-              
+
               {/* MegaMorbius Orbital Particles */}
               {isMegaMorbius && (
                 <>
