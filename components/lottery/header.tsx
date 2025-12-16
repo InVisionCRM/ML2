@@ -7,6 +7,7 @@ import Link from 'next/link'
 interface HeaderProps {
   nextDrawEndTime?: bigint
   fallbackRemaining?: bigint
+  onBentoClick?: () => void
 }
 
 const DISPLAY_OFFSET_SECONDS = 15
@@ -21,7 +22,7 @@ const formatSeconds = (totalSeconds: number) => {
   return `${s}s`
 }
 
-export function Header({ nextDrawEndTime, fallbackRemaining = BigInt(0) }: HeaderProps) {
+export function Header({ nextDrawEndTime, fallbackRemaining = BigInt(0), onBentoClick }: HeaderProps) {
   const [remaining, setRemaining] = useState<number>(() => {
     if (!nextDrawEndTime || nextDrawEndTime === BigInt(0)) return Number(fallbackRemaining) + DISPLAY_OFFSET_SECONDS
     const fromEnd = Number(nextDrawEndTime) * 1000 - Date.now()
@@ -128,10 +129,22 @@ export function Header({ nextDrawEndTime, fallbackRemaining = BigInt(0) }: Heade
           </div>
         </div>
 
-        {/* Centered Next Draw Timer (no label) */}
+        {/* Centered Next Draw Timer and Button */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent drop-shadow">
-            {remaining > 0 ? formatSeconds(remaining) : '--'}
+          <div className="flex items-center gap-3">
+            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent drop-shadow">
+              {remaining > 0 ? formatSeconds(remaining) : '--'}
+            </div>
+            {onBentoClick && (
+              <button
+                onClick={onBentoClick}
+                className="pointer-events-auto px-3 py-1.5 text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

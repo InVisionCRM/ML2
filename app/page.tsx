@@ -14,8 +14,12 @@ import {
 import { Header } from '@/components/lottery/header'
 import { FreeTicketBadge } from '@/components/lottery/free-ticket-badge'
 import { RoundTimer } from '@/components/lottery/round-timer'
+import { LotteryBentoGrid } from '@/components/lottery/bento-grid-lottery'
 import { RoundFinalizedTransactions } from '@/components/lottery/round-finalized-transactions'
+import { RoundHistory } from '@/components/lottery/round-history'
 import { MorbiusMovementFeed } from '@/components/lottery/morbius-movement-feed'
+import { MultiClaimModal } from '@/components/lottery/modals/multi-claim-modal'
+import { PreviousRoundsBracketsModal } from '@/components/lottery/modals/previous-rounds-brackets-modal'
 import { useNumberHeatmap } from '@/hooks/use-number-heatmap'
 import { useMorbiusBurned } from '@/hooks/use-morbius-burned'
 import { useMultiRoundPurchases, getRoundRangeForTx } from '@/hooks/use-multi-round-purchases'
@@ -32,14 +36,12 @@ import {
 } from '@/components/ui/dialog'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatUnits, parseAbiItem } from 'viem'
+import { formatUnits, formatEther, parseAbiItem } from 'viem'
 import { LOTTERY_ADDRESS, LOTTERY_DEPLOY_BLOCK, TOKEN_DECIMALS } from '@/lib/contracts'
-import BallDrawSimulator from '@/components/lottery/ball-draw-simulator/BallDrawSimulator'
 import { TicketPurchaseBuilder } from '@/components/lottery/ticket-purchase-builder'
 import { TicketPurchaseAccordion } from '@/components/lottery/ticket-purchase-accordion'
 import { AllTicketsAccordion } from '@/components/lottery/all-tickets-accordion'
 import { ContractAddress } from '@/components/ui/contract-address'
-import { WalletDebug } from '@/components/wallet-debug'
 
 type ContractTicket = {
   ticketId: bigint | number
@@ -55,6 +57,13 @@ export default function Home() {
   const [showHowToPlay, setShowHowToPlay] = useState(false)
   const [ticketTxMap, setTicketTxMap] = useState<Map<string, string>>(new Map())
   const [showTicketAccordion, setShowTicketAccordion] = useState(false)
+  const [showPlayerStats, setShowPlayerStats] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showTicketsModal, setShowTicketsModal] = useState(false)
+  const [showClaimModal, setShowClaimModal] = useState(false)
+  const [showRoundHistoryModal, setShowRoundHistoryModal] = useState(false)
+  const [showPayoutBreakdownModal, setShowPayoutBreakdownModal] = useState(false)
+  const [showBentoGridModal, setShowBentoGridModal] = useState(false)
 
 
   // Fetch current round data
@@ -382,10 +391,9 @@ export default function Home() {
       <Header
         nextDrawEndTime={endTime}
         fallbackRemaining={timeRemaining}
+        onBentoClick={() => setShowBentoGridModal(true)}
       />
 
-      {/* Wallet Debug Component - Remove in production */}
-      <WalletDebug />
 
       {/* Hero Section - MegaMorbius */}
       <section className="relative py-12 sm:py-16 md:py-20 lg:py-32 overflow-hidden">
@@ -522,11 +530,11 @@ export default function Home() {
                           </div>
                           <div className="flex justify-between items-center p-3 bg-white/5 rounded border border-white/5">
                             <span className="text-white font-medium">2 Matches</span>
-                            <span className="text-white/70">375 MORBIUS</span>
+                            <span className="text-white/70">250 MORBIUS</span>
                           </div>
                           <div className="flex justify-between items-center p-3 bg-white/5 rounded border border-white/5">
                             <span className="text-white font-medium">1 Match</span>
-                            <span className="text-white/70">125 MORBIUS</span>
+                            <span className="text-white/70">100 MORBIUS</span>
                           </div>
                         </div>
                       </div>
@@ -752,40 +760,101 @@ export default function Home() {
       </section>
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-7xl">
-        {/* Round Timer - Centered at Top */}
-        <div className="flex justify-center">
-          <div className="w-full max-w-3xl min-h-[400px] sm:min-h-[500px] md:min-h-[610px] relative">
-            <div className="absolute inset-0 pointer-events-none z-20">
-              <BallDrawSimulator
-                winningNumbers={winningNumbers}
-                roundId={displayRoundId}
-                playerTickets={Array.isArray(playerTicketsFinal) ? playerTicketsFinal : []}
-                autoStart={winningNumbers.length === 6}
-                isBackground
-                onDrawStart={() => setIsDrawing(true)}
-                onDrawEnd={() => setIsDrawing(false)}
-                timeRemaining={Number(timeRemaining)}
-              />
+
+        {/* Round Stats Header */}
+        <div className="flex justify-center mb-4">
+          <div className="w-full max-w-3xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              {/* Total Tickets */}
+              {totalTickets !== undefined && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                  <div className="text-xs sm:text-sm text-white/60 mb-1">Total Tickets</div>
+                  <div className="text-lg sm:text-xl font-bold text-white">{Number(totalTickets).toLocaleString()}</div>
+                </div>
+              )}
+
+              {/* Burned */}
+              {burnedAmount !== undefined && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                  <div className="text-xs sm:text-sm text-white/60 mb-1">Burned</div>
+                  <div className="text-lg sm:text-xl font-bold text-white">
+                    {isLoadingBurned ? (
+                      <span className="text-white/50">...</span>
+                    ) : (() => {
+                      const burnedNum = parseFloat(formatEther(burnedAmount))
+                      return burnedNum >= 1_000_000
+                        ? (burnedNum / 1_000_000).toFixed(1) + 'M'
+                        : burnedNum >= 1_000
+                        ? (burnedNum / 1_000).toFixed(1) + 'K'
+                        : burnedNum.toFixed(0)
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Jackpot */}
+              {megaBank !== undefined && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                  <div className="text-xs sm:text-sm text-white/60 mb-1">Jackpot</div>
+                  <div className="text-lg sm:text-xl font-bold text-white">
+                    {(() => {
+                      const megaNum = parseFloat(formatEther(megaBank))
+                      return megaNum >= 1_000_000
+                        ? (megaNum / 1_000_000).toFixed(1) + 'M'
+                        : megaNum >= 1_000
+                        ? (megaNum / 1_000).toFixed(1) + 'K'
+                        : megaNum.toFixed(0)
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Round */}
+              {roundId !== undefined && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                  <div className="text-xs sm:text-sm text-white/60 mb-1">Next Round</div>
+                  <div className="text-lg sm:text-xl font-bold text-white">#{Number(roundId)}</div>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Round Timer - Centered at Top */}
+        <div className="flex justify-center mb-24 sm:mb-28 md:mb-32">
+          <div className="w-full max-w-3xl min-h-[400px] sm:min-h-[500px] md:min-h-[610px] relative">
             <div className="relative z-10">
               <RoundTimer
                 endTime={endTime}
                 fallbackRemaining={timeRemaining}
                 roundId={roundId}
-                totalTickets={totalTickets}
                 totalPssh={totalPssh}
                 disabled={isDrawing}
                 previousRoundId={displayRoundId}
                 houseTicketNumbers={houseTicketNumbers}
+                winningNumbers={winningNumbers}
                 playerTickets={Array.isArray(playerTicketsWithTx) ? playerTicketsWithTx : []}
                 onBuyTicketsClick={() => setShowTicketAccordion(!showTicketAccordion)}
-                burnedAmount={burnedAmount}
-                megaBank={megaBank}
-                isLoadingBurned={isLoadingBurned}
+                onDrawStart={() => setIsDrawing(true)}
+                onDrawEnd={() => setIsDrawing(false)}
               />
             </div>
           </div>
         </div>
+
+        {/* Round History Modal */}
+        <Dialog open={showRoundHistoryModal} onOpenChange={setShowRoundHistoryModal}>
+          <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-6xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
+                Round History
+              </div>
+            </div>
+            <div className="flex-1">
+              <RoundHistory currentRoundId={Number(roundId || 0)} />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Ticket Purchase Modal */}
         <TicketPurchaseAccordion
@@ -800,10 +869,83 @@ export default function Home() {
           }}
         />
 
-        {/* All Purchased Tickets Accordion */}
-        <div className="container mx-auto px-4 max-w-7xl mt-8">
-          <AllTicketsAccordion />
-        </div>
+        {/* My Tickets Modal */}
+        <Dialog open={showTicketsModal} onOpenChange={setShowTicketsModal}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-lg border-purple-500/30">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-white text-center">
+                My Tickets
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              <AllTicketsAccordion />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Claim Winnings Modal */}
+        <MultiClaimModal open={showClaimModal} onOpenChange={setShowClaimModal} />
+
+        {/* Payout Breakdown Modal */}
+        <Dialog open={showPayoutBreakdownModal} onOpenChange={setShowPayoutBreakdownModal}>
+          <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
+                Payout Breakdown
+              </div>
+            </div>
+            <div className="flex-1">
+              <PreviousRoundsBracketsModal
+                brackets={brackets}
+                isLoading={isLoadingRoundDetails}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bento Grid Modal */}
+        <Dialog open={showBentoGridModal} onOpenChange={setShowBentoGridModal}>
+          <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-6xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
+                Lottery Dashboard
+              </div>
+            </div>
+            <div className="flex-1">
+              <LotteryBentoGrid
+                onPlayNow={() => {
+                  setShowBentoGridModal(false)
+                  setShowTicketAccordion(!showTicketAccordion)
+                }}
+                onShowHistory={() => {
+                  setShowBentoGridModal(false)
+                  setShowRoundHistoryModal(true)
+                }}
+                onShowStats={() => {
+                  setShowBentoGridModal(false)
+                  setShowPlayerStats(true)
+                }}
+                onShowTickets={() => {
+                  setShowBentoGridModal(false)
+                  setShowTicketsModal(true)
+                }}
+                onShowClaim={() => {
+                  setShowBentoGridModal(false)
+                  setShowClaimModal(true)
+                }}
+                onShowPayouts={() => {
+                  setShowBentoGridModal(false)
+                  setShowPayoutBreakdownModal(true)
+                }}
+                totalTickets={totalTickets}
+                timeRemaining={Number(timeRemaining)}
+                burnedAmount={burnedAmount}
+                megaBank={megaBank}
+                isLoadingBurned={isLoadingBurned}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </main>
 

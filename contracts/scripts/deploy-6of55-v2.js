@@ -1,4 +1,6 @@
-const hre = require("hardhat");
+import hre from "hardhat";
+import fs from "fs";
+import path from "path";
 
 async function main() {
   console.log("Deploying MegaMorbiusLottery to", hre.network.name, "…");
@@ -20,14 +22,14 @@ async function main() {
   // Round duration
   let ROUND_DURATION;
   if (hre.network.name === "pulsechainTestnet") {
-    ROUND_DURATION = 120; // 2 minutes for testnet
-    console.log("Testnet detected - using 2 minute rounds");
+    ROUND_DURATION = 300; // 5 minutes for testnet
+    console.log("Testnet detected - using 5 minute rounds");
   } else if (hre.network.name === "pulsechain") {
-    ROUND_DURATION = 120; // 2 minutes for mainnet
-    console.log("Mainnet detected - using 2 minute rounds");
+    ROUND_DURATION = 300; // 5 minutes for mainnet
+    console.log("Mainnet detected - using 5 minute rounds");
   } else {
-    ROUND_DURATION = 120; // 2 minutes default
-    console.log("Local network detected - using 2 minute rounds");
+    ROUND_DURATION = 300; // 5 minutes default
+    console.log("Local network detected - using 5 minute rounds");
   }
 
   console.log("\nConfig:");
@@ -38,8 +40,8 @@ async function main() {
   console.log("DEPLOYER_WALLET     :", DEPLOYER_WALLET);
   console.log("ROUND_DURATION      :", ROUND_DURATION, "seconds");
 
-  // Deploy contract (use fully qualified name to avoid ambiguity)
-  const MegaMorbiusLottery = await hre.ethers.getContractFactory("contracts/SuperStakeLottery6of55V2.sol:MegaMorbiusLottery");
+  // Deploy contract
+  const MegaMorbiusLottery = await hre.ethers.getContractFactory("MegaMorbiusLottery");
   console.log("\nDeploying…");
 
   // Use increased gas price for reliable deployment
@@ -160,8 +162,6 @@ async function main() {
   console.log("   - Check winning numbers and claim prizes");
 
   // Export deployment info to file
-  const fs = require("fs");
-  const path = require("path");
   const deploymentsDir = path.join(__dirname, "../deployments");
 
   if (!fs.existsSync(deploymentsDir)) {

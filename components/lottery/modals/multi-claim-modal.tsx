@@ -15,6 +15,7 @@ import { usePlayerRoundHistory, useRound, usePlayerTickets } from '@/hooks/use-l
 import { toast } from 'sonner'
 import { Loader2, Coins, CheckCircle2, History, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button as AceternityButton } from '@/components/ui/stateful-button'
 
 interface Ticket {
   ticketId: bigint
@@ -37,9 +38,35 @@ interface RoundHistory {
   amount: bigint
   hasClaimed: boolean
   status: 'claimed' | 'claimable' | 'no-win'
+  transactionHash?: string
 }
 
-export function MultiClaimModal() {
+interface MultiClaimModalProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+// Utility functions for transaction hash storage
+const getStoredTransactionHashes = (address: string) => {
+  try {
+    const stored = localStorage.getItem(`lottery_claims_${address}`)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+const storeTransactionHash = (address: string, roundId: number, hash: string) => {
+  try {
+    const stored = getStoredTransactionHashes(address)
+    stored[roundId] = hash
+    localStorage.setItem(`lottery_claims_${address}`, JSON.stringify(stored))
+  } catch (error) {
+    console.warn('Failed to store transaction hash:', error)
+  }
+}
+
+export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {}) {
   const { address } = useAccount()
   const { data: roundHistoryData, isLoading: isLoadingHistory } = usePlayerRoundHistory(address, 0, 100)
   const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set())
@@ -49,6 +76,7 @@ export function MultiClaimModal() {
   const [claimedRounds, setClaimedRounds] = useState<Set<number>>(new Set())
   const [fullHistory, setFullHistory] = useState<RoundHistory[]>([])
   const [isLoadingFullHistory, setIsLoadingFullHistory] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set())
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
@@ -110,8 +138,15 @@ export function MultiClaimModal() {
         }
       }
 
+      // Add transaction hashes from localStorage
+      const storedHashes = address ? getStoredTransactionHashes(address) : {}
+      const historyWithHashes = history.map(round => ({
+        ...round,
+        transactionHash: storedHashes[round.roundId] || undefined
+      }))
+
       setClaimedRounds(claimed)
-      setFullHistory(history.reverse()) // Most recent first
+      setFullHistory(historyWithHashes.reverse()) // Most recent first
       setIsLoadingFullHistory(false)
 
       console.log('✅ Claim status check complete:', {
@@ -202,32 +237,202 @@ export function MultiClaimModal() {
     setSelectedRounds(new Set())
   }
 
+  const handleClaimAll = async () => {
+    if (claimableRounds.length === 0) return
+
+    // Double-check claimable status right before claiming to avoid "already claimed" errors
+    try {
+      const freshClaimableRounds = []
+      for (const round of claimableRounds) {
+        const hasClaimed = await publicClient.readContract({
+          address: LOTTERY_ADDRESS as `0x${string}`,
+          abi: LOTTERY_6OF55_V2_ABI,
+          functionName: 'hasClaimed',
+          args: [BigInt(round.roundId), address],
+        }) as boolean
+
+        if (!hasClaimed) {
+          freshClaimableRounds.push(round)
+        }
+      }
+
+      if (freshClaimableRounds.length === 0) {
+        toast.error("No rounds available to claim - they may have already been claimed")
+        // Force refresh of data
+        window.location.reload()
+        return
+      }
+
+      // Select only the freshly verified claimable rounds
+      const allRounds = new Set(freshClaimableRounds.map(round => round.roundId))
+      setSelectedRounds(allRounds)
+
+      // Claim them
+      await handleClaim()
+    } catch (error) {
+      console.error('Error checking claim status:', error)
+      toast.error("Failed to verify claimable rounds. Please try again.")
+    }
+  }
+
   const handleClaim = async () => {
     if (!walletClient || !publicClient || selectedRounds.size === 0) return
 
     setIsClaiming(true)
 
     try {
-      const roundIds = Array.from(selectedRounds).sort((a, b) => a - b)
+      let roundIds = Array.from(selectedRounds).sort((a, b) => a - b)
 
-      const { request } = await publicClient.simulateContract({
-        address: LOTTERY_ADDRESS as `0x${string}`,
-        abi: LOTTERY_6OF55_V2_ABI,
-        functionName: 'claimWinningsMultiple',
-        args: [roundIds],
-        account: address,
-      })
+      // Filter out rounds that might have already been claimed
+      const validRoundIds = []
+      for (const roundId of roundIds) {
+        try {
+          const hasClaimed = await publicClient.readContract({
+            address: LOTTERY_ADDRESS as `0x${string}`,
+            abi: LOTTERY_6OF55_V2_ABI,
+            functionName: 'hasClaimed',
+            args: [BigInt(roundId), address],
+          }) as boolean
 
-      const hash = await walletClient.writeContract(request)
-      await publicClient.waitForTransactionReceipt({ hash })
+          if (!hasClaimed) {
+            validRoundIds.push(roundId)
+          }
+        } catch (checkError) {
+          console.warn(`Could not check claim status for round ${roundId}:`, checkError)
+          // Include it anyway if we can't check
+          validRoundIds.push(roundId)
+        }
+      }
 
-      toast.success(`Claim successful! ${fmt(totalSelected)} Morbius claimed from ${selectedRounds.size} round${selectedRounds.size > 1 ? 's' : ''}`)
+      if (validRoundIds.length === 0) {
+        toast.error("No rounds available to claim - they may have already been claimed")
+        setSelectedRounds(new Set())
+        window.location.reload()
+        return
+      }
 
-      // Reset selection and refresh data
-      setSelectedRounds(new Set())
+      // Update selectedRounds to only include valid rounds
+      setSelectedRounds(new Set(validRoundIds))
+      roundIds = validRoundIds
 
-      // Force a re-render by updating the query key or similar
-      window.location.reload()
+      // Split rounds into batches of 50 (contract limit)
+      const BATCH_SIZE = 50
+      const batches = []
+      for (let i = 0; i < roundIds.length; i += BATCH_SIZE) {
+        batches.push(roundIds.slice(i, i + BATCH_SIZE))
+      }
+
+      const successfulClaims = []
+      const failedBatches = []
+      let totalAmount = BigInt(0)
+
+      // Process each batch
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex]
+
+        try {
+          if (batches.length > 1) {
+            toast.info(`Processing batch ${batchIndex + 1} of ${batches.length}... (${batch.length} rounds)`)
+          }
+
+          const { request } = await publicClient.simulateContract({
+            address: LOTTERY_ADDRESS as `0x${string}`,
+            abi: LOTTERY_6OF55_V2_ABI,
+            functionName: 'claimWinningsMultiple',
+            args: [batch],
+            account: address,
+          })
+
+              const hash = await walletClient.writeContract(request)
+
+          // Calculate amount for this batch
+          const batchAmount = claimableRounds
+            .filter(round => batch.includes(round.roundId))
+            .reduce((total, round) => total + round.amount, BigInt(0))
+
+          totalAmount += batchAmount
+
+          toast.success(`Transaction sent! Claiming ${fmt(batchAmount)} Morbius from ${batch.length} round${batch.length > 1 ? 's' : ''}...`)
+
+          try {
+            // Wait for transaction with a longer timeout and retry logic
+            await publicClient.waitForTransactionReceipt({
+              hash,
+              timeout: 120000, // 2 minutes timeout
+              retryCount: 5,
+              retryDelay: 2000 // 2 second retry delay
+            })
+
+            successfulClaims.push({ batch, hash, amount: batchAmount })
+
+            // Store transaction hashes for each claimed round in this batch
+            if (address) {
+              batch.forEach(roundId => {
+                storeTransactionHash(address, roundId, hash)
+              })
+            }
+
+          } catch (receiptError: any) {
+            console.warn(`Batch ${batchIndex + 1} transaction sent but receipt not found:`, receiptError)
+            failedBatches.push({ batch, hash, error: receiptError })
+          }
+
+        } catch (batchError: any) {
+          console.error(`Failed to process batch ${batchIndex + 1}:`, batchError)
+          failedBatches.push({ batch, error: batchError })
+        }
+      }
+
+      // Show final results
+      if (successfulClaims.length > 0) {
+        const totalRounds = successfulClaims.reduce((sum, claim) => sum + claim.batch.length, 0)
+        const allHashes = successfulClaims.map(claim => claim.hash)
+
+        toast.success(
+          <div className="flex flex-col gap-2">
+            <div>Claim successful! {fmt(totalAmount)} Morbius claimed from {totalRounds} round{totalRounds > 1 ? 's' : ''} across {successfulClaims.length} transaction{successfulClaims.length > 1 ? 's' : ''}</div>
+            {allHashes.length === 1 ? (
+              <div className="text-xs opacity-75 break-all">
+                Txn: <a
+                  href={`https://scan.pulsechain.com/tx/${allHashes[0]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:no-underline"
+                >
+                  {allHashes[0]}
+                </a>
+              </div>
+            ) : (
+              <div className="text-xs opacity-75">
+                Transactions: {allHashes.map((hash, idx) => (
+                  <a
+                    key={idx}
+                    href={`https://scan.pulsechain.com/tx/${hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline mr-2"
+                  >
+                    {idx + 1}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>,
+          { duration: 10000 }
+        )
+      }
+
+      if (failedBatches.length > 0) {
+        toast.error(`Failed to claim ${failedBatches.reduce((sum, failed) => sum + failed.batch.length, 0)} rounds. Some claims may be pending.`)
+      }
+
+      // Reset selection and refresh data if any claims succeeded
+      if (successfulClaims.length > 0) {
+        setSelectedRounds(new Set())
+
+        // Force a re-render by updating the query key or similar
+        window.location.reload()
+      }
 
     } catch (error: any) {
       console.error('Claim failed:', error)
@@ -282,13 +487,71 @@ export function MultiClaimModal() {
       })
 
       const hash = await walletClient.writeContract(request)
-      await publicClient.waitForTransactionReceipt({ hash })
 
-      toast.success(`Claim successful! ${fmt(claimableAmount)} Morbius claimed from Round #${singleRoundId}`)
+      toast.success(`Transaction sent! Claiming ${fmt(claimableAmount)} Morbius from Round #${singleRoundId}...`)
 
-      // Reset form and refresh data
-      setSingleRoundId('')
-      window.location.reload()
+      try {
+        // Wait for transaction with a longer timeout and retry logic
+        await publicClient.waitForTransactionReceipt({
+          hash,
+          timeout: 120000, // 2 minutes timeout
+          retryCount: 5,
+          retryDelay: 2000 // 2 second retry delay
+        })
+
+        toast.success(
+          <div className="flex flex-col gap-2">
+            <div>Claim successful! {fmt(claimableAmount)} Morbius claimed from Round #{singleRoundId}</div>
+            <div className="text-xs opacity-75 break-all">
+              Txn: <a
+                href={`https://scan.pulsechain.com/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+              >
+                {hash}
+              </a>
+            </div>
+          </div>,
+          { duration: 8000 }
+        )
+
+        // Store transaction hash for the claimed round
+        if (address && singleRoundId) {
+          storeTransactionHash(address, parseInt(singleRoundId), hash)
+        }
+
+        // Reset form and refresh data
+        setSingleRoundId('')
+        window.location.reload()
+
+      } catch (receiptError: any) {
+        console.warn('Transaction sent but receipt not found yet:', receiptError)
+
+        // Transaction was sent successfully, show success with warning
+        toast.success(
+          <div className="flex flex-col gap-2">
+            <div>Transaction sent successfully! Your claim may take a few minutes to process on PulseChain.</div>
+            <div className="text-xs opacity-75 break-all">
+              Txn: <a
+                href={`https://scan.pulsechain.com/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+              >
+                {hash}
+              </a>
+            </div>
+          </div>,
+          { duration: 8000 }
+        )
+
+        // Reset form even if receipt isn't found
+        setSingleRoundId('')
+
+        // Still reload to refresh the UI
+        setTimeout(() => window.location.reload(), 3000)
+      }
 
     } catch (error: any) {
       console.error('Single claim failed:', error)
@@ -386,260 +649,333 @@ export function MultiClaimModal() {
 
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0" title="Claim Winnings">
-          <Coins className="w-5 h-5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="bg-slate-900/98 border-white/20 text-white max-w-2xl max-h-[85vh] overflow-hidden p-0 flex flex-col">
-        <DialogHeader className="px-4 pt-4 pb-2 border-b border-white/10">
-          <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Coins className="w-4 h-4" />
-            Claim Lottery Winnings
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!open && !onOpenChange && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0" title="Claim Winnings">
+            <Coins className="w-5 h-5" />
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-md max-h-[80vh]">
+        <div className="flex items-center gap-3 mb-6">
+          <Coins className="w-6 h-6 text-neutral-600 dark:text-neutral-200" />
+          <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
+            Claim Winnings
+          </div>
+        </div>
 
         {!address ? (
-          <div className="px-4 py-8 text-center text-xs text-white/50">Connect wallet to claim winnings</div>
+          <div className="text-center text-sm text-neutral-600 dark:text-neutral-300 py-8">Connect wallet to claim winnings</div>
         ) : isLoadingHistory ? (
-          <div className="px-4 py-8 flex items-center justify-center gap-2 text-xs text-white/50">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Loading rounds...
+          <div className="flex items-center justify-center gap-3 text-sm text-neutral-600 dark:text-neutral-300 py-8">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Loading your winnings...
+          </div>
+        ) : claimableRounds.length === 0 ? (
+          <div className="text-center">
+            <div className="text-sm text-neutral-600 dark:text-neutral-300 mb-6">No winnings available to claim</div>
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvanced(true)}
+              className="border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+            >
+              View History
+            </Button>
           </div>
         ) : (
-          <Tabs defaultValue="claimable" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="w-full grid grid-cols-2 bg-black/40 mx-4" style={{ width: 'calc(100% - 2rem)' }}>
-              <TabsTrigger value="claimable" className="data-[state=active]:bg-green-600/20 data-[state=active]:text-green-400">
-                <Coins className="w-3 h-3 mr-2" />
-                Claimable ({claimableRounds.length})
-              </TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-400">
-                <History className="w-3 h-3 mr-2" />
-                History ({fullHistory.length})
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            {/* Total Winnings Summary */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400 font-sans mb-1">
+                {fmt(totalClaimable)} Morbius
+              </div>
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 font-sans">
+                Available to claim from {claimableRounds.length} round{claimableRounds.length !== 1 ? 's' : ''}
+              </div>
+            </div>
 
-            <TabsContent value="claimable" className="mt-0 flex-1 flex flex-col min-h-0">
-              {claimableRounds.length === 0 ? (
-                <div className="px-4 py-8 text-center text-xs text-white/50 flex-1">No winnings to claim</div>
-              ) : (
-                <>
-                  <div className="overflow-y-auto max-h-[calc(85vh-200px)] flex-1">
-                    {/* Quick Single Claim */}
-                    <div className="px-4 py-3 bg-black/20 border-b border-white/10">
-                      <div className="text-xs font-medium text-white/70 mb-3 uppercase tracking-wide">Quick Claim</div>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <Label htmlFor="quick-claim-round" className="text-xs text-white/60">Round ID</Label>
-                          <Input
-                            id="quick-claim-round"
-                            value={singleRoundId}
-                            onChange={(e) => setSingleRoundId(e.target.value)}
-                            placeholder="42"
-                            type="number"
-                            className="bg-black/40 border-white/10 text-white placeholder:text-white/50 text-sm h-8 mt-1"
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button
-                            onClick={handleSingleClaim}
-                            disabled={!singleRoundId || isClaimingSingle}
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3"
-                          >
-                            {isClaimingSingle ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              'Claim'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+            {/* Claim All Button */}
+            <AceternityButton
+              onClick={handleClaimAll}
+              className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold text-lg py-3 font-sans"
+            >
+              <Coins className="w-5 h-5 mr-3" />
+              Claim All Winnings
+            </AceternityButton>
 
-                    {/* Summary */}
-                    <div className="px-4 py-3 bg-black/20 border-b border-white/10">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-white/60">Total Claimable</div>
-                        <div className="text-sm font-bold text-green-400">{fmt(totalClaimable)} Morbius</div>
-                      </div>
-                      {selectedRounds.size > 0 && (
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs text-white/60">Selected to Claim</div>
-                          <div className="text-sm font-bold text-yellow-400">{fmt(totalSelected)} Morbius</div>
-                        </div>
-                      )}
-                    </div>
+            {/* Advanced Options */}
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowAdvanced(true)}
+                className="w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 font-sans"
+              >
+                <History className="w-4 h-4 mr-2" />
+                Advanced Options
+              </Button>
+            </div>
+          </div>
+        )}
 
-                    {/* Selection Controls */}
-                    <div className="px-4 py-2 border-b border-white/10 flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={selectAll}
-                        className="text-xs h-6 px-2 text-blue-400 hover:text-blue-300"
-                        disabled={selectedRounds.size === claimableRounds.length}
-                      >
-                        Select All
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearAll}
-                        className="text-xs h-6 px-2 text-gray-400 hover:text-gray-300"
-                        disabled={selectedRounds.size === 0}
-                      >
-                        Clear All
-                      </Button>
-                      <div className="text-xs text-white/50 ml-auto">
-                        {selectedRounds.size} of {claimableRounds.length} selected
-                      </div>
-                    </div>
+        {/* Advanced Modal */}
+        {showAdvanced && (
+          <Dialog open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center gap-3 mb-4">
+                <History className="w-5 h-5 text-neutral-600 dark:text-neutral-200" />
+                <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-lg">
+                  Advanced Claim Options
+                </div>
+              </div>
 
-                    {/* Rounds List */}
-                    <div className="px-4 py-2">
-                      <div className="text-xs font-medium text-white/70 mb-3 uppercase tracking-wide">Claimable Rounds</div>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {claimableRounds.map((round) => (
-                          <div key={round.roundId}>
-                            <div
-                              className={cn(
-                                "flex items-center gap-3 p-3 rounded border transition-colors cursor-pointer",
-                                selectedRounds.has(round.roundId)
-                                  ? "bg-yellow-500/10 border-yellow-500/30"
-                                  : "bg-black/20 border-white/5 hover:bg-white/5"
-                              )}
-                              onClick={() => toggleRound(round.roundId)}
-                            >
-                              <Checkbox
-                                checked={selectedRounds.has(round.roundId)}
-                                onChange={() => toggleRound(round.roundId)}
-                                className="border-white/30 data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
+              <Tabs defaultValue="claimable" className="w-full flex-1 flex flex-col min-h-0">
+                <TabsList className="w-full grid grid-cols-2 bg-neutral-100 dark:bg-neutral-800/50 mx-4" style={{ width: 'calc(100% - 2rem)' }}>
+                  <TabsTrigger value="claimable" className="data-[state=active]:bg-green-600/20 data-[state=active]:text-green-400 font-sans text-neutral-600 dark:text-neutral-200">
+                    <Coins className="w-3 h-3 mr-2" />
+                    Claimable ({claimableRounds.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-400 font-sans text-neutral-600 dark:text-neutral-200">
+                    <History className="w-3 h-3 mr-2" />
+                    History ({fullHistory.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="claimable" className="mt-0 flex-1 flex flex-col min-h-0">
+                  {claimableRounds.length === 0 ? (
+                    <div className="text-center text-xs text-neutral-600 dark:text-neutral-300 flex-1 py-8">No winnings to claim</div>
+                  ) : (
+                    <>
+                      <div className="overflow-y-auto max-h-[calc(85vh-200px)] flex-1">
+                        {/* Quick Single Claim */}
+                        <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/30 border-b border-neutral-200 dark:border-neutral-700">
+                          <div className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-3 uppercase tracking-wide font-sans">Quick Claim</div>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Label htmlFor="quick-claim-round" className="text-xs text-neutral-600 dark:text-neutral-300 font-sans">Round ID</Label>
+                              <Input
+                                id="quick-claim-round"
+                                value={singleRoundId}
+                                onChange={(e) => setSingleRoundId(e.target.value)}
+                                placeholder="42"
+                                type="number"
+                                className="bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 text-sm h-8 mt-1"
                               />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="font-mono font-semibold text-white">Round #{round.roundId}</div>
-                                  <div className="text-xs text-white/60">({round.tickets} ticket{round.tickets !== 1 ? 's' : ''})</div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-white/60 hover:text-white p-1 h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleExpanded(round.roundId)
-                                }}
-                              >
-                                {expandedRounds.has(round.roundId) ? '−' : '+'}
-                              </Button>
-                              <div className="text-sm font-bold text-green-400">
-                                {fmt(round.amount)} Morbius
-                              </div>
                             </div>
+                            <div className="flex items-end">
+                              <Button
+                                onClick={handleSingleClaim}
+                                disabled={!singleRoundId || isClaimingSingle}
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3 font-sans"
+                              >
+                                {isClaimingSingle ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  'Claim'
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
 
-                            {/* Expanded Details */}
-                            {expandedRounds.has(round.roundId) && (
-                              <RoundDetails round={round} />
+                        {/* Summary */}
+                        <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/30 border-b border-neutral-200 dark:border-neutral-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-neutral-600 dark:text-neutral-300 font-sans">Total Claimable</div>
+                            <div className="text-sm font-bold text-green-600 dark:text-green-400 font-sans">{fmt(totalClaimable)} Morbius</div>
+                          </div>
+                          {selectedRounds.size > 0 && (
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs text-neutral-600 dark:text-neutral-300 font-sans">Selected to Claim</div>
+                              <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400 font-sans">{fmt(totalSelected)} Morbius</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Selection Controls */}
+                        <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-700 flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={selectAll}
+                            className="text-xs h-6 px-2 text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-sans"
+                            disabled={selectedRounds.size === claimableRounds.length}
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAll}
+                            className="text-xs h-6 px-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-500 dark:hover:text-neutral-300 font-sans"
+                            disabled={selectedRounds.size === 0}
+                          >
+                            Clear All
+                          </Button>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400 ml-auto font-sans">
+                            {selectedRounds.size} of {claimableRounds.length} selected
+                          </div>
+                        </div>
+
+                        {/* Rounds List */}
+                        <div className="px-4 py-2">
+                          <div className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-3 uppercase tracking-wide font-sans">Claimable Rounds</div>
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {claimableRounds.map((round) => (
+                              <div key={round.roundId}>
+                                <div
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded border transition-colors cursor-pointer",
+                                    selectedRounds.has(round.roundId)
+                                      ? "bg-yellow-500/10 border-yellow-500/30 dark:bg-yellow-500/5 dark:border-yellow-500/20"
+                                      : "bg-neutral-50 dark:bg-neutral-800/20 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800/40"
+                                  )}
+                                  onClick={() => toggleRound(round.roundId)}
+                                >
+                                  <Checkbox
+                                    checked={selectedRounds.has(round.roundId)}
+                                    onChange={() => toggleRound(round.roundId)}
+                                    className="border-neutral-300 dark:border-neutral-600 data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">Round #{round.roundId}</div>
+                                      <div className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">({round.tickets} ticket{round.tickets !== 1 ? 's' : ''})</div>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1 h-6 w-6 font-sans"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleExpanded(round.roundId)
+                                    }}
+                                  >
+                                    {expandedRounds.has(round.roundId) ? '−' : '+'}
+                                  </Button>
+                                  <div className="text-sm font-bold text-green-600 dark:text-green-400 font-sans">
+                                    {fmt(round.amount)} Morbius
+                                  </div>
+                                </div>
+
+                                {/* Expanded Details */}
+                                {expandedRounds.has(round.roundId) && (
+                                  <RoundDetails round={round} />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Fixed footer with claim button - always visible */}
+                      <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/30 flex-shrink-0">
+                        <Button
+                          onClick={handleClaim}
+                          disabled={selectedRounds.size === 0 || isClaiming}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold font-sans"
+                        >
+                          {isClaiming ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Claiming...
+                            </>
+                          ) : (
+                            <>
+                              <Coins className="w-4 h-4 mr-2" />
+                              Claim {selectedRounds.size} Round{selectedRounds.size !== 1 ? 's' : ''} ({fmt(totalSelected)} Morbius)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-0 flex-1 flex flex-col min-h-0">
+                  {isLoadingFullHistory ? (
+                    <div className="px-4 py-8 flex items-center justify-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 flex-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Loading history...
+                    </div>
+                  ) : fullHistory.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-xs text-neutral-600 dark:text-neutral-300 flex-1">No rounds found</div>
+                  ) : (
+                    <div className="overflow-y-auto max-h-[calc(85vh-160px)] px-4 py-3 flex-1">
+                      <div className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-3 uppercase tracking-wide font-sans">Claim History</div>
+                      <div className="space-y-2">
+                        {fullHistory.map((round) => (
+                          <div
+                            key={round.roundId}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded border",
+                              round.status === 'claimed'
+                                ? "bg-blue-500/10 border-blue-500/30 dark:bg-blue-500/5 dark:border-blue-500/20"
+                                : round.status === 'claimable'
+                                ? "bg-green-500/10 border-green-500/30 dark:bg-green-500/5 dark:border-green-500/20"
+                                : "bg-neutral-100 dark:bg-neutral-800/20 border-neutral-200 dark:border-neutral-700"
                             )}
+                          >
+                            <div className="flex-shrink-0">
+                              {round.status === 'claimed' && (
+                                <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                              )}
+                              {round.status === 'claimable' && (
+                                <Coins className="w-5 h-5 text-green-600 dark:text-green-400" />
+                              )}
+                              {round.status === 'no-win' && (
+                                <XCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">Round #{round.roundId}</div>
+                                <div className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">({round.tickets} ticket{round.tickets !== 1 ? 's' : ''})</div>
+                              </div>
+                              <div className="text-xs mt-0.5 font-sans">
+                                {round.status === 'claimed' && (
+                                  <span className="text-blue-600 dark:text-blue-400">✓ Claimed</span>
+                                )}
+                                {round.status === 'claimable' && (
+                                  <span className="text-green-600 dark:text-green-400">• Ready to Claim</span>
+                                )}
+                                {round.status === 'no-win' && (
+                                  <span className="text-neutral-600 dark:text-neutral-400">No Winnings</span>
+                                )}
+                              </div>
+                              {/* Transaction Hash for claimed rounds */}
+                              {round.status === 'claimed' && round.transactionHash && (
+                                <div className="text-xs mt-1 font-mono text-neutral-500 dark:text-neutral-500 break-all">
+                                  <a
+                                    href={`https://scan.pulsechain.com/tx/${round.transactionHash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline hover:no-underline"
+                                  >
+                                    {round.transactionHash.slice(0, 10)}...{round.transactionHash.slice(-8)}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            <div className={cn(
+                              "text-sm font-bold font-sans",
+                              round.status === 'claimed' ? "text-blue-600 dark:text-blue-400" :
+                              round.status === 'claimable' ? "text-green-600 dark:text-green-400" :
+                              "text-neutral-600 dark:text-neutral-400"
+                            )}>
+                              {round.amount > 0 ? fmt(round.amount) : '0'} Morbius
+                            </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Fixed footer with claim button - always visible */}
-                  <div className="px-4 py-3 border-t border-white/10 bg-black/20 flex-shrink-0">
-                    <Button
-                      onClick={handleClaim}
-                      disabled={selectedRounds.size === 0 || isClaiming}
-                      className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold"
-                    >
-                      {isClaiming ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Claiming...
-                        </>
-                      ) : (
-                        <>
-                          <Coins className="w-4 h-4 mr-2" />
-                          Claim {selectedRounds.size} Round{selectedRounds.size !== 1 ? 's' : ''} ({fmt(totalSelected)} Morbius)
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-0 flex-1 flex flex-col min-h-0">
-              {isLoadingFullHistory ? (
-                <div className="px-4 py-8 flex items-center justify-center gap-2 text-xs text-white/50 flex-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading history...
-                </div>
-              ) : fullHistory.length === 0 ? (
-                <div className="px-4 py-8 text-center text-xs text-white/50 flex-1">No rounds found</div>
-              ) : (
-                <div className="overflow-y-auto max-h-[calc(85vh-160px)] px-4 py-3 flex-1">
-                  <div className="text-xs font-medium text-white/70 mb-3 uppercase tracking-wide">Claim History</div>
-                  <div className="space-y-2">
-                    {fullHistory.map((round) => (
-                      <div
-                        key={round.roundId}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded border",
-                          round.status === 'claimed'
-                            ? "bg-blue-500/10 border-blue-500/30"
-                            : round.status === 'claimable'
-                            ? "bg-green-500/10 border-green-500/30"
-                            : "bg-gray-500/10 border-gray-500/20"
-                        )}
-                      >
-                        <div className="flex-shrink-0">
-                          {round.status === 'claimed' && (
-                            <CheckCircle2 className="w-5 h-5 text-blue-400" />
-                          )}
-                          {round.status === 'claimable' && (
-                            <Coins className="w-5 h-5 text-green-400" />
-                          )}
-                          {round.status === 'no-win' && (
-                            <XCircle className="w-5 h-5 text-gray-500" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="font-mono font-semibold text-white">Round #{round.roundId}</div>
-                            <div className="text-xs text-white/60">({round.tickets} ticket{round.tickets !== 1 ? 's' : ''})</div>
-                          </div>
-                          <div className="text-xs mt-0.5">
-                            {round.status === 'claimed' && (
-                              <span className="text-blue-400">✓ Claimed</span>
-                            )}
-                            {round.status === 'claimable' && (
-                              <span className="text-green-400">• Ready to Claim</span>
-                            )}
-                            {round.status === 'no-win' && (
-                              <span className="text-gray-500">No Winnings</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "text-sm font-bold",
-                          round.status === 'claimed' ? "text-blue-400" :
-                          round.status === 'claimable' ? "text-green-400" :
-                          "text-gray-500"
-                        )}>
-                          {round.amount > 0 ? fmt(round.amount) : '0'} Morbius
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>

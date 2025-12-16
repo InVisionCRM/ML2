@@ -36,7 +36,7 @@ interface IPulseXRouter {
  *      - 10% to Burn (dead address)
  *      - 10% to MegaMorbius Bank (progressive jackpot)
  *      - 70% to Winners Pool (prize brackets)
- *      - Fixed prize brackets: 125, 375, 750, 2000, 5000, 15000 Morbius
+ *      - Fixed prize brackets: 100, 250, 750, 2000, 5000, 15000 Morbius
  *      - MegaMorbius progressive: 35% to 5-matches, 65% to 6-matches whenever jackpot is won
  *      - Donations: Direct contributions to prize pool or MegaMorbius jackpot
  *      - Smart rollover: Unclaimed prizes → 100% next round winners pool
@@ -69,8 +69,8 @@ contract MegaMorbiusLottery is Ownable, ReentrancyGuard {
 
     // Fixed bracket amounts in Morbius (18 decimals)
     // Progressive prizes favoring higher matches
-    uint256[6] public BRACKET_AMOUNTS = [125e18, 375e18, 750e18, 2000e18, 5000e18, 15000e18];
-    // Bracket 1: 125 Morbius, Bracket 2: 375 Morbius, Bracket 3: 750 Morbius, Bracket 4: 2000 Morbius, Bracket 5: 5000 Morbius, Bracket 6: 15000 Morbius
+    uint256[6] public BRACKET_AMOUNTS = [100e18, 250e18, 750e18, 2000e18, 5000e18, 15000e18];
+    // Bracket 1: 100 Morbius, Bracket 2: 250 Morbius, Bracket 3: 750 Morbius, Bracket 4: 2000 Morbius, Bracket 5: 5000 Morbius, Bracket 6: 15000 Morbius
 
     // Rollover rule: unclaimed pools → 100% to next round winners pool
     uint256 public constant ROLLOVER_TO_NEXT_ROUND_PCT = 10000; // 100%
@@ -407,13 +407,15 @@ contract MegaMorbiusLottery is Ownable, ReentrancyGuard {
 
             // Apply same fee structure as MORBIUS purchases (on the base amount)
             // Note: Keeper fee is already taken in WPLS, so we don't calculate it here
-            uint256 deployerFee = (morbiusRequired * DEPLOYER_FEE_PCT) / TOTAL_PCT;
-            uint256 burnAmount = (morbiusRequired * BURN_PCT) / TOTAL_PCT;
-            uint256 megaContribution = (morbiusRequired * MEGA_BANK_PCT) / TOTAL_PCT;
-            uint256 toWinnersPool = morbiusRequired - deployerFee - burnAmount - megaContribution;
+            uint256 fees = (morbiusRequired * (DEPLOYER_FEE_PCT + BURN_PCT + MEGA_BANK_PCT)) / TOTAL_PCT;
+            uint256 toWinnersPool = morbiusRequired - fees;
 
             // Note: Keeper fee for PLS is already taken in WPLS above, so we don't transfer MORBIUS keeper fee
             // But we still apply the other fees proportionally
+            uint256 deployerFee = (morbiusRequired * DEPLOYER_FEE_PCT) / TOTAL_PCT;
+            uint256 burnAmount = (morbiusRequired * BURN_PCT) / TOTAL_PCT;
+            uint256 megaContribution = (morbiusRequired * MEGA_BANK_PCT) / TOTAL_PCT;
+
             if (deployerFee > 0) {
                 MORBIUS_TOKEN.safeTransfer(deployerWallet, deployerFee);
             }

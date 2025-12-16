@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Trophy, DollarSign, Users, Target } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, ExternalLink } from 'lucide-react'
 import { LOTTERY_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
 import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -69,29 +69,29 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="text-left hover:bg-white/5 p-2 rounded transition-colors w-full border border-white/10">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-white/70">{matchCount} matches</span>
-            <span className="text-white font-semibold">{winningTicketIds.length} winners</span>
+        <button className="text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/40 p-2 rounded transition-colors w-full border border-neutral-200 dark:border-neutral-700">
+          <div className="flex justify-between items-center text-xs font-sans">
+            <span className="text-neutral-600 dark:text-neutral-400">{matchCount} matches</span>
+            <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{winningTicketIds.length} winners</span>
           </div>
         </button>
       </DialogTrigger>
-      <DialogContent className="bg-black/95 border-white/20 text-white max-w-lg max-h-[70vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg">
+      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-lg max-h-[70vh] overflow-y-auto">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-lg">
             Bracket {matchCount} Winners - Round #{roundId}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-2 mt-2">
-          <div className="p-2 bg-white/5 border border-white/10 rounded-lg">
-            <div className="text-xs text-white/60 mb-1">Payout Per Winner</div>
-            <div className="text-lg font-bold text-white">{formatPssh(payoutPerWinner)} Morbius</div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="p-2 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+            <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1 font-sans">Payout Per Winner</div>
+            <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-sans">{formatPssh(payoutPerWinner)} Morbius</div>
           </div>
 
           {ticketData && ticketData.length > 0 ? (
             <div className="space-y-1.5">
-              <div className="text-xs text-white/60 mb-1">Winners ({ticketData.length})</div>
+              <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1 font-sans">Winners ({ticketData.length})</div>
               {ticketData.map((result: any, idx: number) => {
                 if (result.status !== 'success' || !result.result) return null
                 const [playerAddress, ticketId, isFreeTicket] = result.result as [string, bigint, boolean]
@@ -99,34 +99,34 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
                 return (
                   <div
                     key={idx}
-                    className="p-2 bg-white/5 border border-white/10 rounded hover:bg-white/10 transition-colors"
+                    className="p-2 bg-neutral-50 dark:bg-neutral-800/20 border border-neutral-200 dark:border-neutral-700 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800/40 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <button
                             onClick={() => openBlockExplorer(playerAddress)}
-                            className="text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                            className="text-xs font-mono text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors flex items-center gap-1 font-sans"
                             title={playerAddress}
                           >
                             {formatAddress(playerAddress)}
                             <ExternalLink className="w-2.5 h-2.5" />
                           </button>
                           {isFreeTicket && (
-                            <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                            <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30 font-sans">
                               FREE
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-white/50">
+                        <div className="text-[10px] text-neutral-600 dark:text-neutral-400 font-sans">
                           Ticket #{Number(ticketId)}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs font-bold text-white">
+                        <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100 font-sans">
                           {formatPssh(payoutPerWinner)}
                         </div>
-                        <div className="text-[10px] text-white/50">Morbius</div>
+                        <div className="text-[10px] text-neutral-600 dark:text-neutral-400 font-sans">Morbius</div>
                       </div>
                     </div>
                   </div>
@@ -134,7 +134,7 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
               })}
             </div>
           ) : (
-            <div className="text-center py-4 text-white/60 text-xs">
+            <div className="text-center py-4 text-neutral-600 dark:text-neutral-400 text-xs font-sans">
               Loading winner details...
             </div>
           )}
@@ -159,7 +159,9 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
         rounds.push(i)
       }
       setRoundIds(rounds)
-      setCurrentIndex(0) // Start with most recent round (current)
+      // Start with previous round if available, otherwise current round
+      const defaultIndex = rounds.length > 1 ? 1 : 0
+      setCurrentIndex(defaultIndex)
     }
   }, [currentRoundId, maxRounds])
 
@@ -270,11 +272,10 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
   const isFinalized = roundState === 1
 
   return (
-    <Card className="p-3 sm:p-4 bg-white/5 backdrop-blur-sm border-white/10">
+    <div>
       {/* Header with Navigation */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-yellow-400" />
+      <div className="flex items-center justify-between mb-4 border-b border-neutral-200 dark:border-neutral-700 pb-3">
+        <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-sans">
           Round #{roundId}
         </h3>
         <div className="flex items-center gap-1">
@@ -283,11 +284,11 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
             size="icon"
             onClick={handlePrev}
             disabled={!hasPrev}
-            className="h-7 w-7 border-white/10 text-white hover:bg-white/10 disabled:opacity-30"
+            className="h-7 w-7 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 disabled:opacity-30 font-sans"
           >
             <ChevronLeft className="h-3 w-3" />
           </Button>
-          <span className="text-xs text-white/60 min-w-[40px] sm:min-w-[50px] text-center">
+          <span className="text-xs text-neutral-600 dark:text-neutral-400 min-w-[40px] sm:min-w-[50px] text-center font-sans">
             {currentIndex + 1}/{roundIds.length}
           </span>
           <Button
@@ -295,7 +296,7 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
             size="icon"
             onClick={handleNext}
             disabled={!hasNext}
-            className="h-7 w-7 border-white/10 text-white hover:bg-white/10 disabled:opacity-30"
+            className="h-7 w-7 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 disabled:opacity-30 font-sans"
           >
             <ChevronRight className="h-3 w-3" />
           </Button>
@@ -303,59 +304,56 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
       </div>
 
       {isLoading && !round ? (
-        <Skeleton className="h-16 w-full bg-white/10" />
+        <Skeleton className="h-16 w-full bg-neutral-100 dark:bg-neutral-800" />
       ) : !isFinalized ? (
         <div className="text-center py-6">
-          <p className="text-xs text-white/50">Round not finalized</p>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Round not finalized</p>
         </div>
       ) : (
         <Accordion type="multiple" defaultValue={["overview"]} className="w-full space-y-2">
           {/* Quick Overview */}
-          <AccordionItem value="overview" className="border-white/10">
-            <AccordionTrigger className="text-sm font-medium text-white hover:text-white/80 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                Quick Overview
-              </div>
+          <AccordionItem value="overview" className="border-neutral-200 dark:border-neutral-700">
+            <AccordionTrigger className="text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180 font-sans">
+              Quick Overview
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
               <div className="space-y-3">
                 {/* Winning Numbers */}
                 <div>
-                  <p className="text-xs text-white/60 mb-2">Winning Numbers</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2 font-sans">Winning Numbers</p>
                   {winningNumbers.length === 6 && winningNumbers.some((n: number) => n > 0) ? (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {winningNumbers.map((num: number | bigint, index: number) => (
                         <div
                           key={index}
-                          className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-black font-bold text-xs sm:text-sm"
+                          className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 font-bold text-base sm:text-lg font-sans"
                         >
                           {Number(num)}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-white/50">None</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">None</p>
                   )}
                 </div>
 
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="bg-white/5 border border-white/10 rounded p-2 text-center">
-                    <p className="text-xs text-white/50">Tickets</p>
-                    <p className="text-sm font-semibold text-white">{Number(round?.totalTickets || BigInt(0)).toLocaleString()}</p>
+                  <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Tickets</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{Number(round?.totalTickets || BigInt(0)).toLocaleString()}</p>
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded p-2 text-center">
-                    <p className="text-xs text-white/50">Pool</p>
-                    <p className="text-sm font-semibold text-white">{formatPssh(totalPssh)}</p>
+                  <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Pool</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{formatPssh(totalPssh)}</p>
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded p-2 text-center">
-                    <p className="text-xs text-white/50">Players</p>
-                    <p className="text-sm font-semibold text-white">{Number(round?.uniquePlayers || BigInt(0)).toLocaleString()}</p>
+                  <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Players</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{Number(round?.uniquePlayers || BigInt(0)).toLocaleString()}</p>
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded p-2 text-center">
-                    <p className="text-xs text-white/50">Mega</p>
-                    <p className="text-sm font-semibold text-white">{round?.isMegaMillionsRound ? '⭐' : '—'}</p>
+                  <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Mega</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{round?.isMegaMillionsRound ? '⭐' : '—'}</p>
                   </div>
                 </div>
               </div>
@@ -363,12 +361,9 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
           </AccordionItem>
 
           {/* Winners by Bracket */}
-          <AccordionItem value="winners" className="border-white/10">
-            <AccordionTrigger className="text-sm font-medium text-white hover:text-white/80 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Winners by Bracket
-              </div>
+          <AccordionItem value="winners" className="border-neutral-200 dark:border-neutral-700">
+            <AccordionTrigger className="text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180 font-sans">
+              Winners by Bracket
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -400,30 +395,27 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
           </AccordionItem>
 
           {/* Pool Distribution */}
-          <AccordionItem value="distribution" className="border-white/10">
-            <AccordionTrigger className="text-sm font-medium text-white hover:text-white/80 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Pool Distribution
-              </div>
+          <AccordionItem value="distribution" className="border-neutral-200 dark:border-neutral-700">
+            <AccordionTrigger className="text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-2 hover:no-underline [&[data-state=open]>svg]:rotate-180 font-sans">
+              Pool Distribution
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div className="p-3 bg-white/5 border border-white/10 rounded-lg text-center">
-                  <p className="text-white/60 text-xs mb-1">Winners (70%)</p>
-                  <p className="text-white font-bold text-sm">{formatPssh(winnersPool)}</p>
+                <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">Winners (70%)</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(winnersPool)}</p>
                 </div>
-                <div className="p-3 bg-white/5 border border-white/10 rounded-lg text-center">
-                  <p className="text-white/60 text-xs mb-1">Burned (10%)</p>
-                  <p className="text-white font-bold text-sm">{formatPssh(burnAllocation)}</p>
+                <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">Burned (10%)</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(burnAllocation)}</p>
                 </div>
-                <div className="p-3 bg-white/5 border border-white/10 rounded-lg text-center">
-                  <p className="text-white/60 text-xs mb-1">MegaMorbius (10%)</p>
-                  <p className="text-white font-bold text-sm">{formatPssh(megaAllocation)}</p>
+                <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">MegaMorbius (10%)</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(megaAllocation)}</p>
                 </div>
               </div>
               <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <p className="text-blue-200 text-xs text-center">
+                <p className="text-blue-600 dark:text-blue-400 text-xs text-center font-sans">
                   Additional: 5% to Keeper + 5% to Deployer fees
                 </p>
               </div>
@@ -431,6 +423,6 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
           </AccordionItem>
         </Accordion>
       )}
-    </Card>
+    </div>
   )
 }

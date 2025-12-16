@@ -435,7 +435,7 @@ export default function WhitepaperPage() {
                 <div className="bg-gradient-to-r from-purple-950/30 to-pink-950/30 p-4 rounded-lg border border-purple-400/20 mb-4">
                   <h4 className="text-lg font-semibold text-purple-300 mb-2">Event Characteristics</h4>
                   <ul className="text-white/70 text-sm space-y-1">
-                    <li>• Predictable every 10 hours (20 rounds × 30 minutes)</li>
+                    <li>• Predictable every 10 hours (120 rounds × 5 minutes)</li>
                     <li>• Massive prize pools that dwarf regular rounds</li>
                     <li>• Social media amplification potential</li>
                     <li>• Community celebration and recognition</li>

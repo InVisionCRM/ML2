@@ -1,0 +1,43 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "SafeERC20",
+  "sourceName": "contracts/legacy/SuperStakeLottery6of55-flattened.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "currentAllowance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "requestedDecrease",
+          "type": "uint256"
+        }
+      ],
+      "name": "SafeERC20FailedDecreaseAllowance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "SafeERC20FailedOperation",
+      "type": "error"
+    }
+  ],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea2646970667358221220a02d9da1645a9d5831ac68f3c4c4796d14c5c4cb5c8c672f5a15ec7bc46b76c064736f6c634300081c0033",
+  "deployedBytecode": "0x600080fdfea2646970667358221220a02d9da1645a9d5831ac68f3c4c4796d14c5c4cb5c8c672f5a15ec7bc46b76c064736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

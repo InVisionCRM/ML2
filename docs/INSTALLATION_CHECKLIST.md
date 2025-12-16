@@ -176,7 +176,7 @@ pnpm dev
 - ⬜ Cards stack appropriately
 - ⬜ Touch targets adequate
 
-#### Mobile (375x667)
+#### Mobile (250x667)
 - ⬜ Single column layout
 - ⬜ Navigation accessible
 - ⬜ Forms usable

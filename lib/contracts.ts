@@ -16,14 +16,16 @@ export const WPLS_TO_MORBIUS_BUFFER_BPS = 11000 as const // 10% buffer
 export const LOTTERY_ADDRESS_OLD = '0x25056D6159F6C7a7812d1B65aca2Ca14E3E0F4c3' as const
 
 // NEW Lottery contract (6-of-55 version V2) - Fixed prizes, MegaMorbius progressive jackpot
-export const LOTTERY_ADDRESS = '0xBF48D5376Cb30ff760aFe3728AFf3A308B019C5E' as const
+// TODO: Update with new deployed contract address after deployment
+export const LOTTERY_ADDRESS = '0xD66b4489fbfF99A8d62f969203899840F2ec69c5' as const
 
 // Keno contract
 export const KENO_ADDRESS = '0xb04913A3085993153DaEE58704760BeB67c58705' as const
 
 // Contract deployment info
-export const LOTTERY_DEPLOY_BLOCK = 25281582
-export const KENO_DEPLOY_BLOCK = 25243758
+// TODO: Update with actual deployment block number
+export const LOTTERY_DEPLOY_BLOCK = 25284508 // Update with actual block number
+export const KENO_DEPLOY_BLOCK = 25242508
 // Placeholder - update when deployed
 
 // Lottery constants

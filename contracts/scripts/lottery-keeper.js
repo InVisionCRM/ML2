@@ -1,7 +1,7 @@
 /**
  * PulseChain SuperStakeLottery6of55 V2 Keeper
  * 
- * Simplified keeper that buys tickets every 135 seconds (2:15 minutes)
+ * Simplified keeper that buys tickets every 315 seconds (5:15 minutes)
  * This automatically finalizes expired rounds and ensures rounds have activity
  * 
  * Requirements:
@@ -12,10 +12,13 @@
  * Usage: node scripts/lottery-keeper.js
  */
 
-require('dotenv').config()
-const { ethers } = require('ethers')
-const path = require('path')
-const fs = require('fs')
+import 'dotenv/config'
+import { ethers } from 'ethers'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Config
 const RPC_URL = process.env.PULSECHAIN_RPC || 'https://rpc.pulsechain.com'
@@ -92,9 +95,9 @@ async function main() {
   const MAX_CONSECUTIVE_ERRORS = 10
   let countdownInterval = null // Track countdown timer
 
-  // Buy ticket every 135 seconds (2:15 minutes)
-  const TICKET_INTERVAL_MS = 135000
-  const COUNTDOWN_UPDATE_MS = 10000 // Update countdown every 10 seconds
+  // Buy ticket every 315 seconds (5:15 minutes)
+  const TICKET_INTERVAL_MS = 315000
+  const COUNTDOWN_UPDATE_MS = 30000 // Update countdown every 30 seconds
 
   console.log(`🎫 Keeper will buy tickets every ${TICKET_INTERVAL_MS / 1000} seconds`)
   console.log('═'.repeat(50) + '\n')
@@ -114,7 +117,7 @@ async function main() {
     countdownInterval = setInterval(() => {
       if (timeRemaining > 0) {
         console.log(`⏰ Next ticket buy in ${timeRemaining}s...`)
-        timeRemaining -= 10 // Decrease by 10 seconds (since we update every 10s)
+        timeRemaining -= 30 // Decrease by 30 seconds (since we update every 30s)
       } else {
         // Clear countdown when we reach 0
         if (countdownInterval) {
@@ -171,17 +174,6 @@ async function main() {
         // Start countdown timer for next purchase
         startCountdown()
 
-        // 🚀 EXTEND ROUND: Add 10 seconds to countdown for each ticket bought
-        // This keeps rounds active longer when there's buying activity
-        try {
-          console.log(`⏰ Extending round by 10 seconds per ticket (${keeperNumbers.length * 10}s total)`)
-          // Note: This would require a contract function like extendCurrentRound(uint256 secondsToAdd)
-          // const extendTx = await lottery.extendCurrentRound(BigInt(keeperNumbers.length * 10))
-          // await extendTx.wait()
-          // console.log(`✅ Round extended successfully`)
-        } catch (extendError) {
-          console.warn(`⚠️ Could not extend round: ${extendError.message}`)
-        }
 
         // Calculate gas cost
         const gasUsed = receipt.gasUsed

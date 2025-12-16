@@ -24,8 +24,8 @@ const FIXED_PRIZES = [
   { matches: 5, prize: 5000, odds: '1 in 145,716', color: 'from-purple-500 to-violet-600' },
   { matches: 4, prize: 2000, odds: '1 in 3,387', color: 'from-blue-500 to-cyan-600' },
   { matches: 3, prize: 750, odds: '1 in 220', color: 'from-green-500 to-emerald-600' },
-  { matches: 2, prize: 375, odds: '1 in 22', color: 'from-orange-500 to-red-600' },
-  { matches: 1, prize: 125, odds: '1 in 5', color: 'from-gray-500 to-slate-600' },
+  { matches: 2, prize: 250, odds: '1 in 22', color: 'from-orange-500 to-red-600' },
+  { matches: 1, prize: 100, odds: '1 in 5', color: 'from-gray-500 to-slate-600' },
 ]
 
 export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinners = false }: BracketDisplayProps) {
@@ -60,14 +60,14 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
 
       <div className="space-y-3">
         {FIXED_PRIZES.map((bracket, index) => {
-          const bracketData = brackets.find(b => b.matchCount === bracket.matches) || {
+          const bracketData = brackets.find(b => Number(b.matchCount) === bracket.matches) || {
             bracketId: 0,
             poolAmount: BigInt(0),
             winnerCount: 0,
             matchCount: bracket.matches,
           }
 
-          const hasWinners = bracketData.winnerCount > 0
+          const hasWinners = Number(bracketData.winnerCount) > 0
           const isJackpotBracket = bracket.matches >= 5 // 5 and 6 matches get MegaMorbius bonuses
 
           return (
@@ -98,7 +98,7 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
                         </h3>
                         {hasWinners && (
                           <span className="px-2 py-0.5 bg-green-500/20 text-green-500 text-xs font-semibold rounded-full">
-                            {bracketData.winnerCount} Winner{bracketData.winnerCount !== 1 ? 's' : ''}
+                            {Number(bracketData.winnerCount)} Winner{Number(bracketData.winnerCount) !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
@@ -128,10 +128,10 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
                     {hasWinners && (
                       <div className="pt-2 border-t border-border/50">
                         <div className="text-xs text-muted-foreground mb-1">
-                          {bracketData.winnerCount} Winner{bracketData.winnerCount !== 1 ? 's' : ''} Paid
+                          {Number(bracketData.winnerCount)} Winner{Number(bracketData.winnerCount) !== 1 ? 's' : ''} Paid
                         </div>
                         <div className="font-semibold text-primary">
-                          {(bracket.prize * bracketData.winnerCount).toLocaleString()} <span className="text-xs">Morbius Total</span>
+                          {(bracket.prize * Number(bracketData.winnerCount)).toLocaleString()} <span className="text-xs">Morbius Total</span>
                         </div>
                       </div>
                     )}

@@ -268,7 +268,7 @@ Poll Interval: 15000ms
    ═══════════════════════════════════════════════
    💼 KEEPER WALLET STATUS
    ═══════════════════════════════════════════════
-   💎 PLS Balance: 989375.635768296635924128 PLS
+   💎 PLS Balance: 989250.635768296635924128 PLS
    📊 Estimated Draws Remaining: 8775 draws
    
    🪙 Morbius Balance: 1000080.0 MORBIUS
@@ -533,7 +533,7 @@ Poll Interval: 15000ms
       System time: 1765666255 (local time)
       Time diff: 10s
       Contract state: 0 (0=OPEN, 1=FINALIZED)
-      Round start: 1765666125
+      Round start: 1765666100
       Duration: 120s
       Expires at: 1765666245
       Expired (blockchain time): true
@@ -1230,7 +1230,7 @@ Poll Interval: 15000ms
    ═══════════════════════════════════════════════
    💼 KEEPER WALLET STATUS
    ═══════════════════════════════════════════════
-   💎 PLS Balance: 987008.859285431216507125 PLS
+   💎 PLS Balance: 987008.859285431216507100 PLS
    📊 Estimated Draws Remaining: 10186 draws
    
    🪙 Morbius Balance: 1000090.0 MORBIUS

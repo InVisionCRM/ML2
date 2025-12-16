@@ -15,7 +15,7 @@
 **Deployment Tx:** `0xe8e9ca54817d962832f88d925aec3fb88b3303e5ffa58c84861307e7943b22c1`
 **Block Number:** 25184577
 **Deployer:** `0x70444750eedF1B2c9b777cbF096a5919A14895e5`
-**Deployer Balance:** 94,125.10 PLS (at deployment)
+**Deployer Balance:** 94,100.10 PLS (at deployment)
 
 ### PulseScan Links
 

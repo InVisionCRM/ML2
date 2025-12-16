@@ -145,6 +145,15 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
     }
   }, [winningNumbers, roundId, autoStart, drawCount, onDrawStart])
 
+  // Clear drawn balls when time runs out
+  useEffect(() => {
+    if (timeRemaining <= 0 && drawnNumbers.length > 0) {
+      console.log('🎱 Time ran out, clearing drawn balls')
+      resetDraw()
+      setCurrentState(DrawState.IDLE)
+    }
+  }, [timeRemaining, drawnNumbers.length])
+
   const resetDraw = () => {
     setDrawnNumbers([])
     setDrawnBallIds([])
@@ -337,19 +346,26 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
       )}
 
       <main className="w-full h-full flex flex-col items-center justify-center space-y-4 overflow-visible pt-14 pb-6 relative">
+        {/* Round Winning Numbers Title */}
+        <section className="absolute top-[-7px] left-0 right-0 flex justify-center -mt-6">
+          <div className="text-xs sm:text-xs text-white/70 font-bold uppercase tracking-wide text-center">
+            Round <span className="text-sm sm:text-base text-green-600 font-extrabold">{roundId || '?'}</span> Winning Numbers
+          </div>
+        </section>
+
         {/* Drawn Numbers Display */}
-        <section className="absolute top-8 left-0 right-0 flex justify-center">
-          <div className="flex flex-wrap gap-3 justify-center items-center z-10 px-4">
+        <section className="absolute top-[-7px] left-0 right-0 flex justify-center">
+          <div className="flex flex-wrap gap-2 sm:gap-4 justify-center items-center z-10 px-4">
             {Array.from({ length: drawCount }).map((_, i) => (
               <div
                 key={`ball-${i}`}
-                className={`w-10 h-10 flex items-center justify-center rounded-full ${drawnNumbers[i] ? 'border-1 border-purple-800 shadow-[0_0_8px_rgba(107,33,168,0.8)]' : ''}`}
+                className={`w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-full`}
               >
                 {drawnNumbers[i] ? (
                   <BallResult number={drawnNumbers[i]} type="white" animate={true} />
                 ) : (
-                  <div className="w-8 h-8 rounded-full border-2 border-dashed border-green-700/50 flex items-center justify-center">
-                    <span className="text-gray-800 text-sm font-bold">{i + 1}</span>
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-ful border-2 border-white border-dashed flex items-center justify-center">
+                    {/* Empty placeholder - no numbers */}
                   </div>
                 )}
               </div>
@@ -358,7 +374,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
         </section>
 
         {/* Machine */}
-        <section className="flex justify-center flex-1 items-center w-full overflow-hidden min-h-0 pt-16">
+        <section className="flex justify-center flex-1 items-center w-full overflow-hidden min-h-0 pt-[34px]">
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-center transition-transform relative">
               <div

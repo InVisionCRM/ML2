@@ -1,27 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { formatUnits } from 'viem'
-import { TOKEN_DECIMALS } from '@/lib/contracts'
+import { TOKEN_DECIMALS, TICKET_PRICE } from '@/lib/contracts'
 import { PlayerTicketsModal } from './player-tickets-modal'
 import { PlayerStatsModal } from './player-stats-modal'
 import { MultiClaimModal } from './modals/multi-claim-modal'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RoundHistory } from './round-history'
 import { ChevronUp, ChevronDown, History } from 'lucide-react'
+import PhysicsMachine from './ball-draw-simulator/PhysicsMachine'
+import BallResult from './ball-draw-simulator/BallResult'
+import { DrawState } from './ball-draw-simulator/types'
 
 interface RoundTimerProps {
   endTime: bigint
   fallbackRemaining?: bigint // optional timeRemaining from contract
   roundId?: number | bigint
-  totalTickets?: number | bigint
   totalPssh?: bigint
   previousRoundId?: number // Previous round ID for display
   disabled?: boolean
   houseTicketNumbers?: number[] // Contract's own ticket numbers
+  winningNumbers?: number[] // Currently drawn winning numbers for highlighting
   playerTickets?: Array<{
     ticketId: bigint | number
     numbers: readonly (number | bigint)[]
@@ -29,9 +32,8 @@ interface RoundTimerProps {
     transactionHash?: string
   }> // User's tickets for this round
   onBuyTicketsClick?: () => void // New prop for buy tickets button
-  burnedAmount?: bigint // Burned Morbius amount
-  megaBank?: bigint // MegaMorbius jackpot amount
-  isLoadingBurned?: boolean // Loading state for burned amount
+  onDrawStart?: () => void // Callback when ball draw starts
+  onDrawEnd?: () => void // Callback when ball draw ends
 }
 
 const DISPLAY_OFFSET_SECONDS = 15
@@ -46,7 +48,15 @@ function formatSeconds(totalSeconds: number) {
   return `${s}s`
 }
 
-export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalTickets, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], playerTickets = [], onBuyTicketsClick, burnedAmount, megaBank, isLoadingBurned = false }: RoundTimerProps) {
+// Calculate responsive size for physics machine (responsive with a 350px cap)
+const getPhysicsMachineSize = () => {
+  if (typeof window === 'undefined') return { width: 280, height: 280 }
+  const maxSize = Math.min(window.innerWidth, window.innerHeight) * 0.7
+  const size = Math.min(maxSize, 332) // +18 wrapper = max 350px visible
+  return { width: size, height: size }
+}
+
+export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], onBuyTicketsClick, onDrawStart, onDrawEnd }: RoundTimerProps) {
   // Convert BigInt to number once to avoid recreating dependencies
   const endTimeNum = Number(endTime)
   const fallbackNum = Number(fallbackRemaining)
@@ -57,10 +67,99 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
     return fallbackNum + DISPLAY_OFFSET_SECONDS
   })
 
+  // Ticket carousel state
+  const [ticketIndex, setTicketIndex] = useState(0)
+
+  // Delay winning numbers for highlighting to sync with ball draw animation
+  const [delayedWinningNumbers, setDelayedWinningNumbers] = useState<number[]>([])
+
+  // Ball draw simulator state
+  const [currentState, setCurrentState] = useState<DrawState>(DrawState.IDLE)
+  const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]) // Winning numbers drawn
+  const [drawnBallIds, setDrawnBallIds] = useState<number[]>([]) // Ball IDs that have been drawn
+  const [triggerDraw, setTriggerDraw] = useState(false)
+  const [currentTarget, setCurrentTarget] = useState<number | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+  const [machineSize, setMachineSize] = useState(getPhysicsMachineSize())
+  const startedRef = useRef(false)
+  const lastNumbersKeyRef = useRef<string | null>(null)
+  const hasAnimatedRef = useRef(false) // Track if animation has played for current round
+  const completedRef = useRef(false) // Track if onComplete has been called for current round
+  const clampedMachineSize = Math.min(machineSize.width, 330) // keep globe large but responsive
+  const visualSize = Math.min(clampedMachineSize + 5, 335) // wrapper only 5px larger than globe
+
+  useEffect(() => {
+    if (winningNumbers.length > delayedWinningNumbers.length) {
+      // Add delay to sync with ball draw animation timing
+      const timeout = setTimeout(() => {
+        setDelayedWinningNumbers(winningNumbers)
+      }, 3500) // 1.5 second delay to match ball draw timing
+
+      return () => clearTimeout(timeout)
+    } else if (winningNumbers.length === 0) {
+      // Reset when no winning numbers
+      setDelayedWinningNumbers([])
+    }
+  }, [winningNumbers, delayedWinningNumbers.length])
+
   const [showHistory, setShowHistory] = useState(false)
 
   // Buttons should always be clickable regardless of disabled state
   const cardDisabledClass = ''
+
+  const resetDraw = () => {
+    setDrawnNumbers([])
+    setDrawnBallIds([])
+    setCurrentTarget(null)
+    setTriggerDraw(false)
+  }
+
+  // Ball draw orchestrator effect
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>
+
+    // Phase 1: Mixing
+    if (currentState === DrawState.MIXING) {
+      onDrawStart?.()
+      timeout = setTimeout(() => {
+        setCurrentState(DrawState.DRAWING)
+      }, 2500)
+    }
+
+    // Phase 2: Drawing Balls
+    if (currentState === DrawState.DRAWING) {
+      if (drawnNumbers.length < 6) {
+        // Set target to the next winning number
+        const nextWinningNumber = winningNumbers[drawnNumbers.length]
+        setCurrentTarget(nextWinningNumber)
+
+        timeout = setTimeout(() => {
+          setTriggerDraw(true)
+        }, 2000)
+      } else {
+        setCurrentState(DrawState.COMPLETED)
+        // Only fire callbacks once per round
+        if (!completedRef.current) {
+          completedRef.current = true
+          onDrawEnd?.()
+        }
+      }
+    }
+
+    return () => clearTimeout(timeout)
+  }, [currentState, drawnNumbers, winningNumbers])
+
+  // Ball selection callback
+  const handleBallSelected = useCallback((ballId: number, number: number) => {
+    console.log('🎱 Ball selected:', { ballId, number, currentTarget })
+
+    if (number === currentTarget) {
+      setDrawnNumbers(prev => [...prev, number])
+      setDrawnBallIds(prev => [...prev, ballId])
+      setTriggerDraw(false)
+      setCurrentTarget(null)
+    }
+  }, [currentTarget])
 
   useEffect(() => {
     const update = () => {
@@ -84,7 +183,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
 
   return (
     <>
-      <Card className={`p-4 sm:p-6 md:p-8 border-white/10 relative min-h-[600px] sm:min-h-[600px] md:min-h-[610px] max-w-3xl w-full mx-auto bg-Black/10 backdrop-blur-md ${cardDisabledClass}`}>
+      <Card className={`px-4 py-0 sm:px-6 sm:py-0 md:px-8 md:py-0 border-white/10 relative min-h-[680px] sm:min-h-[680px] md:min-h-[690px] max-w-3xl w-full mx-auto bg-Black/10 backdrop-blur-md ${cardDisabledClass}`}>
       {/* House Ticket Numbers - Vertical on left */}
       <div className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 sm:gap-2">
         {houseTicketNumbers && houseTicketNumbers.length === 6 ? (
@@ -107,159 +206,179 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
         )}
       </div>
 
-      {/* Top Stats Row - Evenly Spaced */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex justify-between items-start">
-        {/* Total Tickets */}
-        {totalTickets !== undefined && (
-          <div className="text-center">
-            <div className="text-xs sm:text-sm text-white/60">Total Tickets</div>
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">{Number(totalTickets).toLocaleString()}</div>
-          </div>
-        )}
 
-        {/* Burned - Center Left */}
-        {burnedAmount !== undefined && (
-          <div className="text-center">
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-              {isLoadingBurned ? (
-                <span className="text-white/50">...</span>
-              ) : (() => {
-                const burnedNum = parseFloat(formatUnits(burnedAmount, TOKEN_DECIMALS))
-                return burnedNum >= 1_000_000
-                  ? (burnedNum / 1_000_000).toFixed(1) + 'M'
-                  : burnedNum >= 1_000
-                  ? (burnedNum / 1_000).toFixed(1) + 'K'
-                  : burnedNum.toFixed(0)
-              })()}
-            </div>
-            <div className="text-xs sm:text-sm text-white/60">Burned</div>
-          </div>
-        )}
-
-        {/* Jackpot - Center Right */}
-        {megaBank !== undefined && (
-          <div className="text-center">
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-              {(() => {
-                const megaNum = parseFloat(formatUnits(megaBank, TOKEN_DECIMALS))
-                return megaNum >= 1_000_000
-                  ? (megaNum / 1_000_000).toFixed(1) + 'M'
-                  : megaNum >= 1_000
-                  ? (megaNum / 1_000).toFixed(1) + 'K'
-                  : megaNum.toFixed(0)
-              })()}
-            </div>
-            <div className="text-xs sm:text-sm text-white/60">Jackpot</div>
-          </div>
-        )}
-
-        {/* Round - Right */}
-        {roundId !== undefined && (
-          <div className="text-center">
-            <div className="text-xs sm:text-sm text-white/60">Round</div>
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">#{Number(roundId)}</div>
-          </div>
-        )}
-      </div>
-
-
-
-      {/* Timer at bottom-center */}
-      <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 text-center">
-        <div className="text-xs text-white/60 mb-1 sm:mb-2">Time Remaining</div>
-        <div className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
+      {/* Timer at top-right */}
+      <div className="absolute top-1 sm:top-2 right-1 sm:right-2 text-right">
+        <div className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
           {formatSeconds(remaining)}
         </div>
       </div>
 
-      {/* History Dropdown Button */}
-      <div className="absolute bottom-2 right-0">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowHistory(!showHistory)}
-          className="text-white border-white/20 bg-black/20 hover:bg-white/10 backdrop-blur-sm"
-        >
-          <History className="w-4 h-4" />
-          {showHistory ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
-        </Button>
+      {/* Ball Draw Simulator - Integrated */}
+      {/* Round Winning Numbers Title */}
+      <div className="absolute top-4 left-0 right-0 flex justify-center mt-1 z-10">
+        <div className="text-xs sm:text-xs text-white/70 font-bold uppercase tracking-wide text-center">
+          Round <span className="text-sm sm:text-base text-green-600 font-extrabold">{roundId || '?'}</span> Winning Numbers
+        </div>
       </div>
 
-      {/* Tickets Button - Bottom Left */}
-      {onBuyTicketsClick && (
-        <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2">
+      {/* Drawn Numbers Display */}
+      <div className="absolute top-14 left-0 right-0 flex rounded-full justify-center z-20">
+        <div className="flex flex-wrap gap-2 sm:gap-4 justify-center items-center px-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={`ball-${i}`}
+              className={`w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-full`}
+            >
+              {drawnNumbers[i] ? (
+                <BallResult number={drawnNumbers[i]} type="white" animate={true} />
+              ) : (
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-white border-dashed flex items-center justify-center">
+                  {/* Empty placeholder - no numbers */}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Physics Machine */}
+      <div className="absolute inset-0 flex items-center justify-center z-5 pointer-events-none">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center transition-transform relative">
+            <div
+              className="glass-panel p-0.5 rounded-full shadow-[0_0_55px_-12px_rgba(59,130,246,0.25)] relative border border-white/5 bg-gray-900/40 z-0 overflow-visible flex items-center justify-center"
+              style={{ width: `${visualSize}px`, height: `${visualSize}px` }}
+            >
+            <div className="absolute inset-0 animate-[spin_30s_linear_infinite] pointer-events-none">
+              <span
+                className="absolute inset-0 bg-[url('/morbius/MorbiusLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-50"
+              />
+            </div>
+            <PhysicsMachine
+              width={clampedMachineSize}
+              height={clampedMachineSize}
+              ballCount={30}
+              isMixing={currentState === DrawState.MIXING || currentState === DrawState.DRAWING}
+              drawnBallIds={drawnBallIds}
+              onBallSelected={handleBallSelected}
+              triggerDraw={triggerDraw}
+              targetWinningNumber={currentTarget}
+              isBackground={true}
+            />
+            {/* Reflection Overlay */}
+            <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Your Numbers Display - Above Buttons */}
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+        {playerTickets.length > 0 ? (
+          <>
+            {/* Title */}
+            <div className="text-xs sm:text-base text-white/80 font-bold uppercase tracking-wide">
+              Your Numbers
+            </div>
+
+            {/* Navigation and numbers container */}
+            <div className="flex items-center gap-2">
+              {/* Left navigation arrow */}
+              {playerTickets.length > 1 && (
+                <button
+                  onClick={() => setTicketIndex(Math.max(0, ticketIndex - 1))}
+                  disabled={ticketIndex === 0}
+                  className="w-8 h-8 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white/60 text-base"
+                >
+                  ‹
+                </button>
+              )}
+
+              {/* Current ticket numbers - horizontal */}
+              <div className="flex gap-1 sm:gap-2">
+                {playerTickets[ticketIndex]?.numbers.slice(0, 6).map((num, idx) => {
+                  const isDrawn = delayedWinningNumbers.includes(Number(num))
+                  return (
+                    <div
+                      key={idx}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-base shadow-lg transition-all duration-300 ${
+                        isDrawn
+                          ? 'bg-green-500 border-2 border-green-300 shadow-[0_0_12px_rgba(34,197,94,0.8)]'
+                          : 'bg-blue-950/20 backdrop-blur-sm border border-white/20'
+                      }`}
+                    >
+                      {num}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Right navigation arrow */}
+              {playerTickets.length > 1 && (
+                <button
+                  onClick={() => setTicketIndex(Math.min(playerTickets.length - 1, ticketIndex + 1))}
+                  disabled={ticketIndex === playerTickets.length - 1}
+                  className="w-8 h-8 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white/60 text-base"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-xs text-white/30">
+            No tickets
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons - Below Your Numbers */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3 z-10">
+        {/* Round History Button */}
+        <Button
+          variant="outline"
+          onClick={() => setShowHistory(!showHistory)}
+          className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0"
+          title="Round History"
+        >
+          <History className="w-5 h-5" />
+        </Button>
+
+        {/* Tickets Button */}
+        {onBuyTicketsClick && (
           <Button
             variant="outline"
-            className="text-white border-white/20 bg-green-500/50 hover:bg-green-600/60 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+            className="text-white bg-green-500/50 hover:bg-green-600/60 border-white/10 w-10 h-10 p-0"
             title="Buy lottery tickets"
             onClick={onBuyTicketsClick}
           >
-            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-xs sm:text-sm font-medium">Tickets</span>
           </Button>
-        </div>
-      )}
+        )}
 
-      {/* Buttons - vertical stack on right side */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-1 sm:gap-2">
         {/* Claim winnings button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <MultiClaimModal />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="z-30">
-              <p>Claim your lottery prizes</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div>
+          <MultiClaimModal />
+        </div>
 
         {/* Player stats button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <PlayerStatsModal />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="z-30">
-              <p>View your performance</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div>
+          <PlayerStatsModal />
+        </div>
 
         {/* Your tickets button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <PlayerTicketsModal roundId={roundId} playerTickets={playerTickets} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="z-30">
-              <p>See purchased tickets</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div>
+          <PlayerTicketsModal roundId={roundId} playerTickets={playerTickets} />
+        </div>
 
         {/* Payouts button (conditional) */}
         {totalPssh !== undefined && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <PayoutBreakdownDialog totalPssh={totalPssh} />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="z-30">
-                <p>Pool distribution</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div>
+            <PayoutBreakdownDialog totalPssh={totalPssh} />
+          </div>
         )}
       </div>
     </Card>
@@ -299,8 +418,8 @@ export function PayoutBreakdownDialog({ totalPssh }: PayoutBreakdownDialogProps)
     { id: 5, label: 'Match 5 (5,000 MOR)', amount: 5000, hasMegaBonus: true },
     { id: 4, label: 'Match 4 (2,000 MOR)', amount: 2000, hasMegaBonus: false },
     { id: 3, label: 'Match 3 (750 MOR)', amount: 750, hasMegaBonus: false },
-    { id: 2, label: 'Match 2 (375 MOR)', amount: 375, hasMegaBonus: false },
-    { id: 1, label: 'Match 1 (125 MOR)', amount: 125, hasMegaBonus: false },
+    { id: 2, label: 'Match 2 (250 MOR)', amount: 250, hasMegaBonus: false },
+    { id: 1, label: 'Match 1 (100 MOR)', amount: 100, hasMegaBonus: false },
   ]
 
   return (

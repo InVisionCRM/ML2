@@ -128,7 +128,7 @@
 │  5               │  OPEN                           │
 │                  │                                 │
 │  Total Morbius   │  Total Tickets                 │
-│  125,000         │  125                           │
+│  100,000         │  100                           │
 │                  │                                 │
 │  Unique Players  │  Time Remaining                │
 │  42              │  1234m                          │
@@ -154,7 +154,7 @@
 │  1,250                 │  1,250,000                │
 │                        │                           │
 │  Total Claimed         │  Outstanding Prizes       │
-│  625,000               │  125,000                  │
+│  625,000               │  100,000                  │
 │                        │                           │
 │  MegaMorbius Bank                                  │
 │  250,000 Morbius                                   │
