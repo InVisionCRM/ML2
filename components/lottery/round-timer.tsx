@@ -233,7 +233,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
 
 
       {/* Timer at top-right */}
-      <div className="absolute top-1 sm:top-2 right-1 sm:right-2 text-right">
+      <div className="absolute top-2 sm:top-2 left-1/2 -translate-x-1/2 text-right">
         <div className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
           {formatSeconds(remaining)}
         </div>
@@ -241,14 +241,14 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
 
       {/* Ball Draw Simulator - Integrated */}
       {/* Round Winning Numbers Title */}
-      <div className="absolute top-4 left-0 right-0 flex justify-center mt-1 z-10">
-        <div className="text-xs sm:text-xs text-white/70 font-bold uppercase tracking-wide text-center">
-          Round <span className="text-sm sm:text-base text-green-600 font-extrabold">{previousRoundId || roundId || '?'}</span> Winning Numbers
+      <div className="absolute top-10 left-0 right-0 flex justify-center mt-1 z-10">
+        <div className="text-sm sm:text-sm text-white/70 font-bold uppercase tracking-wide text-center">
+          Round <span className="text-lg sm:text-lg text-green-600 font-extrabold">{previousRoundId || roundId || '?'}</span> Winning Numbers
         </div>
       </div>
 
       {/* Drawn Numbers Display */}
-      <div className="absolute top-14 left-0 right-0 flex rounded-full justify-center z-20">
+      <div className="absolute top-25 left-0 right-0 flex rounded-full justify-center z-20">
         <div className="flex flex-wrap gap-2 sm:gap-4 justify-center items-center px-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div

@@ -458,7 +458,7 @@ export default function Home() {
                           <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center text-green-300 font-bold text-sm flex-shrink-0 mt-0.5">2</div>
                           <div>
                             <h4 className="text-white font-medium mb-1">Purchase Tickets</h4>
-                            <p className="text-white/70 text-sm leading-relaxed">Each ticket costs 100 MORBIUS tokens. You can buy multiple tickets per transaction and play across multiple rounds in advance.</p>
+                            <p className="text-white/70 text-sm leading-relaxed">Each ticket costs 100 MORBIUS tokens or you can use Native PLS with a .5 buffer. All PLS is swapped directly for Morbius. You can buy multiple tickets per transaction and play across multiple rounds in advance.</p>
                           </div>
                         </div>
 
@@ -466,7 +466,7 @@ export default function Home() {
                           <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 font-bold text-sm flex-shrink-0 mt-0.5">3</div>
                           <div>
                             <h4 className="text-white font-medium mb-1">Wait for the Draw</h4>
-                            <p className="text-white/70 text-sm leading-relaxed">Rounds last exactly 30 minutes. The draw happens automatically at the end of each round, generating 6 winning numbers.</p>
+                            <p className="text-white/70 text-sm leading-relaxed">Rounds last exactly 5 minutes. The draw happens automatically at the end of each round, generating 6 winning numbers.</p>
                           </div>
                         </div>
 
@@ -486,7 +486,7 @@ export default function Home() {
 
                       <div className="mb-4">
                         <p className="text-white/80 text-sm mb-4">
-                          Every ticket purchase contributes to multiple pools. 70% goes to winners, 10% to MegaMorbius jackpot, 10% burned, and 10% to protocol fees.
+                          Every ticket purchase contributes to multiple pools. 70% goes to winners, 10% to MegaMorbius jackpot, 10% burned, and 10% to the keeper.
                         </p>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -504,7 +504,7 @@ export default function Home() {
                           </div>
                           <div className="text-center p-3 bg-blue-950/30 rounded-lg border border-blue-400/20">
                             <div className="text-lg font-bold text-blue-400 mb-1">10%</div>
-                            <div className="text-white/70 text-xs">Protocol</div>
+                            <div className="text-white/70 text-xs">Keeper</div>
                           </div>
                         </div>
                       </div>
@@ -591,8 +591,8 @@ export default function Home() {
                           <h4 className="text-green-300 font-medium mb-3">Claiming Process</h4>
                           <ol className="text-white/70 text-sm space-y-2 list-decimal list-inside">
                             <li>Check your tickets after round completion</li>
-                            <li>Click the yellow "Claim" button on the timer</li>
-                            <li>Select rounds with available prizes</li>
+                            <li>Click "Dashboard" button at top of screen and then "Claim"</li>
+                            <li>Click "Claim All" or select advanced to see all rounds with available prizes</li>
                             <li>Confirm the blockchain transaction</li>
                             <li>Prizes are instantly transferred to your wallet</li>
                           </ol>
@@ -601,7 +601,7 @@ export default function Home() {
                         <div className="bg-blue-950/20 p-3 rounded border border-blue-400/20">
                           <p className="text-blue-300 text-sm font-medium mb-1">Important Notes</p>
                           <ul className="text-white/70 text-xs space-y-1">
-                            <li>• Unclaimed prizes roll over to future rounds</li>
+                            <li>• Unclaimed prizes will auto burn after 180 days of no claim</li>
                             <li>• You can claim multiple rounds at once</li>
                             <li>• All claims are recorded on-chain for transparency</li>
                             <li>• Gas fees apply for claim transactions</li>
@@ -624,11 +624,11 @@ export default function Home() {
                           <div className="grid md:grid-cols-2 gap-4">
                             <div className="bg-white/5 p-3 rounded border border-white/10">
                               <h5 className="text-cyan-300 text-sm font-medium mb-1">Purchase Frequency</h5>
-                              <p className="text-white/70 text-xs">Buys 1 ticket every 15 minutes</p>
+                              <p className="text-white/70 text-xs">Buys 1 ticket every 5 minutes</p>
                             </div>
                             <div className="bg-white/5 p-3 rounded border border-white/10">
                               <h5 className="text-cyan-300 text-sm font-medium mb-1">Initial Balance</h5>
-                              <p className="text-white/70 text-xs">Started with 10 million MORBIUS</p>
+                              <p className="text-white/70 text-xs">Started with 5 million MORBIUS</p>
                             </div>
                           </div>
 
