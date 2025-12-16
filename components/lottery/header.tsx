@@ -52,7 +52,12 @@ export function Header({ nextDrawEndTime, fallbackRemaining = BigInt(0), onBento
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="text-left">
-              <h1 className="text-xl font-bold text-white leading-none">MORBIUS.IO</h1>
+              <h1 className="text-xl font-bold text-white leading-none hidden sm:inline">MORBIUS.IO</h1>
+              <img
+                src="/morbius/MorbiusLogo (3).png"
+                alt="Morbius.io"
+                className="h-6 w-auto sm:hidden inline"
+              />
             </div>
           </Link>
 
