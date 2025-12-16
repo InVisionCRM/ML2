@@ -38,15 +38,6 @@ interface RoundTimerProps {
 
 const DISPLAY_OFFSET_SECONDS = 15
 
-function formatSeconds(totalSeconds: number) {
-  const seconds = Math.max(0, Math.floor(totalSeconds))
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  if (h > 0) return `${h}h ${m}m ${s}s`
-  if (m > 0) return `${m}m ${s}s`
-  return `${s}s`
-}
 
 // Calculate responsive size for physics machine (responsive with a 350px cap)
 const getPhysicsMachineSize = () => {
@@ -61,11 +52,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
   const endTimeNum = Number(endTime)
   const fallbackNum = Number(fallbackRemaining)
 
-  const [remaining, setRemaining] = useState<number>(() => {
-    const fromEnd = endTimeNum * 1000 - Date.now()
-    if (!Number.isNaN(fromEnd) && fromEnd > 0) return Math.floor(fromEnd / 1000) + DISPLAY_OFFSET_SECONDS
-    return fallbackNum + DISPLAY_OFFSET_SECONDS
-  })
 
   // Ticket carousel state
   const [ticketIndex, setTicketIndex] = useState(0)
@@ -186,17 +172,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
     }
   }, [currentTarget])
 
-  useEffect(() => {
-    const update = () => {
-      const ms = endTimeNum * 1000 - Date.now()
-      if (!Number.isNaN(ms)) {
-        setRemaining(Math.max(0, Math.floor(ms / 1000) + DISPLAY_OFFSET_SECONDS))
-      }
-    }
-    update()
-    const id = setInterval(update, 1000)
-    return () => clearInterval(id)
-  }, [endTimeNum])
 
   const formatPssh = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
@@ -231,13 +206,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
         )}
       </div>
 
-
-      {/* Timer at top-right */}
-      <div className="absolute top-2 sm:top-2 left-1/2 -translate-x-1/2 text-right">
-        <div className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
-          {formatSeconds(remaining)}
-        </div>
-      </div>
 
       {/* Ball Draw Simulator - Integrated */}
       {/* Round Winning Numbers Title */}
