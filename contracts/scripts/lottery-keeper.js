@@ -13,7 +13,7 @@
  */
 
 import 'dotenv/config'
-import { ethers } from 'ethers'
+import { ethers } from '../../node_modules/ethers/lib.commonjs/index.js'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
