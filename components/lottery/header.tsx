@@ -132,13 +132,14 @@ export function Header({ nextDrawEndTime, fallbackRemaining = BigInt(0), onBento
         {/* Centered Next Draw Timer and Button */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="flex items-center gap-3">
-            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent drop-shadow">
+            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent drop-shadow">
               {remaining > 0 ? formatSeconds(remaining) : '--'}
             </div>
             {onBentoClick && (
               <button
                 onClick={onBentoClick}
-                className="pointer-events-auto px-3 py-1.5 text-sm font-medium bg-slate-950/30 text-white border-purple-600/30 border-1 rounded-lg transition-colors flex items-center gap-2"
+                title="Dashboard"
+                className="pointer-events-auto px-3 py-1.5 text-md font-medium bg-slate-900 text-white border-white border-2 rounded-md transition-colors flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />

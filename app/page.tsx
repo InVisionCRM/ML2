@@ -754,7 +754,7 @@ export default function Home() {
                 disabled
                 className="px-3 py-2 bg-purple-950/10 backdrop-blur-sm border border-white/20 text-white text-xs rounded-lg opacity-50 cursor-not-allowed funnel-display-medium"
               >
-                Stats
+                Dashboard
               </button>
             </div>
           </div>
