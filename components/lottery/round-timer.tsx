@@ -10,7 +10,6 @@ import { PlayerTicketsModal } from './player-tickets-modal'
 import { PlayerStatsModal } from './player-stats-modal'
 import { MultiClaimModal } from './modals/multi-claim-modal'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { RoundHistory } from './round-history'
 import { ChevronUp, ChevronDown, History } from 'lucide-react'
 import PhysicsMachine from './ball-draw-simulator/PhysicsMachine'
 import BallResult from './ball-draw-simulator/BallResult'
@@ -103,7 +102,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
     }
   }, [winningNumbers, delayedWinningNumbers.length])
 
-  const [showHistory, setShowHistory] = useState(false)
 
   // Buttons should always be clickable regardless of disabled state
   const cardDisabledClass = ''
@@ -365,7 +363,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
         {/* Round History Button */}
         <Button
           variant="outline"
-          onClick={() => setShowHistory(!showHistory)}
+          onClick={onShowDashboard}
           className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0"
           title="Round History"
         >
@@ -417,12 +415,6 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
       </div>
     </Card>
 
-      {/* Round History Dropdown */}
-      {showHistory && roundId && (
-        <div className="mt-4">
-          <RoundHistory currentRoundId={Number(roundId)} />
-        </div>
-      )}
     </>
   )
 }
