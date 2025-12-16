@@ -700,16 +700,21 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* Stats Button */}
+                        {/* Dashboard Button */}
                         <div className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/5">
-                          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0 flex-shrink-0" title="Stats">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowBentoGridModal(true)}
+                            className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0 flex-shrink-0"
+                            title="Dashboard"
+                          >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                           </Button>
                           <div>
-                            <div className="text-white font-medium text-sm mb-1">Player Stats</div>
-                            <div className="text-white/60 text-xs">View performance metrics</div>
+                            <div className="text-white font-medium text-sm mb-1">Dashboard</div>
+                            <div className="text-white/60 text-xs">View all features and stats</div>
                           </div>
                         </div>
 
@@ -965,7 +970,12 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="text-purple-400 hover:text-purple-300 transition-colors"
               >
-                Morbius.io
+                <span className="hidden sm:inline">Morbius.io</span>
+                <img
+                  src="/morbius/MorbiusLogo (3).png"
+                  alt="Morbius.io"
+                  className="h-4 w-auto sm:hidden inline"
+                />
               </a>
             </div>
           </div>
