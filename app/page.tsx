@@ -749,10 +749,10 @@ export default function Home() {
                 </DialogContent>
               </Dialog>
 
-              {/* Stats Button */}
+              {/* Dashboard Button */}
               <button
-                disabled
-                className="px-3 py-2 bg-purple-950/10 backdrop-blur-sm border border-white/20 text-white text-xs rounded-lg opacity-50 cursor-not-allowed funnel-display-medium"
+                onClick={() => setShowBentoGridModal(true)}
+                className="px-3 py-2 bg-purple-950/10 backdrop-blur-sm border border-white/20 text-white text-xs rounded-lg hover:bg-purple-950/20 transition-colors funnel-display-medium"
               >
                 Dashboard
               </button>
