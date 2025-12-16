@@ -74,6 +74,11 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
   const clampedMachineSize = Math.min(machineSize.width, 330) // keep globe large but responsive
   const visualSize = Math.min(clampedMachineSize + 5, 335) // wrapper only 5px larger than globe
 
+  // Calculate progress for timer-based border (assuming 5-minute rounds = 300 seconds)
+  const totalRoundTime = 300 // 5 minutes in seconds
+  const timeRemainingNum = Number(fallbackRemaining) // Convert BigInt to number
+  const progressPercentage = Math.max(0, Math.min(100, ((totalRoundTime - timeRemainingNum) / totalRoundTime) * 100))
+
   useEffect(() => {
     if (winningNumbers.length > delayedWinningNumbers.length) {
       // Add delay to sync with ball draw animation timing
@@ -261,6 +266,38 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
             />
             {/* Reflection Overlay */}
             <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
+
+            {/* Progress Border - Multicolor circular progress based on timer */}
+            <div className="absolute inset-0 pointer-events-none z-20">
+              <svg
+                className="w-full h-full transform -rotate-90"
+                viewBox="0 0 100 100"
+                style={{ width: `${visualSize + 12}px`, height: `${visualSize + 12}px` }}
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  stroke="url(#rainbowGradient)"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(progressPercentage / 100) * 289} 289`}
+                  className="transition-all duration-1000 ease-linear"
+                />
+                <defs>
+                  <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#ff0000" />
+                    <stop offset="16.67%" stopColor="#ff8000" />
+                    <stop offset="33.33%" stopColor="#ffff00" />
+                    <stop offset="50%" stopColor="#80ff00" />
+                    <stop offset="66.67%" stopColor="#00ff00" />
+                    <stop offset="83.33%" stopColor="#00ff80" />
+                    <stop offset="100%" stopColor="#0080ff" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
           </div>
         </div>
         </div>
