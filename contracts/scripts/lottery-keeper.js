@@ -95,8 +95,8 @@ async function main() {
   const MAX_CONSECUTIVE_ERRORS = 10
   let countdownInterval = null // Track countdown timer
 
-  // Buy ticket every 315 seconds (5:15 minutes)
-  const TICKET_INTERVAL_MS = 315000
+  // Buy ticket every 160 seconds (2:40 minutes)
+  const TICKET_INTERVAL_MS = 160000
   const COUNTDOWN_UPDATE_MS = 30000 // Update countdown every 30 seconds
 
   console.log(`🎫 Keeper will buy tickets every ${TICKET_INTERVAL_MS / 1000} seconds`)
