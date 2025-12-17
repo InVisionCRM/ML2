@@ -797,6 +797,24 @@
   {
     "inputs": [
       {
+        "internalType": "uint8[6][][]",
+        "name": "ticketGroups",
+        "type": "uint8[6][][]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "roundOffsets",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "buyTicketsWithPLSForRounds",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint8[6][]",
         "name": "ticketNumbers",
         "type": "uint8[6][]"

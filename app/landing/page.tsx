@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { LOTTERY_ADDRESS, KENO_ADDRESS, PSSH_TOKEN_ADDRESS, HEX_TOKEN_ADDRESS, TICKET_PRICE } from '@/lib/contracts'
+import { LOTTERY_ADDRESS, KENO_ADDRESS, MORBIUS_TOKEN_ADDRESS, HEX_TOKEN_ADDRESS, TICKET_PRICE } from '@/lib/contracts'
 
 export default function LandingPage() {
   const [copiedAddress, setCopiedAddress] = useState('')
@@ -118,9 +118,9 @@ export default function LandingPage() {
             />
             <ContractAddress
               label="Morbius"
-              address={PSSH_TOKEN_ADDRESS}
-              copied={copiedAddress === 'pSSH'}
-              onCopy={() => copyToClipboard(PSSH_TOKEN_ADDRESS, 'pSSH')}
+              address={MORBIUS_TOKEN_ADDRESS}
+              copied={copiedAddress === 'Morbius'}
+              onCopy={() => copyToClipboard(MORBIUS_TOKEN_ADDRESS, 'Morbius')}
             />
           </div>
         </div>

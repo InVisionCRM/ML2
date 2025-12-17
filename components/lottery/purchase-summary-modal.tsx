@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { LOTTERY_ADDRESS, PSSH_TOKEN_ADDRESS, TICKET_PRICE, TOKEN_DECIMALS } from '@/lib/contracts'
+import { LOTTERY_ADDRESS, MORBIUS_TOKEN_ADDRESS, TICKET_PRICE, TOKEN_DECIMALS } from '@/lib/contracts'
 import { pulsechain } from '@/lib/chains'
 import { useBuyTickets, useBuyTicketsForRounds } from '@/hooks/use-lottery-6of55'
 import { ERC20_ABI } from '@/abi/erc20'
@@ -45,7 +45,7 @@ export function PurchaseSummaryModal({
   const { switchChainAsync } = useSwitchChain()
   const [step, setStep] = useState<'idle' | 'approving' | 'buying' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const paymentMethod: 'pssh' = 'pssh' // WPLS temporarily disabled
+  const paymentMethod: 'morbius' = 'morbius' // WPLS temporarily disabled
 
   // Expand tickets by their quantities (critical for multi-quantity purchases)
   const expandedTickets = tickets.flatMap((ticket, index) => {
@@ -55,8 +55,8 @@ export function PurchaseSummaryModal({
   })
 
   // Read pSSH balance
-  const { data: psshBalance } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+  const { data: morbiusBalance } = useReadContract({
+    address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -69,13 +69,13 @@ export function PurchaseSummaryModal({
   // Read pSSH allowance
   const [optimisticAllowance, setOptimisticAllowance] = useState<bigint | null>(null)
 
-  const { data: psshAllowance, refetch: refetchPsshAllowance } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+  const { data: morbiusAllowance, refetch: refetchMorbiusAllowance } = useReadContract({
+    address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, LOTTERY_ADDRESS as `0x${string}`] : undefined,
     query: {
-      enabled: !!address && paymentMethod === 'pssh',
+      enabled: !!address && paymentMethod === 'morbius',
       refetchInterval: 3000,
       staleTime: 0,
     },
@@ -124,13 +124,13 @@ export function PurchaseSummaryModal({
   const ticketCount = expandedTickets.length
   const effectiveRounds = roundsToPlay < 1 ? 1 : roundsToPlay
   const totalEntries = ticketCount * effectiveRounds
-  const psshCost = TICKET_PRICE * BigInt(ticketCount) * BigInt(effectiveRounds)
-  const currentAllowance = optimisticAllowance ?? psshAllowance ?? BigInt(0)
-  const requiredAmount = psshCost
+  const morbiusCost = TICKET_PRICE * BigInt(ticketCount) * BigInt(effectiveRounds)
+  const currentAllowance = optimisticAllowance ?? morbiusAllowance ?? BigInt(0)
+  const requiredAmount = morbiusCost
   const needsApproval = currentAllowance < requiredAmount
 
-  const currentBalance = psshBalance
-  const hasEnoughBalance = currentBalance !== undefined && currentBalance >= psshCost
+  const currentBalance = morbiusBalance
+  const hasEnoughBalance = currentBalance !== undefined && currentBalance >= morbiusCost
 
   // Calculate cost per ticket
   const costPerTicket = TICKET_PRICE
@@ -141,13 +141,13 @@ export function PurchaseSummaryModal({
       // Optimistically bump allowance to avoid UI being stuck if RPC refetch lags
       setOptimisticAllowance(requiredAmount)
       const timer = setTimeout(() => {
-        refetchPsshAllowance()
+        refetchMorbiusAllowance()
         setOptimisticAllowance(null)
       }, 1000)
       setStep('idle')
       return () => clearTimeout(timer)
     }
-  }, [isApproveSuccess, refetchPsshAllowance, requiredAmount])
+  }, [isApproveSuccess, refetchMorbiusAllowance, requiredAmount])
 
   // Keep latest onSuccess callback in a ref to avoid effect loops
   const onSuccessRef = useRef<typeof onSuccess>(onSuccess)
@@ -229,10 +229,10 @@ export function PurchaseSummaryModal({
       await switchChainAsync({ chainId: pulsechain.id })
     }
 
-    const amount = requiredAmount
+    const amount = requiredAmount // This is now morbiusCost
 
     approve({
-      address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+      address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [LOTTERY_ADDRESS as `0x${string}`, amount],
@@ -290,8 +290,8 @@ export function PurchaseSummaryModal({
 
   const isProcessing = isApprovePending || isApproveLoading || isBuyPsshPending || isBuyMultiPending || isBuyLoading
 
-  const currentTokenSymbol = 'Morbius'
-  const displayCost = psshCost
+  const currentTokenSymbol = 'Morbius' // Updated to use Morbius consistently
+  const displayCost = morbiusCost
 
   // Group tickets by their original numbers with quantities for display
   const ticketGroups = tickets
@@ -439,7 +439,7 @@ export function PurchaseSummaryModal({
             <div className="flex justify-between text-xs pt-2">
               <span className="text-white/60">Your {currentTokenSymbol} Balance:</span>
               <span className={hasEnoughBalance ? 'text-green-400' : 'text-red-400'}>
-                {currentBalance ? formatToken(currentBalance, currentTokenSymbol) : '0'} {currentTokenSymbol}
+                {currentBalance ? formatToken(currentBalance, 'Morbius') : '0'} Morbius
               </span>
             </div>
           </div>
@@ -486,7 +486,7 @@ export function PurchaseSummaryModal({
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Insufficient {currentTokenSymbol} balance. You need {formatToken(displayCost - (currentBalance || BigInt(0)), currentTokenSymbol)} more {currentTokenSymbol}.
+                Insufficient Morbius balance. You need {formatToken(displayCost - (currentBalance || BigInt(0)), 'Morbius')} more Morbius.
               </AlertDescription>
             </Alert>
           )}
@@ -516,7 +516,7 @@ export function PurchaseSummaryModal({
               ) : (
                 <>
                   <Coins className="h-4 w-4 mr-2" />
-                  Approve {currentTokenSymbol}
+                  Approve Morbius
                 </>
               )}
             </Button>
@@ -540,7 +540,7 @@ export function PurchaseSummaryModal({
               ) : (
                 <>
                   <Ticket className="h-4 w-4 mr-2" />
-                  Buy {totalEntries} Ticket{totalEntries === 1 ? '' : 's'} with {currentTokenSymbol}
+                  Buy {totalEntries} Ticket{totalEntries === 1 ? '' : 's'} with Morbius
                 </>
               )}
             </Button>
@@ -548,7 +548,7 @@ export function PurchaseSummaryModal({
 
           {needsApproval && (
             <p className="text-xs text-center text-white/60">
-              You need to approve the lottery contract to spend your {currentTokenSymbol} tokens. This is a one-time approval.
+              You need to approve the lottery contract to spend your Morbius tokens. This is a one-time approval.
             </p>
           )}
         </div>

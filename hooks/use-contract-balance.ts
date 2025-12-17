@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LOTTERY_ADDRESS, PSSH_TOKEN_ADDRESS } from '@/lib/contracts'
+import { LOTTERY_ADDRESS, MORBIUS_TOKEN_ADDRESS } from '@/lib/contracts'
 import { formatUnits } from 'viem'
 
 interface TokenBalance {
@@ -13,7 +13,7 @@ interface TokenBalance {
 }
 
 /**
- * Hook to fetch contract's PSSH token balance from PulseScan API
+ * Hook to fetch contract's Morbius token balance from PulseScan API
  * This provides live data from the blockchain explorer
  */
 export function useContractBalance() {
@@ -39,26 +39,26 @@ export function useContractBalance() {
 
         const data: TokenBalance[] = await response.json()
 
-        // Find PSSH token balance
-        const psshToken = data.find(
-          (item) => item.token.address.toLowerCase() === PSSH_TOKEN_ADDRESS.toLowerCase()
+        // Find Morbius token balance
+        const morbiusToken = data.find(
+          (item) => item.token.address.toLowerCase() === MORBIUS_TOKEN_ADDRESS.toLowerCase()
         )
 
-        if (psshToken) {
-          const decimals = parseInt(psshToken.token.decimals) || 9
-          const balanceValue = BigInt(psshToken.value)
+        if (morbiusToken) {
+          const decimals = parseInt(morbiusToken.token.decimals) || 9
+          const balanceValue = BigInt(morbiusToken.value)
           const formatted = formatUnits(balanceValue, decimals)
 
           setBalance(balanceValue)
           setBalanceFormatted(formatted)
 
-          console.log('💰 Contract PSSH Balance (from API):', {
-            raw: psshToken.value,
+          console.log('💰 Contract Morbius Balance (from API):', {
+            raw: morbiusToken.value,
             formatted,
             decimals,
           })
         } else {
-          console.warn('⚠️ PSSH token not found in API response')
+          console.warn('⚠️ Morbius token not found in API response')
           setBalance(BigInt(0))
           setBalanceFormatted('0')
         }

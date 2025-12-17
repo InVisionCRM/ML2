@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useReadContract } from 'wagmi'
-import { WPLS_PSSH_PAIR, WPLS_TOKEN_ADDRESS, PSSH_TOKEN_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
+import { WPLS_PSSH_PAIR, WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
 
 // PulseX Pair ABI (V1/V2 compatible) - only the functions we need
 const PAIR_ABI = [
@@ -35,7 +35,7 @@ const PAIR_ABI = [
 
 // WPLS/token Pair Address on PulseX (Morbius)
 const WPLS_ADDRESS = WPLS_TOKEN_ADDRESS
-const TOKEN_ADDRESS = PSSH_TOKEN_ADDRESS
+const MORBIUS_ADDRESS = MORBIUS_TOKEN_ADDRESS
 
 interface DexScreenerPair {
   priceUsd?: string
@@ -130,12 +130,12 @@ export function useWplsPrice() {
     const isToken0Wpls = token0.toLowerCase() === WPLS_ADDRESS.toLowerCase()
 
     const wplsReserve = isToken0Wpls ? reserve0 : reserve1
-    const tokenReserve = isToken0Wpls ? reserve1 : reserve0
+    const morbiusReserve = isToken0Wpls ? reserve1 : reserve0
 
-    if (tokenReserve > BigInt(0)) {
-      // Calculate WPLS per token (wei per base unit)
+    if (morbiusReserve > BigInt(0)) {
+      // Calculate WPLS per Morbius token (wei per base unit)
       const decimalFactor = BigInt(10) ** BigInt(TOKEN_DECIMALS)
-      wplsPerPssh = (BigInt(wplsReserve) * decimalFactor) / BigInt(tokenReserve)
+      wplsPerPssh = (BigInt(wplsReserve) * decimalFactor) / BigInt(morbiusReserve)
       source = 'pulsex'
     }
   }

@@ -1,5 +1,5 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { PSSH_TOKEN_ADDRESS, LOTTERY_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
+import { MORBIUS_TOKEN_ADDRESS, LOTTERY_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
 import { ERC20_ABI } from '@/abi/erc20'
 import { formatEther, parseEther, formatUnits } from 'viem'
 import { maxUint256 } from 'viem'
@@ -7,7 +7,7 @@ import { maxUint256 } from 'viem'
 // Read token decimals (default to configured TOKEN_DECIMALS)
 export function useTokenDecimals() {
   const { data: decimals } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'decimals',
   })
@@ -18,7 +18,7 @@ export function useTokenDecimals() {
 // Read token balance
 export function useTokenBalance(address?: `0x${string}`) {
   const { data: decimals } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'decimals',
   })
@@ -26,7 +26,7 @@ export function useTokenBalance(address?: `0x${string}`) {
   const tokenDecimals = decimals || TOKEN_DECIMALS
   
   const { data: balance, error, isLoading, isError } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -42,7 +42,7 @@ export function useTokenBalance(address?: `0x${string}`) {
     if (error || isError) {
       console.error('❌ Error fetching token balance:', error)
       console.log('Wallet address:', address)
-      console.log('Token address:', PSSH_TOKEN_ADDRESS)
+      console.log('Token address:', MORBIUS_TOKEN_ADDRESS)
       console.log('Token decimals:', tokenDecimals)
       console.log('Error details:', {
         message: error?.message,
@@ -74,7 +74,7 @@ export function useTokenBalance(address?: `0x${string}`) {
 // Read token allowance
 export function useTokenAllowance(owner?: `0x${string}`) {
   const { data: allowance, refetch } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: owner ? [owner, LOTTERY_ADDRESS] : undefined,
@@ -98,7 +98,7 @@ export function useApproveToken() {
 
   const approve = (amount?: bigint) => {
     writeContract({
-      address: PSSH_TOKEN_ADDRESS,
+      address: MORBIUS_TOKEN_ADDRESS,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [LOTTERY_ADDRESS, amount || maxUint256], // Approve infinite by default
@@ -118,19 +118,19 @@ export function useApproveToken() {
 // Read token info
 export function useTokenInfo() {
   const { data: name } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'name',
   })
 
   const { data: symbol } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'symbol',
   })
 
   const { data: decimals } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS,
+    address: MORBIUS_TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'decimals',
   })

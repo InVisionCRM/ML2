@@ -7,12 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import {
   LOTTERY_ADDRESS,
   TICKET_PRICE,
-  PSSH_TOKEN_ADDRESS,
+  MORBIUS_TOKEN_ADDRESS,
   TOKEN_DECIMALS,
   MIN_NUMBER,
   MAX_NUMBER,
   NUMBERS_PER_TICKET,
-  MORBIUS_TOKEN_ADDRESS,
   WPLS_TOKEN_ADDRESS,
   PULSEX_V1_ROUTER_ADDRESS,
   WPLS_TO_MORBIUS_BUFFER_BPS,
@@ -20,7 +19,7 @@ import {
 import { pulsechain } from '@/lib/chains'
 import { ERC20_ABI } from '@/abi/erc20'
 import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
-import { useBuyTickets, useBuyTicketsForRounds, useBuyTicketsWithPLS } from '@/hooks/use-lottery-6of55'
+import { useBuyTickets, useBuyTicketsForRounds, useBuyTicketsWithPLS, useBuyTicketsWithPLSForRounds } from '@/hooks/use-lottery-6of55'
 import {
   useAccount,
   useChainId,
@@ -118,8 +117,8 @@ export function TicketPurchaseBuilder({
     functionName: 'ticketPricePls',
   })
 
-  const { data: psshBalance, isLoading: isLoadingBalance, error: balanceError } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+  const { data: morbiusBalance, isLoading: isLoadingBalance, error: balanceError } = useReadContract({
+    address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -129,10 +128,10 @@ export function TicketPurchaseBuilder({
   // Debug balance fetching
   console.log('💰 Balance fetch:', {
     address: address?.slice(0, 6) + '...',
-    balance: psshBalance?.toString() ?? 'undefined',
+    balance: morbiusBalance?.toString() ?? 'undefined',
     error: balanceError?.message,
     isLoading: isLoadingBalance,
-    tokenAddress: PSSH_TOKEN_ADDRESS
+    tokenAddress: MORBIUS_TOKEN_ADDRESS
   })
 
   // Use native PLS balance for PLS payments
@@ -142,16 +141,16 @@ export function TicketPurchaseBuilder({
   useEffect(() => {
     console.log('💰 Balance fetch:', {
       address,
-      psshBalance: psshBalance?.toString(),
-      formatted: psshBalance ? formatUnits(psshBalance, TOKEN_DECIMALS) : 'N/A',
+      morbiusBalance: morbiusBalance?.toString(),
+      formatted: morbiusBalance ? formatUnits(morbiusBalance, TOKEN_DECIMALS) : 'N/A',
       isLoadingBalance,
       balanceError: balanceError?.message,
-      tokenAddress: PSSH_TOKEN_ADDRESS
+      tokenAddress: MORBIUS_TOKEN_ADDRESS
     })
-  }, [psshBalance, address, isLoadingBalance, balanceError])
+  }, [morbiusBalance, address, isLoadingBalance, balanceError])
 
-  const { data: psshAllowance, refetch: refetchPsshAllowance, error: allowanceError, isLoading: isLoadingAllowance } = useReadContract({
-    address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+  const { data: morbiusAllowance, refetch: refetchMorbiusAllowance, error: allowanceError, isLoading: isLoadingAllowance } = useReadContract({
+    address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, LOTTERY_ADDRESS as `0x${string}`] : undefined,
@@ -161,10 +160,10 @@ export function TicketPurchaseBuilder({
   // Debug allowance fetching
   console.log('🔍 Allowance fetch:', {
     address: address?.slice(0, 6) + '...',
-    allowance: psshAllowance?.toString() ?? 'undefined',
+    allowance: morbiusAllowance?.toString() ?? 'undefined',
     error: allowanceError?.message,
     isLoading: isLoadingAllowance,
-    tokenAddress: PSSH_TOKEN_ADDRESS,
+    tokenAddress: MORBIUS_TOKEN_ADDRESS,
     spenderAddress: LOTTERY_ADDRESS
   })
 
@@ -200,17 +199,26 @@ export function TicketPurchaseBuilder({
     error: buyPlsError,
   } = useBuyTicketsWithPLS()
 
+  const {
+    buyTicketsWithPLSForRounds,
+    data: buyPlsMultiHash,
+    isPending: isBuyPlsMultiPending,
+    error: buyPlsMultiError,
+  } = useBuyTicketsWithPLSForRounds()
+
   const isTicketComplete = workingTicket.length === NUMBERS_PER_TICKET
   const ticketCount = isTicketComplete ? 1 : 0
   const totalEntries = isTicketComplete ? workingRounds : 0
   const maxRounds = workingRounds
 
-  const buyHash = paymentMethod === 'pls' ? buyPlsHash : (workingRounds > 1 ? buyMultiHash : buyPsshHash)
+  const buyHash = paymentMethod === 'pls'
+    ? (workingRounds > 1 ? buyPlsMultiHash : buyPlsHash)
+    : (workingRounds > 1 ? buyMultiHash : buyPsshHash)
   const { isLoading: isBuyLoading, isSuccess: isBuySuccess } = useWaitForTransactionReceipt({
     hash: buyHash,
   })
   const pricePerTicket = (ticketPriceMorbiusData as bigint | undefined) ?? TICKET_PRICE
-  const psshCost = pricePerTicket * BigInt(totalEntries || 0)
+  const morbiusCost = pricePerTicket * BigInt(totalEntries || 0)
 
   // Dynamic PLS pricing: base cost + 50% tax + 20% buffer
   const { data: plsBaseQuote, error: plsQuoteError, isLoading: isLoadingPlsQuote } = useReadContract({
@@ -219,7 +227,7 @@ export function TicketPurchaseBuilder({
     functionName: 'getAmountsIn',
     args:
       paymentMethod === 'pls' && totalEntries > 0
-        ? [psshCost, [WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS]]
+        ? [morbiusCost, [WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS]]
         : undefined,
     query: {
       enabled: paymentMethod === 'pls' && totalEntries > 0,
@@ -256,24 +264,24 @@ export function TicketPurchaseBuilder({
 
     return totalPlsRequired
   }, [plsBaseQuote, totalEntries, plsQuoteError, isLoadingPlsQuote, paymentMethod])
-  const currentAllowance = optimisticAllowance ?? psshAllowance ?? BigInt(0)
+  const currentAllowance = optimisticAllowance ?? morbiusAllowance ?? BigInt(0)
   // Only consider approval needed if we have loaded allowance data and it's insufficient
-  const needsApproval = psshAllowance !== undefined && !isLoadingAllowance && currentAllowance < psshCost
+  const needsApproval = morbiusAllowance !== undefined && !isLoadingAllowance && currentAllowance < morbiusCost
 
   // Force approval check for debugging
   console.log('🔐 Allowance check:', {
     address: address?.slice(0, 6) + '...',
     contractAddress: LOTTERY_ADDRESS,
-    allowance: psshAllowance?.toString() ?? 'undefined',
+    allowance: morbiusAllowance?.toString() ?? 'undefined',
     currentAllowance: currentAllowance.toString(),
-    psshCost: psshCost.toString(),
+    morbiusCost: morbiusCost.toString(),
     needsApproval,
     isLoadingAllowance
   })
   const hasEnoughBalance = paymentMethod === 'pls'
     ? (nativePlsBalance !== undefined && nativePlsBalance >= plsValueWei)
-    : (psshBalance !== undefined && psshBalance >= psshCost)
-  const isProcessing = isApprovePending || isApproveLoading || isBuyPsshPending || isBuyMultiPending || isBuyPlsPending
+    : (morbiusBalance !== undefined && morbiusBalance >= morbiusCost)
+  const isProcessing = isApprovePending || isApproveLoading || isBuyPsshPending || isBuyMultiPending || isBuyPlsPending || isBuyPlsMultiPending
 
   const canBuy =
     paymentMethod === 'morbius'
@@ -287,15 +295,15 @@ export function TicketPurchaseBuilder({
     paymentMethod,
     ticketCount,
     totalEntries,
-    psshCost: psshCost.toString(),
+    morbiusCost: morbiusCost.toString(),
     plsValueWei: plsValueWei.toString(),
     plsValueDisplay: formatEther ? Number(formatEther(plsValueWei)).toFixed(4) : 'N/A',
-    psshAllowance: psshAllowance?.toString() ?? 'undefined',
+    morbiusAllowance: morbiusAllowance?.toString() ?? 'undefined',
     optimisticAllowance: optimisticAllowance?.toString() ?? 'undefined',
     currentAllowance: currentAllowance.toString(),
     needsApproval,
     hasEnoughBalance,
-    psshBalance: psshBalance?.toString() ?? 'undefined',
+    morbiusBalance: morbiusBalance?.toString() ?? 'undefined',
     nativePlsBalance: nativePlsBalance?.toString() ?? 'undefined',
     canBuy,
     isProcessing,
@@ -308,10 +316,10 @@ export function TicketPurchaseBuilder({
       console.log('✅ Approval transaction successful - refreshing allowance')
       // Clear optimistic allowance and force refresh
       setOptimisticAllowance(null)
-      refetchPsshAllowance()
+      refetchMorbiusAllowance()
       setUiState('idle')
     }
-  }, [isApproveSuccess, refetchPsshAllowance])
+  }, [isApproveSuccess, refetchMorbiusAllowance])
 
   useEffect(() => {
     if (approveError) {
@@ -373,6 +381,14 @@ export function TicketPurchaseBuilder({
     }
   }, [buyPlsError])
 
+  useEffect(() => {
+    if (buyPlsMultiError) {
+      setUiState('error')
+      setErrorMessage(buyPlsMultiError.message.includes('rejected') ? 'Purchase rejected' : 'Purchase failed')
+      onErrorRef.current?.(buyPlsMultiError)
+    }
+  }, [buyPlsMultiError])
+
   const handleApprove = async () => {
     if (!address) return
     setUiState('approving')
@@ -383,14 +399,14 @@ export function TicketPurchaseBuilder({
     // Approve a large amount to avoid needing approval again
     const approvalAmount = BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935') // uint256.max
 
-    console.log('✅ Approving MORBIUS:', {
+    console.log('✅ Approving Morbius:', {
       spender: LOTTERY_ADDRESS,
       amount: approvalAmount.toString(),
       currentAllowance: currentAllowance.toString()
     })
 
     approve({
-      address: PSSH_TOKEN_ADDRESS as `0x${string}`,
+      address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [LOTTERY_ADDRESS as `0x${string}`, approvalAmount],
@@ -419,7 +435,7 @@ export function TicketPurchaseBuilder({
       return
     }
     if (paymentMethod === 'morbius' && !hasEnoughBalance) {
-      setErrorMessage('Balance too low')
+      setErrorMessage('Morbius balance too low')
       setUiState('error')
       return
     }
@@ -456,15 +472,24 @@ export function TicketPurchaseBuilder({
       }
 
       if (paymentMethod === 'pls') {
+        const boundedRounds = Math.max(1, Math.min(100, workingRounds))
         const valueWei = plsValueWei
+
         if (valueWei === BigInt(0)) {
           throw new Error('PLS amount is zero')
         }
-        console.log('💰 Buying with PLS:', { workingTicket, valueWei: valueWei.toString() })
 
-        // Note: The hook buyTicketsWithPLS already handles gas estimation
-        // If we need custom gas, we'd need to modify the hook
-        buyTicketsWithPLS([workingTicket], valueWei)
+        if (boundedRounds > 1) {
+          // Multi-round PLS purchase
+          const offsets = Array.from({ length: boundedRounds }, (_, i) => i)
+          const groups = offsets.map(() => [workingTicket])
+          console.log('💰 Buying with PLS (multiple rounds):', { workingTicket, boundedRounds, groups, offsets, valueWei: valueWei.toString() })
+          buyTicketsWithPLSForRounds(groups, offsets, valueWei)
+        } else {
+          // Single round PLS purchase
+          console.log('💰 Buying with PLS (single round):', { workingTicket, valueWei: valueWei.toString() })
+          buyTicketsWithPLS([workingTicket], valueWei)
+        }
       } else {
         const boundedRounds = Math.max(1, Math.min(100, workingRounds))
         console.log('🎫 Buying with MORBIUS:', { workingTicket, boundedRounds })
@@ -692,7 +717,7 @@ export function TicketPurchaseBuilder({
                     `${Number(formatEther(plsValueWei)).toFixed(4)} PLS`
                   )
                 ) : (
-                  `${formatToken(psshCost)} MORBIUS`
+                  `${formatToken(morbiusCost)} MORBIUS`
                 )}
               </span>
             </div>
@@ -715,8 +740,8 @@ export function TicketPurchaseBuilder({
                 ) : (
                   isLoadingBalance ? (
                     'Loading...'
-                  ) : psshBalance !== undefined ? (
-                    `${formatToken(psshBalance)} MORBIUS`
+                  ) : morbiusBalance !== undefined ? (
+                    `${formatToken(morbiusBalance)} MORBIUS`
                   ) : (
                     `— ${address ? '(fetching...)' : '(connect wallet)'}`
                   )
@@ -750,7 +775,7 @@ export function TicketPurchaseBuilder({
                   Approving...
                 </span>
               ) : (
-                'Approve'
+                  'Approve Morbius'
               )}
             </Button>
           ) : (
@@ -768,7 +793,7 @@ export function TicketPurchaseBuilder({
                   Processing...
                 </span>
               ) : (
-                paymentMethod === 'pls' ? 'Buy with PLS' : 'Buy Now'
+                paymentMethod === 'pls' ? 'Buy with PLS' : 'Buy with Morbius'
               )}
             </Button>
           )

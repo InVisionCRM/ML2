@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi'
 import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
-import { HEX_TOKEN_ADDRESS, LOTTERY_ADDRESS, PSSH_TOKEN_ADDRESS } from '@/lib/contracts'
+import { HEX_TOKEN_ADDRESS, LOTTERY_ADDRESS, MORBIUS_TOKEN_ADDRESS } from '@/lib/contracts'
 import { pulsechain } from '@/lib/chains'
 
 // Read current round information
@@ -263,6 +263,45 @@ export function useBuyTicketsWithWPLS(defaultExtraBufferBp: number = 2500) {
   }
 
   return { buyTicketsWithWPLS, ...rest }
+}
+
+// Write: Buy tickets for multiple rounds with PLS
+export function useBuyTicketsWithPLSForRounds() {
+  const { writeContract, ...rest } = useWriteContract()
+
+  const buyTicketsWithPLSForRounds = (ticketGroups: number[][][], offsets: number[], valueWei: bigint) => {
+    // Ensure each ticket is exactly 6 numbers and convert to the expected format
+    const formattedGroups = ticketGroups.map(group =>
+      group
+        .filter(ticket => ticket.length === 6) // Only include valid 6-number tickets
+        .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
+    ) as unknown as readonly [readonly [number, number, number, number, number, number]][]
+
+    const formattedOffsets = offsets.map(o => BigInt(o))
+
+    // Calculate total tickets across all groups for gas estimation
+    const totalTickets = ticketGroups.reduce((sum, group) => sum + group.length, 0)
+
+    console.log('💰 buyTicketsWithPLSForRounds input:', {
+      ticketGroups,
+      offsets,
+      formattedGroups,
+      formattedOffsets,
+      valueWei: valueWei.toString(),
+      totalTickets
+    })
+
+    writeContract({
+      address: LOTTERY_ADDRESS as `0x${string}`,
+      abi: LOTTERY_6OF55_V2_ABI,
+      functionName: 'buyTicketsWithPLSForRounds',
+      args: [formattedGroups, formattedOffsets],
+      value: valueWei,
+      chainId: pulsechain.id,
+    })
+  }
+
+  return { buyTicketsWithPLSForRounds, ...rest }
 }
 
 // Write: Buy tickets with native PLS (wraps and swaps on-chain)

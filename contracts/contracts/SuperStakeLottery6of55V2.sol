@@ -604,6 +604,125 @@ contract MegaMorbiusLottery is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Buy tickets for multiple rounds using PLS (PulseChain native token)
+     * @param ticketGroups Array of ticket arrays, one for each round
+     * @param roundOffsets Array of round offsets (0 = current round, 1 = next round, etc.)
+     */
+    function buyTicketsWithPLSForRounds(
+        uint8[6][][] calldata ticketGroups,
+        uint256[] calldata roundOffsets
+    ) external payable nonReentrant {
+        require(ticketGroups.length > 0, "No tickets");
+        require(ticketGroups.length == roundOffsets.length, "Length mismatch");
+
+        uint256 totalTickets = 0;
+        uint256 totalMorbiusRequired = 0;
+        uint256[] memory targetRoundIds = new uint256[](ticketGroups.length);
+        uint256[] memory ticketCounts = new uint256[](ticketGroups.length);
+
+        // First pass: validate and calculate totals
+        for (uint256 i = 0; i < ticketGroups.length; i++) {
+            uint256 offset = roundOffsets[i];
+            require(offset <= MAX_FUTURE_ROUND_OFFSET, "Offset too large");
+            uint256 targetRoundId = currentRoundId + offset;
+            targetRoundIds[i] = targetRoundId;
+
+            uint256 count = ticketGroups[i].length;
+            require(count > 0, "Empty ticket group");
+            require(count <= 100, "Max 100 tickets per group");
+
+            ticketCounts[i] = count;
+            totalTickets += count;
+            totalMorbiusRequired += count * ticketPriceMorbius;
+        }
+
+        require(totalMorbiusRequired > 0, "No tickets to buy");
+
+        // Handle PLS payment calculation (same logic as single round)
+        address[] memory path = new address[](2);
+        path[0] = address(WPLS_TOKEN);
+        path[1] = address(MORBIUS_TOKEN);
+
+        // Get current PLS price for the total required MORBIUS
+        uint256[] memory amountsIn = pulseXRouter.getAmountsIn(totalMorbiusRequired, path);
+        uint256 basePlsCost = amountsIn[0];
+
+        // Add 50% tax to discourage PLS payments
+        uint256 taxedAmount = (basePlsCost * 15000) / 10000;
+
+        // Add 20% buffer for slippage and fees
+        uint256 totalPlsRequired = (taxedAmount * 12000) / 10000;
+
+        require(msg.value >= totalPlsRequired, "Insufficient PLS payment");
+
+        // Process PLS payment and MORBIUS acquisition
+        if (totalMorbiusRequired > 0) {
+            // Swap PLS for MORBIUS
+            uint256[] memory swapAmounts = pulseXRouter.swapExactETHForTokens{value: totalPlsRequired}(
+                totalMorbiusRequired,
+                path,
+                address(this),
+                block.timestamp + 300 // 5 minute deadline
+            );
+            uint256 morbiusReceived = swapAmounts[swapAmounts.length - 1];
+            require(morbiusReceived >= totalMorbiusRequired, "Swap failed");
+
+            // Apply same fee structure as MORBIUS purchases
+            uint256 deployerFee = (totalMorbiusRequired * DEPLOYER_FEE_PCT) / TOTAL_PCT;
+            uint256 burnAmount = (totalMorbiusRequired * BURN_PCT) / TOTAL_PCT;
+            uint256 megaContribution = (totalMorbiusRequired * MEGA_BANK_PCT) / TOTAL_PCT;
+            uint256 toWinnersPool = totalMorbiusRequired - deployerFee - burnAmount - megaContribution;
+
+            // Distribute fees
+            if (deployerFee > 0) {
+                MORBIUS_TOKEN.safeTransfer(deployerWallet, deployerFee);
+            }
+            if (burnAmount > 0) {
+                _accrueBurn(burnAmount);
+            }
+            if (megaContribution > 0) {
+                megaMorbiusBank += megaContribution;
+            }
+
+            // Distribute to winners pools across rounds
+            for (uint256 i = 0; i < ticketGroups.length; i++) {
+                uint256 targetRoundId = targetRoundIds[i];
+                uint256 ticketsForThisRound = ticketCounts[i];
+                uint256 morbiusForThisRound = ticketsForThisRound * ticketPriceMorbius;
+                uint256 winnersPoolForThisRound = (morbiusForThisRound * 7000) / 10000; // 70% to winners pool
+
+                if (targetRoundId == currentRoundId) {
+                    currentRoundTotalMorbius += winnersPoolForThisRound;
+                } else {
+                    futureRoundTotals[targetRoundId].totalMorbius += winnersPoolForThisRound;
+                }
+            }
+
+            currentRoundTotalCollectedFromPlayers += totalMorbiusRequired;
+            totalMorbiusEverCollected += totalMorbiusRequired;
+            totalTicketsEver += totalTickets;
+            playerTotals[msg.sender].ticketsBought += totalTickets;
+            playerTotals[msg.sender].totalSpent += totalMorbiusRequired;
+
+            emit WPLSSwappedForTickets(msg.sender, totalPlsRequired, morbiusReceived);
+        }
+
+        // Process tickets for each round
+        for (uint256 i = 0; i < ticketGroups.length; i++) {
+            uint256 targetRoundId = targetRoundIds[i];
+            _processTickets(msg.sender, ticketGroups[i], targetRoundId);
+        }
+
+        // Refund excess PLS
+        if (msg.value > totalPlsRequired) {
+            uint256 refund = msg.value - totalPlsRequired;
+            payable(msg.sender).transfer(refund);
+        }
+
+        emit TicketsPurchased(msg.sender, currentRoundId, totalTickets, roundOffsets, totalMorbiusRequired);
+    }
+
+    /**
      * @notice Manually finalize the current round
      */
     function finalizeRound() external nonReentrant {
