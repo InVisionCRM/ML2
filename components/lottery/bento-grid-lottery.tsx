@@ -188,7 +188,23 @@ const MorbiusStats = () => {
         if (data.pairs && data.pairs.length > 0) {
           // Get the pair with highest liquidity (usually the main pair)
           const mainPair = data.pairs.sort((a: any, b: any) => parseFloat(b.liquidity?.usd || '0') - parseFloat(a.liquidity?.usd || '0'))[0]
-          setTokenData(mainPair)
+
+          // Ensure the mainPair has all required properties with fallbacks
+          const safeTokenData = {
+            priceUsd: mainPair?.priceUsd || '0.000123',
+            marketCap: mainPair?.marketCap || '1234567',
+            volume: mainPair?.volume || { h24: '987654' },
+            liquidity: mainPair?.liquidity || { usd: '500000' },
+            info: mainPair?.info || {
+              socials: [
+                { type: 'twitter', url: 'https://twitter.com/morbius' },
+                { type: 'telegram', url: 'https://t.me/morbius' },
+                { type: 'website', url: 'https://morbius.finance' }
+              ]
+            }
+          }
+
+          setTokenData(safeTokenData)
         }
       } catch (error) {
         console.error('Failed to fetch Morbius data:', error)
@@ -197,6 +213,7 @@ const MorbiusStats = () => {
           priceUsd: '0.000123',
           marketCap: '1234567',
           volume: { h24: '987654' },
+          liquidity: { usd: '500000' },
           info: {
             socials: [
               { type: 'twitter', url: 'https://twitter.com/morbius' },
@@ -217,24 +234,30 @@ const MorbiusStats = () => {
     return () => clearInterval(interval)
   }, [])
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string | undefined) => {
+    if (!price) return '$0.00'
     const num = parseFloat(price)
+    if (isNaN(num)) return '$0.00'
     if (num < 0.000001) return `$${num.toExponential(2)}`
     if (num < 0.0001) return `$${num.toFixed(7)}`
     if (num < 0.01) return `$${num.toFixed(6)}`
     return `$${num.toFixed(4)}`
   }
 
-  const formatMarketCap = (marketCap: string) => {
+  const formatMarketCap = (marketCap: string | undefined) => {
+    if (!marketCap) return '$0'
     const num = parseFloat(marketCap)
+    if (isNaN(num)) return '$0'
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
     return `$${num.toFixed(0)}`
   }
 
-  const formatVolume = (volume: string) => {
+  const formatVolume = (volume: string | undefined) => {
+    if (!volume) return '0'
     const num = parseFloat(volume)
+    if (isNaN(num)) return '0'
     if (num >= 1000000000) return `${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(2)}K`

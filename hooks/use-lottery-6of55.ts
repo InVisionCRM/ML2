@@ -184,13 +184,17 @@ export function useBuyTickets() {
 
     console.log('🛒 buyTickets: raw tickets:', tickets)
 
+    // Filter to only valid tickets and ensure proper typing
+    const validTickets = tickets
+      .filter(ticket => ticket.length === 6)
+      .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
+
     // Convert to the exact format expected by the contract: uint8[6][]
-    // wagmi/viem should handle the conversion from number[][] to uint8[6][]
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTickets',
-      args: [tickets as any], // Type assertion needed for wagmi
+      args: [validTickets],
       chainId: pulsechain.id,
     })
   }
@@ -203,20 +207,31 @@ export function useBuyTicketsForRounds() {
   const { writeContract, ...rest } = useWriteContract()
 
   const buyTicketsForRounds = (ticketGroups: number[][][], offsets: number[]) => {
+    // Ensure each ticket is exactly 6 numbers and convert to the expected format
     const formattedGroups = ticketGroups.map(group =>
-      group.map(ticket => ticket.map(n => n as number))
-    ) as unknown as readonly [readonly [number, number, number, number, number, number][]][]
+      group
+        .filter(ticket => ticket.length === 6) // Only include valid 6-number tickets
+        .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
+    ) as readonly [readonly [number, number, number, number, number, number]][]
 
     const formattedOffsets = offsets.map(o => BigInt(o))
 
     // Calculate total tickets across all groups for gas estimation
     const totalTickets = ticketGroups.reduce((sum, group) => sum + group.length, 0)
 
+    console.log('🎫 buyTicketsForRounds input:', {
+      ticketGroups,
+      offsets,
+      formattedGroups,
+      formattedOffsets,
+      totalTickets
+    })
+
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTicketsForRounds',
-      args: [formattedGroups as any, formattedOffsets as any],
+      args: [formattedGroups, formattedOffsets],
       chainId: pulsechain.id,
     })
   }
@@ -230,16 +245,19 @@ export function useBuyTicketsWithWPLS(defaultExtraBufferBp: number = 2500) {
 
   const buyTicketsWithWPLS = (tickets: number[][], extraBufferBp?: number) => {
     const bufferBp = extraBufferBp ?? defaultExtraBufferBp
-    // Convert to uint8[6][] format
-    const formattedTickets = tickets.map(ticket =>
-      ticket.map(n => n as number)
-    ) as unknown as readonly [number, number, number, number, number, number][]
+
+    // Validate and filter tickets
+    const validTickets = tickets
+      .filter(ticket => ticket.length === 6)
+      .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
+
+    console.log('💰 buyTicketsWithWPLS: valid tickets:', validTickets, 'buffer:', bufferBp)
 
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTicketsWithWPLSAndBuffer',
-      args: [formattedTickets as any, BigInt(bufferBp)],
+      args: [validTickets, BigInt(bufferBp)],
       chainId: pulsechain.id,
     })
   }

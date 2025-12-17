@@ -471,9 +471,7 @@ export function TicketPurchaseBuilder({
 
         if (boundedRounds > 1) {
           const offsets = Array.from({ length: boundedRounds }, (_, i) => i)
-          const groups = offsets.map((offset) =>
-            offset === 0 ? [workingTicket] : []
-          )
+          const groups = offsets.map(() => [workingTicket])
           console.log('📅 Buying for multiple rounds:', { groups, offsets })
           buyTicketsForRounds(groups, offsets)
         } else {
