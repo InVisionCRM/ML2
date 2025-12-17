@@ -15,7 +15,6 @@ import { usePlayerRoundHistory, useRound, usePlayerTickets } from '@/hooks/use-l
 import { toast } from 'sonner'
 import { Loader2, Coins, CheckCircle2, History, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button as AceternityButton } from '@/components/ui/stateful-button'
 
 interface Ticket {
   ticketId: bigint
@@ -92,49 +91,72 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
       const claimed = new Set<number>()
       const history: RoundHistory[] = []
 
-      // Check each round
-      for (let i = 0; i < ids.length; i++) {
-        const roundId = Number(ids[i])
-        const amount = wins[i] || BigInt(0)
-        const ticketCount = Number(tickets[i])
+      // Process rounds in batches to avoid overwhelming the network
+      const BATCH_SIZE = 10
+      for (let batchStart = 0; batchStart < ids.length; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE, ids.length)
+        const batchPromises = []
 
-        if (roundId > 0) {
-          try {
-            const hasClaimed = await publicClient.readContract({
-              address: LOTTERY_ADDRESS as `0x${string}`,
-              abi: LOTTERY_6OF55_V2_ABI,
-              functionName: 'hasClaimed',
-              args: [BigInt(roundId), address],
-            }) as boolean
+        // Prepare batch of contract calls
+        for (let i = batchStart; i < batchEnd; i++) {
+          const roundId = Number(ids[i])
+          const amount = wins[i] || BigInt(0)
+          const ticketCount = Number(tickets[i])
 
-            let status: 'claimed' | 'claimable' | 'no-win'
-            if (amount === BigInt(0)) {
-              status = 'no-win'
-            } else if (hasClaimed) {
-              status = 'claimed'
-              claimed.add(roundId)
-            } else {
-              status = 'claimable'
-            }
-
-            history.push({
-              roundId,
-              tickets: ticketCount,
-              amount,
-              hasClaimed,
-              status,
-            })
-          } catch (err) {
-            console.error(`Error checking claim status for round ${roundId}:`, err)
-            // Add to history anyway with best guess
-            history.push({
-              roundId,
-              tickets: ticketCount,
-              amount,
-              hasClaimed: false,
-              status: amount > 0 ? 'claimable' : 'no-win',
-            })
+          if (roundId > 0 && amount > 0) {
+            batchPromises.push(
+              publicClient.readContract({
+                address: LOTTERY_ADDRESS as `0x${string}`,
+                abi: LOTTERY_6OF55_V2_ABI,
+                functionName: 'hasClaimed',
+                args: [BigInt(roundId), address],
+              }).then((hasClaimed: boolean) => ({
+                roundId,
+                amount,
+                ticketCount,
+                hasClaimed
+              })).catch((error) => {
+                console.warn(`Error checking claim status for round ${roundId}:`, error)
+                return {
+                  roundId,
+                  amount,
+                  ticketCount,
+                  hasClaimed: false // Assume not claimed on error
+                }
+              })
+            )
           }
+        }
+
+        // Wait for this batch to complete
+        const batchResults = await Promise.all(batchPromises)
+
+        // Process batch results
+        for (const result of batchResults) {
+          const { roundId, amount, ticketCount, hasClaimed } = result
+
+          let status: 'claimed' | 'claimable' | 'no-win'
+          if (amount === BigInt(0)) {
+            status = 'no-win'
+          } else if (hasClaimed) {
+            status = 'claimed'
+            claimed.add(roundId)
+          } else {
+            status = 'claimable'
+          }
+
+          history.push({
+            roundId,
+            tickets: ticketCount,
+            amount,
+            hasClaimed,
+            status,
+          })
+        }
+
+        // Small delay between batches to avoid rate limiting
+        if (batchEnd < ids.length) {
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
       }
 
@@ -166,8 +188,29 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
       console.log('❌ No roundHistoryData or invalid format')
       return []
     }
+
+    // Use the fullHistory data if available, as it has more accurate claim status
+    if (fullHistory.length > 0) {
+      const claimable = fullHistory
+        .filter(round => round.status === 'claimable')
+        .map(round => ({
+          roundId: round.roundId,
+          tickets: round.tickets,
+          amount: round.amount
+        }))
+        .reverse() // Most recent first
+
+      console.log('✅ Claimable rounds from fullHistory:', claimable.map(r => ({
+        roundId: r.roundId,
+        amount: r.amount.toString()
+      })))
+
+      return claimable
+    }
+
+    // Fallback to basic filtering if fullHistory isn't ready yet
     const [ids, tickets, wins] = roundHistoryData as [bigint[], bigint[], bigint[]]
-    console.log('📊 Raw round history:', {
+    console.log('📊 Raw round history (fallback):', {
       ids: ids.map(id => Number(id)),
       tickets: tickets.map(t => Number(t)),
       wins: wins.map(w => w.toString())
@@ -181,14 +224,14 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
       .filter(r => r.amount > 0 && r.roundId > 0 && !claimedRounds.has(r.roundId))
       .reverse()
 
-    console.log('✅ Filtered claimable rounds:', filtered.map(r => ({
+    console.log('✅ Filtered claimable rounds (fallback):', filtered.map(r => ({
       roundId: r.roundId,
       amount: r.amount.toString(),
       claimed: claimedRounds.has(r.roundId)
     })))
 
     return filtered
-  }, [roundHistoryData, claimedRounds])
+  }, [roundHistoryData, claimedRounds, fullHistory])
 
   const totalSelected = useMemo(() => {
     return Array.from(selectedRounds).reduce((total, roundId) => {
@@ -240,44 +283,12 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
   const handleClaimAll = async () => {
     if (claimableRounds.length === 0) return
 
-    // Double-check claimable status right before claiming to avoid "already claimed" errors
-    if (!publicClient) {
-      toast.error('Wallet not connected')
-      return
-    }
+    // Select all claimable rounds - we already verified these are claimable
+    const allRounds = new Set(claimableRounds.map(round => round.roundId))
+    setSelectedRounds(allRounds)
 
-    try {
-      const freshClaimableRounds = []
-      for (const round of claimableRounds) {
-        const hasClaimed = await publicClient.readContract({
-          address: LOTTERY_ADDRESS as `0x${string}`,
-          abi: LOTTERY_6OF55_V2_ABI,
-          functionName: 'hasClaimed',
-          args: [BigInt(round.roundId), address],
-        }) as boolean
-
-        if (!hasClaimed) {
-          freshClaimableRounds.push(round)
-        }
-      }
-
-      if (freshClaimableRounds.length === 0) {
-        toast.error("No rounds available to claim - they may have already been claimed")
-        // Force refresh of data
-        window.location.reload()
-        return
-      }
-
-      // Select only the freshly verified claimable rounds
-      const allRounds = new Set(freshClaimableRounds.map(round => round.roundId))
-      setSelectedRounds(allRounds)
-
-      // Claim them
-      await handleClaim()
-    } catch (error) {
-      console.error('Error checking claim status:', error)
-      toast.error("Failed to verify claimable rounds. Please try again.")
-    }
+    // Claim them directly
+    await handleClaim()
   }
 
   const handleClaim = async () => {
@@ -286,39 +297,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
     setIsClaiming(true)
 
     try {
-      let roundIds = Array.from(selectedRounds).sort((a, b) => a - b)
-
-      // Filter out rounds that might have already been claimed
-      const validRoundIds = []
-      for (const roundId of roundIds) {
-        try {
-          const hasClaimed = await publicClient.readContract({
-            address: LOTTERY_ADDRESS as `0x${string}`,
-            abi: LOTTERY_6OF55_V2_ABI,
-            functionName: 'hasClaimed',
-            args: [BigInt(roundId), address],
-          }) as boolean
-
-          if (!hasClaimed) {
-            validRoundIds.push(roundId)
-          }
-        } catch (checkError) {
-          console.warn(`Could not check claim status for round ${roundId}:`, checkError)
-          // Include it anyway if we can't check
-          validRoundIds.push(roundId)
-        }
-      }
-
-      if (validRoundIds.length === 0) {
-        toast.error("No rounds available to claim - they may have already been claimed")
-        setSelectedRounds(new Set())
-        window.location.reload()
-        return
-      }
-
-      // Update selectedRounds to only include valid rounds
-      setSelectedRounds(new Set(validRoundIds))
-      roundIds = validRoundIds
+      const roundIds = Array.from(selectedRounds).sort((a, b) => a - b)
 
       // Split rounds into batches of 50 (contract limit)
       const BATCH_SIZE = 50
@@ -348,7 +327,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
             account: address,
           })
 
-              const hash = await walletClient.writeContract(request)
+          const hash = await walletClient.writeContract(request)
 
           // Calculate amount for this batch
           const batchAmount = claimableRounds
@@ -384,7 +363,13 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
         } catch (batchError: any) {
           console.error(`Failed to process batch ${batchIndex + 1}:`, batchError)
-          failedBatches.push({ batch, error: batchError })
+
+          // If the error indicates the round was already claimed, remove it from consideration
+          if (batchError.message && batchError.message.includes('already claimed')) {
+            toast.warning(`Some rounds in batch ${batchIndex + 1} were already claimed`)
+          } else {
+            failedBatches.push({ batch, error: batchError })
+          }
         }
       }
 
@@ -428,20 +413,39 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
       }
 
       if (failedBatches.length > 0) {
-        toast.error(`Failed to claim ${failedBatches.reduce((sum, failed) => sum + failed.batch.length, 0)} rounds. Some claims may be pending.`)
+        toast.error(`Failed to claim ${failedBatches.reduce((sum, failed) => sum + (failed.batch?.length || 0), 0)} rounds. Some claims may be pending.`)
       }
 
       // Reset selection and refresh data if any claims succeeded
       if (successfulClaims.length > 0) {
         setSelectedRounds(new Set())
 
-        // Force a re-render by updating the query key or similar
-        window.location.reload()
+        // Instead of full reload, just refresh the round history data
+        // This is less disruptive than a full page reload
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
       }
 
     } catch (error: any) {
       console.error('Claim failed:', error)
-      toast.error(`Claim Failed: ${error.message || "Transaction failed"}`)
+
+      let errorMessage = "Transaction failed"
+      if (error.message) {
+        if (error.message.includes('rejected')) {
+          errorMessage = "Transaction was rejected by your wallet"
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = "Insufficient PLS for gas fees"
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network error - please check your connection"
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Transaction timed out - it may still be processing"
+        } else {
+          errorMessage = error.message
+        }
+      }
+
+      toast.error(`Claim Failed: ${errorMessage}`)
     } finally {
       setIsClaiming(false)
     }
@@ -560,7 +564,23 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
     } catch (error: any) {
       console.error('Single claim failed:', error)
-      toast.error(`Claim Failed: ${error.message || "Transaction failed"}`)
+
+      let errorMessage = "Transaction failed"
+      if (error.message) {
+        if (error.message.includes('rejected')) {
+          errorMessage = "Transaction was rejected by your wallet"
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = "Insufficient PLS for gas fees"
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network error - please check your connection"
+        } else if (error.message.includes('already claimed')) {
+          errorMessage = "This round has already been claimed"
+        } else {
+          errorMessage = error.message
+        }
+      }
+
+      toast.error(`Claim Failed: ${errorMessage}`)
     } finally {
       setIsClaimingSingle(false)
     }
@@ -663,30 +683,53 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
         </DialogTrigger>
       )}
       <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-md max-h-[80vh]">
-        <div className="flex items-center gap-3 mb-6">
-          <Coins className="w-6 h-6 text-neutral-600 dark:text-neutral-200" />
-          <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
-            Claim Winnings
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Coins className="w-6 h-6 text-neutral-600 dark:text-neutral-200" />
+            <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
+              Claim Winnings
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.location.reload()}
+            className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+            title="Refresh data"
+          >
+            <History className="w-4 h-4" />
+          </Button>
         </div>
 
         {!address ? (
           <div className="text-center text-sm text-neutral-600 dark:text-neutral-300 py-8">Connect wallet to claim winnings</div>
-        ) : isLoadingHistory ? (
-          <div className="flex items-center justify-center gap-3 text-sm text-neutral-600 dark:text-neutral-300 py-8">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Loading your winnings...
+        ) : isLoadingHistory || isLoadingFullHistory ? (
+          <div className="flex flex-col items-center justify-center gap-3 text-sm text-neutral-600 dark:text-neutral-300 py-8">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <div className="text-center">
+              <div className="font-medium">Loading your winnings...</div>
+              <div className="text-xs opacity-75 mt-1">Checking claim status across all rounds</div>
+            </div>
           </div>
         ) : claimableRounds.length === 0 ? (
           <div className="text-center">
-            <div className="text-sm text-neutral-600 dark:text-neutral-300 mb-6">No winnings available to claim</div>
-            <Button
-              variant="outline"
-              onClick={() => setShowAdvanced(true)}
-              className="border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-            >
-              View History
-            </Button>
+            <div className="text-sm text-neutral-600 dark:text-neutral-300 mb-4">
+              {isLoadingFullHistory ? "Checking for winnings..." : "No winnings available to claim"}
+            </div>
+            {!isLoadingFullHistory && (
+              <div className="space-y-3">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Make sure you're connected to PulseChain and try refreshing if you believe you have unclaimed winnings.
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAdvanced(true)}
+                  className="border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                >
+                  View History
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -698,16 +741,31 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
               <div className="text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                 Available to claim from {claimableRounds.length} round{claimableRounds.length !== 1 ? 's' : ''}
               </div>
+              {isLoadingFullHistory && (
+                <div className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  Verifying claim status...
+                </div>
+              )}
             </div>
 
             {/* Claim All Button */}
-            <AceternityButton
+            <Button
               onClick={handleClaimAll}
+              disabled={isClaiming}
               className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold text-lg py-3 font-sans"
             >
-              <Coins className="w-5 h-5 mr-3" />
-              Claim All Winnings
-            </AceternityButton>
+              {isClaiming ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <Coins className="w-5 h-5 mr-3" />
+                  Claim All Winnings
+                </>
+              )}
+            </Button>
 
             {/* Advanced Options */}
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
