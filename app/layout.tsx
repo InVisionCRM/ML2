@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
 
-const geistSans = Geist({
+// Use system fonts instead of Google Fonts to avoid build issues
+const geistSans = {
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+  className: "",
+};
 
-const geistMono = Geist_Mono({
+const geistMono = {
   variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  className: "",
+};
 
 export const metadata: Metadata = {
   title: "Morbius Lotto",
@@ -27,9 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
+        {/* Google Fonts removed to avoid build issues - using system fonts */}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

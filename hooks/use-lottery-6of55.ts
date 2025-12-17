@@ -187,7 +187,7 @@ export function useBuyTickets() {
     // Filter to only valid tickets and ensure proper typing
     const validTickets = tickets
       .filter(ticket => ticket.length === 6)
-      .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
+      .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
 
     // Convert to the exact format expected by the contract: uint8[6][]
     writeContract({
@@ -211,8 +211,8 @@ export function useBuyTicketsForRounds() {
     const formattedGroups = ticketGroups.map(group =>
       group
         .filter(ticket => ticket.length === 6) // Only include valid 6-number tickets
-        .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
-    ) as readonly [readonly [number, number, number, number, number, number]][]
+        .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
+    ) as unknown as readonly [readonly [number, number, number, number, number, number]][]
 
     const formattedOffsets = offsets.map(o => BigInt(o))
 
@@ -249,7 +249,7 @@ export function useBuyTicketsWithWPLS(defaultExtraBufferBp: number = 2500) {
     // Validate and filter tickets
     const validTickets = tickets
       .filter(ticket => ticket.length === 6)
-      .map(ticket => ticket.map(n => n as number) as readonly [number, number, number, number, number, number])
+      .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
 
     console.log('💰 buyTicketsWithWPLS: valid tickets:', validTickets, 'buffer:', bufferBp)
 

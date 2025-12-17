@@ -110,11 +110,11 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
                 abi: LOTTERY_6OF55_V2_ABI,
                 functionName: 'hasClaimed',
                 args: [BigInt(roundId), address],
-              }).then((hasClaimed: boolean) => ({
+              }).then((result: unknown) => ({
                 roundId,
                 amount,
                 ticketCount,
-                hasClaimed
+                hasClaimed: result as boolean
               })).catch((error) => {
                 console.warn(`Error checking claim status for round ${roundId}:`, error)
                 return {
