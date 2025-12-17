@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -78,11 +77,9 @@ export function TicketPurchaseBuilder({
   } = useWalletDetection()
   const { isOnPulseChain, switchToPulseChain } = useNetworkValidation()
 
-  const [tickets, setTickets] = useState<number[][]>([])
-  const [roundsByTicket, setRoundsByTicket] = useState<number[]>([])
   const [workingTicket, setWorkingTicket] = useState<number[]>([])
   const [workingRounds, setWorkingRounds] = useState(1)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [isGridExpanded, setIsGridExpanded] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'morbius' | 'pls'>('morbius')
   const [optimisticAllowance, setOptimisticAllowance] = useState<bigint | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -103,8 +100,11 @@ export function TicketPurchaseBuilder({
 
   // Notify parent on state change
   useEffect(() => {
-    onStateChangeRef.current?.(tickets, roundsByTicket[0] ?? initialRounds)
-  }, [tickets, roundsByTicket, initialRounds])
+    // Pass single ticket as array and current working rounds
+    const ticketComplete = workingTicket.length === NUMBERS_PER_TICKET
+    const ticketArray = ticketComplete ? [workingTicket] : []
+    onStateChangeRef.current?.(ticketArray, workingRounds)
+  }, [workingTicket, workingRounds])
 
   const { data: ticketPriceMorbiusData } = useReadContract({
     address: LOTTERY_ADDRESS as `0x${string}`,
@@ -200,17 +200,15 @@ export function TicketPurchaseBuilder({
     error: buyPlsError,
   } = useBuyTicketsWithPLS()
 
-  const buyHash = paymentMethod === 'pls' ? buyPlsHash : (roundsByTicket.some((r) => r > 1) ? buyMultiHash : buyPsshHash)
+  const isTicketComplete = workingTicket.length === NUMBERS_PER_TICKET
+  const ticketCount = isTicketComplete ? 1 : 0
+  const totalEntries = isTicketComplete ? workingRounds : 0
+  const maxRounds = workingRounds
+
+  const buyHash = paymentMethod === 'pls' ? buyPlsHash : (workingRounds > 1 ? buyMultiHash : buyPsshHash)
   const { isLoading: isBuyLoading, isSuccess: isBuySuccess } = useWaitForTransactionReceipt({
     hash: buyHash,
   })
-
-  const ticketCount = tickets.length
-  const totalEntries = useMemo(
-    () => roundsByTicket.reduce((acc, r) => acc + Math.max(1, Math.min(100, r || 1)), 0),
-    [roundsByTicket]
-  )
-  const maxRounds = useMemo(() => (roundsByTicket.length ? Math.max(...roundsByTicket) : 1), [roundsByTicket])
   const pricePerTicket = (ticketPriceMorbiusData as bigint | undefined) ?? TICKET_PRICE
   const psshCost = pricePerTicket * BigInt(totalEntries || 0)
 
@@ -279,8 +277,8 @@ export function TicketPurchaseBuilder({
 
   const canBuy =
     paymentMethod === 'morbius'
-      ? ticketCount > 0 && hasEnoughBalance && !needsApproval
-      : ticketCount > 0 && hasEnoughBalance
+      ? isTicketComplete && hasEnoughBalance && !needsApproval
+      : isTicketComplete && hasEnoughBalance
   const isApproveLoadingState = uiState === 'approving' || isApprovePending || isApproveLoading
   const isBuyLoadingState = uiState === 'buying' || isBuyLoading || isBuyPsshPending || isBuyMultiPending || isBuyPlsPending
 
@@ -334,8 +332,7 @@ export function TicketPurchaseBuilder({
         setShowSuccessModal(true)
       }
 
-      setTickets([])
-      setRoundsByTicket([])
+      // Reset for next purchase
       setWorkingTicket([])
       setWorkingRounds(1)
       onSuccessRef.current?.()
@@ -404,11 +401,11 @@ export function TicketPurchaseBuilder({
   const handleBuy = async () => {
     console.log('🛒 handleBuy called with:', {
       address,
-      ticketCount,
+      isTicketComplete,
       paymentMethod,
       hasEnoughBalance,
-      tickets,
-      roundsByTicket
+      workingTicket,
+      workingRounds
     })
 
     if (!address) {
@@ -416,8 +413,8 @@ export function TicketPurchaseBuilder({
       setUiState('error')
       return
     }
-    if (ticketCount < 1) {
-      setErrorMessage('Add a ticket')
+    if (!isTicketComplete) {
+      setErrorMessage('Select 6 numbers')
       setUiState('error')
       return
     }
@@ -463,26 +460,25 @@ export function TicketPurchaseBuilder({
         if (valueWei === BigInt(0)) {
           throw new Error('PLS amount is zero')
         }
-        console.log('💰 Buying with PLS:', { tickets, valueWei: valueWei.toString() })
+        console.log('💰 Buying with PLS:', { workingTicket, valueWei: valueWei.toString() })
 
         // Note: The hook buyTicketsWithPLS already handles gas estimation
         // If we need custom gas, we'd need to modify the hook
-        buyTicketsWithPLS(tickets, valueWei)
+        buyTicketsWithPLS([workingTicket], valueWei)
       } else {
-        const boundedRounds = roundsByTicket.map((r) => Math.max(1, Math.min(100, r || 1)))
-        const highest = boundedRounds.length ? Math.max(...boundedRounds) : 1
-        console.log('🎫 Buying with MORBIUS:', { tickets, boundedRounds, highest })
+        const boundedRounds = Math.max(1, Math.min(100, workingRounds))
+        console.log('🎫 Buying with MORBIUS:', { workingTicket, boundedRounds })
 
-        if (highest > 1) {
-          const offsets = Array.from({ length: highest }, (_, i) => i)
+        if (boundedRounds > 1) {
+          const offsets = Array.from({ length: boundedRounds }, (_, i) => i)
           const groups = offsets.map((offset) =>
-            tickets.filter((_, idx) => boundedRounds[idx] > offset)
+            offset === 0 ? [workingTicket] : []
           )
           console.log('📅 Buying for multiple rounds:', { groups, offsets })
           buyTicketsForRounds(groups, offsets)
         } else {
-          console.log('🎫 Buying for current round:', tickets)
-          buyTickets(tickets)
+          console.log('🎫 Buying for current round:', workingTicket)
+          buyTickets([workingTicket])
         }
       }
     } catch (err) {
@@ -536,79 +532,30 @@ export function TicketPurchaseBuilder({
     setWorkingTicket(nums.sort((a, b) => a - b))
   }
 
-  const handleAddToCart = () => {
-    if (workingTicket.length !== NUMBERS_PER_TICKET) {
-      toast.error(`Select ${NUMBERS_PER_TICKET} numbers`)
-      return
-    }
-    if (tickets.length >= 10) {
-      toast.error('Maximum 10 tickets')
-      return
-    }
-
-    if (editingIndex !== null) {
-      // Update existing ticket
-      setTickets((prev) => {
-        const next = [...prev]
-        next[editingIndex] = workingTicket
-        return next
-      })
-      setRoundsByTicket((prev) => {
-        const next = [...prev]
-        next[editingIndex] = workingRounds
-        return next
-      })
-      toast.success('Ticket updated')
-      setEditingIndex(null)
-    } else {
-      // Add new ticket
-      setTickets((prev) => [...prev, workingTicket])
-      setRoundsByTicket((prev) => [...prev, workingRounds])
-      toast.success('Ticket added')
-    }
-
-    setWorkingTicket([])
-    setWorkingRounds(1)
-  }
-
-  const handleEditTicket = (index: number) => {
-    setWorkingTicket(tickets[index])
-    setWorkingRounds(roundsByTicket[index] || 1)
-    setEditingIndex(index)
-    toast.info('Editing ticket')
-  }
-
-  const handleRemoveTicket = (index: number) => {
-    setTickets((prev) => prev.filter((_, i) => i !== index))
-    setRoundsByTicket((prev) => prev.filter((_, i) => i !== index))
-    if (editingIndex === index) {
-      setEditingIndex(null)
-      setWorkingTicket([])
-      setWorkingRounds(1)
-    }
-    toast.success('Ticket removed')
-  }
-
-  const handleCancelEdit = () => {
-    setEditingIndex(null)
-    setWorkingTicket([])
-    setWorkingRounds(1)
-  }
-
-  const canAddToCart = workingTicket.length === NUMBERS_PER_TICKET
 
   return (
-    <Card className="relative overflow-hidden bg-black/70 border-white/10 shadow-2xl p-0 w-full max-w-full">
+    <div className="relative overflow-visible w-full max-w-full">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.08),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.08),transparent_30%)]" />
 
-      <div className="relative flex flex-col lg:flex-row gap-4 p-4 min-h-0 overflow-x-hidden w-full">
-        {/* LEFT PANEL - Builder */}
-        <div className="flex-1 lg:flex-[3] space-y-4 min-w-0 w-full overflow-x-hidden">
-          <h2 className="text-xl font-bold text-white">GET TICKETS</h2>
+      <h2 className="text-sm font-bold text-white text-center top-[-14] relative z-10">GET TICKETS</h2>
 
-          {/* Number Grid */}
-          <div className="w-full overflow-x-hidden">
-            <div className="grid grid-cols-6 xs:grid-cols-7 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-11 gap-1.5 mb-3 w-full">
+      <div className="relative p-4 w-full space-y-4">
+
+        {/* Number Grid - Collapsible */}
+        <div className="w-full">
+          <Button
+            variant="outline"
+            onClick={() => setIsGridExpanded(!isGridExpanded)}
+            className="w-full border-white/20 text-white hover:bg-white/5 mb-2"
+          >
+            <span className="flex items-center justify-center w-full gap-2">
+              <span className="text-xl">Select Numbers</span>
+              <ChevronDown className={cn("w-8 h-8 transition-transform", isGridExpanded ? "rotate-180" : "")} />
+            </span>
+          </Button>
+
+          {isGridExpanded && (
+            <div className="grid grid-cols-6 xs:grid-cols-7 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-11 gap-1.5 mb-3 w-full animate-in slide-in-from-top-2 duration-200">
               {Array.from({ length: MAX_NUMBER }, (_, i) => i + MIN_NUMBER).map((num) => {
                 const selected = workingTicket.includes(num)
                 return (
@@ -628,33 +575,37 @@ export function TicketPurchaseBuilder({
                 )
               })}
             </div>
+          )}
 
-            {/* Selected Numbers Display */}
-            <div className="bg-black/40 border border-white/10 rounded-lg p-2 mb-2">
-              <div className="flex flex-wrap gap-1.5 min-h-[32px] items-center mb-2">
-                {workingTicket.length > 0 ? (
-                  workingTicket.map((n) => (
-                    <span
-                      key={n}
-                      className="h-7 min-w-7 px-2 flex items-center justify-center rounded-full bg-white text-black font-bold text-sm"
-                    >
-                      {n}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-white/50 text-sm">Select {NUMBERS_PER_TICKET} numbers</span>
-                )}
-                <span className="ml-auto text-white/60 text-xs">
-                  {workingTicket.length}/{NUMBERS_PER_TICKET}
-                </span>
+          {/* Selected Numbers Display */}
+          <div className="bg-white/5 rounded-full p-2 mb-2">
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left column: Selected Numbers (3 wide) */}
+              <div className="flex flex-col">
+                <div className="grid grid-cols-3 gap-4 min-h-[100px] items-start">
+                  {workingTicket.length > 0 ? (
+                    workingTicket.map((n) => (
+                      <span
+                        key={n}
+                        className="min-h-12 min-w-12 rounded-full px-2 flex items-center justify-center bg-white text-black font-bold"
+                      >
+                        {n}
+                      </span>
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-center">
+                      <span className="text-white text-sm">Select {NUMBERS_PER_TICKET} numbers</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Quick Actions - Inline */}
-              <div className="flex gap-2">
+              {/* Right column: Buttons */}
+              <div className="flex flex-col gap-4">
                 <Button
-                  size="sm"
+                  size="default"
                   variant="outline"
-                  className="border-white/30 text-white text-xs px-2 h-7"
+                  className="border-2 border-orange-500 bg-black hover:bg-gray-900 text-white hover:text-orange-400 px-6 py-3 text-lg font-semibold rounded-lg h-20 flex-1"
                   onClick={handleQuickPick}
                 >
                   Quick Pick
@@ -662,7 +613,7 @@ export function TicketPurchaseBuilder({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-white/30 text-white text-xs px-2 h-7"
+                  className="border-white/30 text-white text-sm px-4 py-2 h-12 flex-1"
                   onClick={() => setWorkingTicket([])}
                   disabled={workingTicket.length === 0}
                 >
@@ -671,189 +622,66 @@ export function TicketPurchaseBuilder({
               </div>
             </div>
           </div>
-
-          {/* Rounds Selector */}
-          <div className="space-y-2">
-            <label className="text-white/70 text-sm">Rounds for this ticket</label>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/30 text-white h-8 w-8 p-0"
-                onClick={() => setWorkingRounds(Math.max(1, workingRounds - 1))}
-                disabled={workingRounds <= 1}
-              >
-                <Minus className="w-3 h-3" />
-              </Button>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={workingRounds}
-                onChange={(e) => setWorkingRounds(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
-                className="w-16 h-8 rounded border border-white/20 bg-black/40 text-white text-center font-semibold text-sm"
-                title="Number of rounds for this ticket"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/30 text-white h-8 w-8 p-0"
-                onClick={() => setWorkingRounds(Math.min(100, workingRounds + 1))}
-                disabled={workingRounds >= 100}
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-              <div className="flex gap-1 ml-auto">
-                {[5, 10, 25, 50].map((v) => (
-                  <Button
-                    key={v}
-                    size="sm"
-                    variant="outline"
-                    className="border-white/30 text-white text-xs px-2 h-7"
-                    onClick={() => setWorkingRounds(v)}
-                  >
-                    {v}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Add to Cart Button */}
-          <div className="flex gap-2">
-            {editingIndex !== null && (
-              <Button
-                variant="outline"
-                className="border-white/30 text-white"
-                onClick={handleCancelEdit}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              className={cn(
-                'flex-1 h-12 font-semibold',
-                canAddToCart
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : 'bg-white/10 text-white/50 cursor-not-allowed'
-              )}
-              disabled={!canAddToCart}
-              onClick={handleAddToCart}
-            >
-              {editingIndex !== null ? 'Update Ticket' : '+ Add to Cart'}
-            </Button>
-          </div>
-
-          {/* Scroll Down Arrow - Mobile Only */}
-          {ticketCount > 0 && (
-            <div className="flex justify-center py-4 lg:hidden">
-              <div className="flex flex-col items-center gap-2 animate-bounce">
-                <span className="text-white/70 text-xs font-medium">View Cart</span>
-                <ChevronDown className="w-6 h-6 text-white/80" />
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* RIGHT PANEL - Cart */}
-        <div className="lg:flex-[2] lg:max-w-sm bg-black/40 rounded-lg p-4 flex flex-col min-w-0 w-full overflow-x-hidden">
-          <h2 className="text-lg font-bold text-white mb-3">CONFIRM</h2>
+        {/* Rounds Selector - Only show when ticket is complete */}
+        {isTicketComplete && (
+          <div className="space-y-3">
+            <label className="text-white font-bold text-lg text-center block">Rounds To Play</label>
+            <div className="grid grid-cols-5 gap-3">
+              {[1, 5, 10, 25, 50].map((rounds) => (
+                <Button
+                  key={rounds}
+                  size="default"
+                  variant={workingRounds === rounds ? "default" : "outline"}
+                  className={workingRounds === rounds ? "bg-green-600 text-white h-12 text-lg font-semibold" : "border-white/30 text-white h-12 text-lg hover:bg-white/10"}
+                  onClick={() => setWorkingRounds(rounds)}
+                >
+                  {rounds}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {/* Payment Method Selection - Text Labels */}
-          <div className="mb-4 p-3 bg-white/5 rounded-lg">
-            <div className="text-xs text-white/70 mb-2 font-medium text-center">Pay In...</div>
-            <div className="flex items-center justify-center gap-4">
-              <span
+        {/* Payment Method - Only show when ticket is complete */}
+        {isTicketComplete && (
+          <div className="p-3 bg-white/5 rounded-lg">
+            <div className="text-lg text-white mb-3 font-bold text-center">Payment Method</div>
+            <div className="grid grid-cols-2 gap-5">
+              <Button
+                variant={paymentMethod === 'morbius' ? 'default' : 'outline'}
                 className={cn(
-                  'cursor-pointer transition-all duration-300 px-2 py-1 rounded text-xl',
+                  'h-24 text-2xl font-bold rounded-sm transition-all duration-300',
                   paymentMethod === 'morbius'
-                    ? 'mitr-semibold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent'
-                    : 'mitr-regular text-white/70 hover:text-white'
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border-purple-500'
+                    : 'border-white text-white hover:text-white hover:bg-white/10'
                 )}
                 onClick={() => setPaymentMethod('morbius')}
               >
                 MORBIUS
-              </span>
-              <span className="text-white/50 text-xl">/</span>
-              <span
+              </Button>
+              <Button
+                variant={paymentMethod === 'pls' ? 'default' : 'outline'}
                 className={cn(
-                  'cursor-pointer transition-all duration-300 px-2 py-1 rounded text-xl',
+                  'h-24 text-2xl font-bold rounded-sm transition-all duration-300',
                   paymentMethod === 'pls'
-                    ? 'mitr-semibold bg-gradient-to-r from-pink-400 via-red-400 to-purple-500 bg-clip-text text-transparent'
-                    : 'mitr-regular text-white/70 hover:text-white'
+                    ? 'bg-gradient-to-t from-blue-900 to-pink-600 text-white border-pink-400'
+                    : 'border-white text-white/70 hover:text-white hover:bg-white/10'
                 )}
                 onClick={() => setPaymentMethod('pls')}
               >
                 PLS
-              </span>
+              </Button>
             </div>
           </div>
+        )}
 
-          {/* Cart Items */}
-          <div className="flex-1 space-y-2 mb-4 overflow-y-auto max-h-[300px]">
-            {tickets.length === 0 ? (
-              <div className="text-center py-12 text-white/50">
-                <p className="text-sm">No tickets yet</p>
-                <p className="text-xs mt-2">Add tickets to get started</p>
-              </div>
-            ) : (
-              tickets.map((ticket, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    'p-2 rounded border transition-all',
-                    editingIndex === idx
-                      ? 'border-green-500/50 bg-green-500/10'
-                      : 'border-white/10 bg-white/5'
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-white/60 text-xs font-semibold">Ticket #{idx + 1}</span>
-                    <div className="flex gap-0.5">
-                      <button
-                        onClick={() => handleEditTicket(idx)}
-                        className="p-1 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => handleRemoveTicket(idx)}
-                        className="p-1 hover:bg-white/10 rounded text-white/60 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-1">
-                    {ticket.map((num) => (
-                      <span
-                        key={num}
-                        className="h-5 min-w-5 px-1 flex items-center justify-center rounded bg-white/10 text-white text-xs font-semibold"
-                      >
-                        {num}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="text-white/60 text-xs">
-                    {roundsByTicket[idx] || 1} round{(roundsByTicket[idx] || 1) > 1 ? 's' : ''}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Cart Summary */}
-          <div className="space-y-2 border-t border-white/10 pt-3">
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Tickets</span>
-              <span className="text-white font-semibold">{ticketCount}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Total Entries</span>
-              <span className="text-white font-semibold">{totalEntries}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Cost</span>
+        {/* Cost & Balance - Only show when ticket is complete */}
+        {isTicketComplete && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-lg">
+              <span className="text-white">Cost</span>
               <span className="text-white font-semibold">
                 {paymentMethod === 'pls' ? (
                   isLoadingPlsQuote ? (
@@ -870,14 +698,13 @@ export function TicketPurchaseBuilder({
                 )}
               </span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Balance</span>
+            <div className="flex justify-between text-lg">
+              <span className="text-white">Balance</span>
               <span
                 className={cn(
                   'font-semibold',
                   hasEnoughBalance ? 'text-emerald-400' : 'text-amber-400'
                 )}
-                title={`Raw: ${paymentMethod === 'pls' ? nativePlsBalance?.toString() : psshBalance?.toString() || 'undefined'} | Address: ${address || 'not connected'}`}
               >
                 {paymentMethod === 'pls' ? (
                   isLoadingPlsBalance ? (
@@ -898,72 +725,56 @@ export function TicketPurchaseBuilder({
                 )}
               </span>
             </div>
-
-            {/* Error/Success Messages */}
-            {uiState === 'error' && errorMessage && (
-              <Alert variant="destructive">
-                <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
-              </Alert>
-            )}
-            {uiState === 'success' && (
-              <Alert className="border-emerald-400/40 bg-emerald-500/10">
-                <AlertDescription className="text-emerald-200 text-sm">Success! Good luck!</AlertDescription>
-              </Alert>
-            )}
-            {/* PLS Quote Error Warning */}
-            {paymentMethod === 'pls' && plsQuoteError && (
-              <Alert variant="destructive">
-                <AlertDescription className="text-sm">
-                  Unable to fetch PLS price quote. Try using MORBIUS or refreshing the page.
-                </AlertDescription>
-              </Alert>
-            )}
-            {paymentMethod === 'pls' && isLoadingPlsQuote && ticketCount > 0 && (
-              <Alert className="border-blue-400/40 bg-blue-500/10">
-                <AlertDescription className="text-blue-200 text-sm">Loading PLS price...</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Buy/Approve Button */}
-            {paymentMethod === 'morbius' && needsApproval ? (
-              <Button
-                className={cn(
-                  'w-full h-12 font-semibold',
-                  isProcessing ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
-                )}
-                disabled={isProcessing || ticketCount === 0}
-                onClick={handleApprove}
-              >
-                {isApproveLoadingState ? (
-                  <span className="flex items-center gap-2">
-                    <LoaderOne />
-                    Approving...
-                  </span>
-                ) : (
-                  'Approve'
-                )}
-              </Button>
-            ) : (
-              <Button
-                className={cn(
-                  'w-full h-12 font-semibold',
-                  isProcessing || !canBuy ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
-                )}
-                disabled={!canBuy || isProcessing}
-                onClick={handleBuy}
-              >
-                {isBuyLoadingState ? (
-                  <span className="flex items-center gap-2">
-                    <LoaderOne />
-                    Processing...
-                  </span>
-                ) : (
-                  paymentMethod === 'pls' ? 'Buy with PLS' : 'Buy Now'
-                )}
-              </Button>
-            )}
           </div>
-        </div>
+        )}
+
+        {/* Error/Success Messages */}
+        {uiState === 'error' && errorMessage && (
+          <Alert variant="destructive">
+            <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Buy/Approve Button - Only show when ticket is complete */}
+        {isTicketComplete && (
+          paymentMethod === 'morbius' && needsApproval ? (
+            <Button
+              className={cn(
+                'w-full h-12 font-semibold',
+                isProcessing ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
+              )}
+              disabled={isProcessing}
+              onClick={handleApprove}
+            >
+              {isApproveLoadingState ? (
+                <span className="flex items-center gap-2">
+                  <LoaderOne />
+                  Approving...
+                </span>
+              ) : (
+                'Approve'
+              )}
+            </Button>
+          ) : (
+            <Button
+              className={cn(
+                'w-full h-12 font-semibold',
+                isProcessing || !canBuy ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
+              )}
+              disabled={!canBuy || isProcessing}
+              onClick={handleBuy}
+            >
+              {isBuyLoadingState ? (
+                <span className="flex items-center gap-2">
+                  <LoaderOne />
+                  Processing...
+                </span>
+              ) : (
+                paymentMethod === 'pls' ? 'Buy with PLS' : 'Buy Now'
+              )}
+            </Button>
+          )
+        )}
       </div>
 
       {/* Success Modal */}
@@ -974,7 +785,7 @@ export function TicketPurchaseBuilder({
               Purchase Successful!
             </DialogTitle>
             <DialogDescription className="text-white/80 text-center pt-2">
-              Your lottery tickets have been purchased
+              Your lottery ticket has been purchased
             </DialogDescription>
           </DialogHeader>
 
@@ -989,7 +800,7 @@ export function TicketPurchaseBuilder({
 
             {/* Transaction Hash */}
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="text-sm text-white/60 mb-2">Transaction Hash</div>
+              <div className="text-md text-white mb-2">Transaction Hash</div>
               <div className="font-mono text-xs text-white/80 break-all">
                 {successTxHash}
               </div>
@@ -1017,7 +828,7 @@ export function TicketPurchaseBuilder({
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   )
 }
 

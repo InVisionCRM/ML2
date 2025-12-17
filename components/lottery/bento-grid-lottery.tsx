@@ -14,7 +14,7 @@ import {
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import { formatEther } from "viem";
-import { GlowingStarsBackgroundCard } from "../ui/glowing-stars";
+import { BackgroundGradientAnimation } from "../ui/background-gradient-animation";
 import { Meteors } from "../ui/meteors";
 import { DottedGlowBackground } from "../ui/dotted-glow-background";
 
@@ -167,7 +167,7 @@ const SkeletonTimer = () => {
           style={{
             maxWidth: Math.random() * (100 - 40) + 40 + "%",
           }}
-          className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-neutral-100 dark:bg-black w-full h-4"
+          className="flex flex-row rounded-full border-2 border-blue-500 dark:border-blue-400 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 p-2 items-center space-x-2 w-full h-4"
         ></motion.div>
       ))}
     </motion.div>
@@ -335,11 +335,26 @@ const MorbiusStats = () => {
 
 const SkeletonPerformance = () => {
   return (
-    <GlowingStarsBackgroundCard className="w-full h-full min-h-[4rem] border-0 bg-transparent !bg-transparent">
-      <div className="flex flex-col items-center justify-center h-full">
-        {/* Empty - just the glowing starfield background */}
-      </div>
-    </GlowingStarsBackgroundCard>
+    <div className="w-full h-full min-h-[4rem] relative overflow-hidden">
+      <BackgroundGradientAnimation
+        gradientBackgroundStart="rgb(34, 197, 94)"
+        gradientBackgroundEnd="rgb(22, 163, 74)"
+        firstColor="34, 197, 94"
+        secondColor="22, 163, 74"
+        thirdColor="20, 83, 45"
+        fourthColor="34, 197, 94"
+        fifthColor="22, 163, 74"
+        pointerColor="34, 197, 94"
+        size="60%"
+        blendingValue="soft-light"
+        containerClassName="w-full h-full"
+        className="w-full h-full flex items-center justify-center"
+      >
+        <div className="text-2xl font-bold text-white">
+          PLAY
+        </div>
+      </BackgroundGradientAnimation>
+    </div>
   );
 };
 
@@ -517,21 +532,21 @@ const items = [
       </span>
     ),
     header: <SkeletonPerformance />,
-    className: "md:col-span-1",
+    className: "md:col-span-1 bg-transparent",
     icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
     onClick: ({ onPlayNow }: any) => onPlayNow?.(),
   },
   {
-    title: "Payout Breakdown",
+    title: "My Tickets",
     description: (
       <span className="text-sm">
-        View prize distribution and payout calculations
+        View all your lottery tickets and track their performance
       </span>
     ),
-    header: <SkeletonTimer />,
+    header: <SkeletonMyTickets />,
     className: "md:col-span-1",
-    icon: <IconClock className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowPayouts }: any) => onShowPayouts?.(),
+    icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
+    onClick: ({ onShowTickets }: any) => onShowTickets?.(),
   },
   {
     title: "Morbius",
@@ -541,7 +556,7 @@ const items = [
       </span>
     ),
     header: <MorbiusStats />,
-    className: "md:col-span-1",
+    className: "col-span-2 md:col-span-1",
     onClick: () => {
       window.open('https://morbius.io/geicko?address=0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1', '_blank')
     },
@@ -597,15 +612,15 @@ const items = [
     onClick: ({ onShowClaim }: any) => onShowClaim?.(),
   },
   {
-    title: "My Tickets",
+    title: "Payout Breakdown",
     description: (
       <span className="text-sm">
-        View all your lottery tickets and track their performance
+        View prize distribution and payout calculations
       </span>
     ),
-    header: <SkeletonMyTickets />,
-    className: "md:col-span-1",
-    icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowTickets }: any) => onShowTickets?.(),
+    header: <SkeletonTimer />,
+    className: "col-span-2 md:col-span-1",
+    icon: <IconClock className="h-4 w-4 text-neutral-500" />,
+    onClick: ({ onShowPayouts }: any) => onShowPayouts?.(),
   },
 ];

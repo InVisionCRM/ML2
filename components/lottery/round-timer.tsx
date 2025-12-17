@@ -4,13 +4,9 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { formatUnits } from 'viem'
+import { formatUnits, formatEther } from 'viem'
 import { TOKEN_DECIMALS, TICKET_PRICE } from '@/lib/contracts'
-import { PlayerTicketsModal } from './player-tickets-modal'
-import { PlayerStatsModal } from './player-stats-modal'
-import { MultiClaimModal } from './modals/multi-claim-modal'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ChevronUp, ChevronDown, History } from 'lucide-react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import PhysicsMachine from './ball-draw-simulator/PhysicsMachine'
 import BallResult from './ball-draw-simulator/BallResult'
 import { DrawState } from './ball-draw-simulator/types'
@@ -30,6 +26,10 @@ interface RoundTimerProps {
     isFreeTicket: boolean
     transactionHash?: string
   }> // User's tickets for this round
+  totalTickets?: bigint // Total tickets for round stats
+  burnedAmount?: bigint // Burned amount for round stats
+  megaBank?: bigint // Mega bank/jackpot amount
+  isLoadingBurned?: boolean // Loading state for burned amount
   onBuyTicketsClick?: () => void // New prop for buy tickets button
   onShowDashboard?: () => void // Callback to show dashboard modal
   onDrawStart?: () => void // Callback when ball draw starts
@@ -47,7 +47,7 @@ const getPhysicsMachineSize = () => {
   return { width: size, height: size }
 }
 
-export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], onBuyTicketsClick, onShowDashboard, onDrawStart, onDrawEnd }: RoundTimerProps) {
+export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], totalTickets, burnedAmount, megaBank, isLoadingBurned, onBuyTicketsClick, onShowDashboard, onDrawStart, onDrawEnd }: RoundTimerProps) {
   // Convert BigInt to number once to avoid recreating dependencies
   const endTimeNum = Number(endTime)
   const fallbackNum = Number(fallbackRemaining)
@@ -392,60 +392,66 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
         )}
       </div>
 
+      {/* Round Stats Cards - Below Your Numbers */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-4">
+        <div className="flex justify-between gap-0 text-center">
+          {/* Total Tickets */}
+          {totalTickets !== undefined && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
+              <div className="text-xs text-white/60 mb-1">Total Tickets</div>
+              <div className="text-sm font-bold text-white">{Number(totalTickets).toLocaleString()}</div>
+            </div>
+          )}
+
+          {/* Burned */}
+          {burnedAmount !== undefined && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
+              <div className="text-xs text-white/60 mb-1">Burned</div>
+              <div className="text-sm font-bold text-white">
+                {isLoadingBurned ? (
+                  <span className="text-white/50">...</span>
+                ) : (() => {
+                  const burnedNum = parseFloat(formatEther(burnedAmount))
+                  return burnedNum >= 1_000_000
+                    ? (burnedNum / 1_000_000).toFixed(1) + 'M'
+                    : burnedNum >= 1_000
+                    ? (burnedNum / 1_000).toFixed(1) + 'K'
+                    : burnedNum.toFixed(0)
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Jackpot */}
+          {megaBank !== undefined && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
+              <div className="text-xs text-white/60 mb-1">Jackpot</div>
+              <div className="text-sm font-bold text-white">
+                {(() => {
+                  const megaNum = parseFloat(formatEther(megaBank))
+                  return megaNum >= 1_000_000
+                    ? (megaNum / 1_000_000).toFixed(1) + 'M'
+                    : megaNum >= 1_000
+                    ? (megaNum / 1_000).toFixed(1) + 'K'
+                    : megaNum.toFixed(0)
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Round */}
+          {roundId !== undefined && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
+              <div className="text-xs text-white/60 mb-1">Next Round</div>
+              <div className="text-sm font-bold text-white">#{Number(roundId)}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Action Buttons - Below Your Numbers */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3 z-10">
-        {/* Round History Button */}
-        <Button
-          variant="outline"
-          onClick={onShowDashboard}
-          className="text-white bg-slate-900 border-white/10 hover:bg-blue-500/60 w-10 h-10 p-0"
-          title="Round History"
-        >
-          <History className="w-5 h-5" />
-        </Button>
-
-        {/* Claim winnings button */}
-        <div>
-          <MultiClaimModal />
-        </div>
-
-        {/* Dashboard button */}
-        {onShowDashboard && (
-          <Button
-            variant="outline"
-            onClick={onShowDashboard}
-            className="text-white bg-slate-900 border-yellow-500/50 hover:bg-yellow-500/60 w-10 h-10 p-0"
-            title="Dashboard"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </Button>
-        )}
-
-        {/* Your tickets button */}
-        <div>
-          <PlayerTicketsModal roundId={roundId} playerTickets={playerTickets} />
-        </div>
-
-        {/* Payouts button (conditional) */}
-        {totalPssh !== undefined && (
-          <div>
-            <PayoutBreakdownDialog totalPssh={totalPssh} />
-          </div>
-        )}
-
-        {/* Tickets Button - Moved to last position */}
-        {onBuyTicketsClick && (
-          <Button
-            variant="outline"
-            className="text-white bg-green-500/50 hover:bg-green-600/60 border-white/10 px-4 py-2 h-10 min-w-[80px] font-bold"
-            title="Buy lottery tickets"
-            onClick={onBuyTicketsClick}
-          >
-            BUY
-          </Button>
-        )}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+        {/* No buttons - removed BUY button */}
       </div>
     </Card>
 

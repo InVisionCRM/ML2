@@ -767,63 +767,6 @@ export default function Home() {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-7xl">
 
         {/* Round Stats Header */}
-        <div className="flex justify-center mb-4">
-          <div className="w-full max-w-3xl">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              {/* Total Tickets */}
-              {totalTickets !== undefined && (
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
-                  <div className="text-xs sm:text-sm text-white/60 mb-1">Total Tickets</div>
-                  <div className="text-lg sm:text-xl font-bold text-white">{Number(totalTickets).toLocaleString()}</div>
-                </div>
-              )}
-
-              {/* Burned */}
-              {burnedAmount !== undefined && (
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
-                  <div className="text-xs sm:text-sm text-white/60 mb-1">Burned</div>
-                  <div className="text-lg sm:text-xl font-bold text-white">
-                    {isLoadingBurned ? (
-                      <span className="text-white/50">...</span>
-                    ) : (() => {
-                      const burnedNum = parseFloat(formatEther(burnedAmount))
-                      return burnedNum >= 1_000_000
-                        ? (burnedNum / 1_000_000).toFixed(1) + 'M'
-                        : burnedNum >= 1_000
-                        ? (burnedNum / 1_000).toFixed(1) + 'K'
-                        : burnedNum.toFixed(0)
-                    })()}
-                  </div>
-                </div>
-              )}
-
-              {/* Jackpot */}
-              {megaBank !== undefined && (
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
-                  <div className="text-xs sm:text-sm text-white/60 mb-1">Jackpot</div>
-                  <div className="text-lg sm:text-xl font-bold text-white">
-                    {(() => {
-                      const megaNum = parseFloat(formatEther(megaBank))
-                      return megaNum >= 1_000_000
-                        ? (megaNum / 1_000_000).toFixed(1) + 'M'
-                        : megaNum >= 1_000
-                        ? (megaNum / 1_000).toFixed(1) + 'K'
-                        : megaNum.toFixed(0)
-                    })()}
-                  </div>
-                </div>
-              )}
-
-              {/* Round */}
-              {roundId !== undefined && (
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
-                  <div className="text-xs sm:text-sm text-white/60 mb-1">Next Round</div>
-                  <div className="text-lg sm:text-xl font-bold text-white">#{Number(roundId)}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Round Timer - Centered at Top */}
         <div className="flex justify-center mb-24 sm:mb-28 md:mb-32">
@@ -839,6 +782,10 @@ export default function Home() {
                 houseTicketNumbers={houseTicketNumbers}
                 winningNumbers={winningNumbers}
                 playerTickets={Array.isArray(playerTicketsWithTx) ? playerTicketsWithTx : []}
+                totalTickets={totalTickets}
+                burnedAmount={burnedAmount}
+                megaBank={megaBank}
+                isLoadingBurned={isLoadingBurned}
                 onBuyTicketsClick={() => setShowTicketAccordion(!showTicketAccordion)}
                 onShowDashboard={() => setShowBentoGridModal(true)}
                 onDrawStart={() => setIsDrawing(true)}
@@ -911,7 +858,7 @@ export default function Home() {
 
         {/* Bento Grid Modal */}
         <Dialog open={showBentoGridModal} onOpenChange={setShowBentoGridModal}>
-          <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-black p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-6xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
               <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-xl">
                 Lottery Dashboard

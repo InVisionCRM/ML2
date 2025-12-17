@@ -25,7 +25,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY
 // Latest deployment: 0x25056D6159F6C7a7812d1B65aca2Ca14E3E0F4c3 (Block 25278796)
 // Get from: lib/contracts.ts or your deployment logs
 const LOTTERY_ADDRESS =
-  process.env.LOTTERY_ADDRESS || '0x25056D6159F6C7a7812d1B65aca2Ca14E3E0F4c3'
+  process.env.LOTTERY_ADDRESS || '0xD66b4489fbfF99A8d62f969203899840F2ec69c5'
 
 const GAS_LIMIT = parseInt(process.env.KEEPER_GAS_LIMIT || '2000000', 10)
 

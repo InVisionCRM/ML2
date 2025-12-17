@@ -32,7 +32,7 @@ export function HowToPlayModal() {
       {/* Prize Brackets - The Exciting Part! */}
       <div className="space-y-3">
         <h3 className="text-2xl font-bold text-center bg-gradient-to-r from-yellow-400 to-amber-400 bg-clip-text text-transparent">
-          🏆 Win with Every Match! 🏆
+          🏆 Winners Payouts! 🏆
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {/* 6 Matches - JACKPOT */}
@@ -40,7 +40,7 @@ export function HowToPlayModal() {
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-xl animate-pulse"></div>
             <div className="relative z-10 text-center">
               <div className="text-5xl font-bold text-yellow-300 mb-2">6 MATCHES</div>
-              <div className="text-xl text-yellow-200 font-semibold">🎊 15,000 MORBIUS! 🎊</div>
+              <div className="text-xl text-yellow-200 font-semibold">15,000 MORBIUS! 🎊</div>
               <div className="text-sm text-yellow-100/80 mt-2">+ MegaMorbius Bonus</div>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-2 border-purple-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-300">5 Matches</div>
-              <div className="text-lg text-purple-200 mt-1">💎 5,000 Morbius!</div>
+              <div className="text-lg text-purple-200 mt-1">5,000 Morbius!</div>
               <div className="text-xs text-white/60 mt-2">+ MegaMorbius Bonus</div>
             </div>
           </div>
@@ -58,7 +58,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/30 to-pink-900/20 border-2 border-pink-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-300">4 Matches</div>
-              <div className="text-lg text-pink-200 mt-1">⭐ 2,000 Morbius!</div>
+              <div className="text-lg text-pink-200 mt-1">2,000 Morbius!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -67,7 +67,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-2 border-blue-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-300">3 Matches</div>
-              <div className="text-lg text-blue-200 mt-1">🎯 750 Morbius!</div>
+              <div className="text-lg text-blue-200 mt-1">750 Morbius!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -76,7 +76,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/30 to-green-900/20 border-2 border-green-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-green-300">2 Matches</div>
-              <div className="text-lg text-green-200 mt-1">✨ 375 Morbius!</div>
+              <div className="text-lg text-green-200 mt-1">250 Morbius!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -85,7 +85,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/30 to-cyan-900/20 border-2 border-cyan-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-cyan-300">1 Match</div>
-              <div className="text-lg text-cyan-200 mt-1">🎲 125 Morbius!</div>
+              <div className="text-lg text-cyan-200 mt-1">100 Morbius!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
