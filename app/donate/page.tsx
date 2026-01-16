@@ -12,6 +12,7 @@ import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
 import { useCurrentRound, useMegaMillionsBank } from '@/hooks/use-lottery-6of55'
 import { toast } from 'sonner'
 import { Heart, Coins, Trophy, Users, Sparkles } from 'lucide-react'
+import { Footer } from '@/components/shared/footer'
 
 export default function DonatePage() {
   const { address, isConnected } = useAccount()
@@ -27,7 +28,7 @@ export default function DonatePage() {
   const { data: megaBankRaw } = useMegaMillionsBank()
 
   // Parse round data (memoized to prevent recreating BigInts)
-  // V2 Returns: [roundId, startTime, endTime, totalMorbius, totalTickets, uniquePlayers, timeRemaining, state]
+  // V2 Returns: [roundId, startTime, endTime, totalMORBIUS, totalTickets, uniquePlayers, timeRemaining, state]
   const roundData = useMemo(() => {
     if (Array.isArray(roundDataRaw) && roundDataRaw.length >= 8) {
       return roundDataRaw as unknown as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, number]
@@ -36,12 +37,12 @@ export default function DonatePage() {
   }, [roundDataRaw])
 
   const currentRoundId = roundData?.[0] ?? BigInt(0)
-  const totalPssh = roundData?.[3] ?? BigInt(0)
+  const totalMORBIUS = roundData?.[3] ?? BigInt(0)
   const totalTickets = roundData?.[4] ?? BigInt(0)
   const uniquePlayers = roundData?.[5] ?? BigInt(0)
   const megaBank = (megaBankRaw ?? BigInt(0)) as bigint
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -123,11 +124,11 @@ export default function DonatePage() {
         return
       }
 
-      // Call the donateToMegaMorbius function
+      // Call the donateToMegaMORBIUS function
       const hash = await walletClient.writeContract({
         address: LOTTERY_ADDRESS as `0x${string}`,
         abi: LOTTERY_6OF55_V2_ABI,
-        functionName: 'donateToMegaMorbius',
+        functionName: 'donateToMegaMORBIUS',
         args: [amount]
       })
 
@@ -145,7 +146,7 @@ export default function DonatePage() {
 
       if (receipt.status === 'success') {
         toast.success('Jackpot donation successful! 🎉', {
-          description: `Thank you for donating ${jackpotDonationAmount} MORBIUS to the MegaMorbius Jackpot!`,
+          description: `Thank you for donating ${jackpotDonationAmount} MORBIUS to the MegaMORBIUS Jackpot!`,
           duration: 10000,
         })
         setJackpotDonationAmount('')
@@ -176,7 +177,7 @@ export default function DonatePage() {
 
   return (
     <div className="min-h-screen text-slate-100" style={{
-      backgroundImage: "linear-gradient(rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.88)), url('/morbius/Morbiusbg.png')",
+      backgroundImage: "linear-gradient(rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.88)), url('/MORBIUS/MORBIUSbg.png')",
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed',
@@ -195,7 +196,7 @@ export default function DonatePage() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Prize Pool Donation */}
-          <Card className="p-6 bg-black/20 backdrop-blur-lg border-white/10">
+          <Card className="p-6 bg-gradient-to-br from-slate-950 to-slate-900/20 backdrop-blur-lg border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <Heart className="w-6 h-6 text-red-400" />
               <h2 className="text-xl font-bold text-white">Prize Pool</h2>
@@ -261,13 +262,13 @@ export default function DonatePage() {
           <Card className="p-6 bg-gradient-to-br from-purple-950/30 to-pink-950/30 backdrop-blur-lg border-purple-400/20">
             <div className="flex items-center gap-3 mb-4">
               <Sparkles className="w-6 h-6 text-yellow-400" />
-              <h2 className="text-xl font-bold text-white">MegaMorbius Jackpot</h2>
+              <h2 className="text-xl font-bold text-white">MegaMORBIUS Jackpot</h2>
             </div>
             <p className="text-white/70 text-sm mb-2">
               Donate to the progressive jackpot
             </p>
             <p className="text-yellow-400 font-bold text-lg mb-6">
-              {formatPssh(megaBank)} MORBIUS
+              {formatMORBIUS(megaBank)} MORBIUS
             </p>
 
             {!isConnected ? (
@@ -324,7 +325,7 @@ export default function DonatePage() {
           </Card>
 
           {/* Current Round Info */}
-          <Card className="p-6 bg-black/20 backdrop-blur-lg border-white/10">
+          <Card className="p-6 bg-gradient-to-br from-slate-950 to-slate-900/20 backdrop-blur-lg border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <Trophy className="w-6 h-6 text-yellow-400" />
               <h2 className="text-xl font-bold text-white">Current Round</h2>
@@ -343,7 +344,7 @@ export default function DonatePage() {
                 </div>
                 <div className="bg-white/5 p-3 rounded-lg border border-white/10">
                   <div className="text-white/60 text-xs mb-1">Prize Pool</div>
-                  <div className="text-lg font-bold text-white">{formatPssh(totalPssh)}</div>
+                  <div className="text-lg font-bold text-white">{formatMORBIUS(totalMORBIUS)}</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white/5 p-3 rounded-lg border border-white/10">
@@ -365,7 +366,7 @@ export default function DonatePage() {
         </div>
 
         {/* Info Section */}
-        <Card className="p-8 bg-black/20 backdrop-blur-lg border-white/10 mt-8">
+        <Card className="p-8 bg-gradient-to-br from-slate-950 to-slate-900/20 backdrop-blur-lg border-white/10 mt-8">
           <div className="bg-blue-950/20 p-4 rounded-lg border border-blue-400/20">
             <div className="flex items-center gap-2 mb-2">
               <Coins className="w-5 h-5 text-blue-400" />
@@ -373,14 +374,14 @@ export default function DonatePage() {
             </div>
             <div className="space-y-2 text-white/70 text-sm">
               <p><strong className="text-white">Prize Pool:</strong> Goes directly to Round #{currentRoundId.toString()} - winners in this round get bigger prizes!</p>
-              <p><strong className="text-white">Jackpot:</strong> Grows the MegaMorbius progressive jackpot - future 6-match winners get the full amount!</p>
+              <p><strong className="text-white">Jackpot:</strong> Grows the MegaMORBIUS progressive jackpot - future 6-match winners get the full amount!</p>
               <p className="text-green-400">100% of donations go to prizes. No fees!</p>
             </div>
           </div>
         </Card>
 
         {/* Benefits Section */}
-        <Card className="p-8 bg-black/20 backdrop-blur-lg border-white/10 mt-8">
+        <Card className="p-8 bg-gradient-to-br from-slate-950 to-slate-900/20 backdrop-blur-lg border-white/10 mt-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Why Donate?</h2>
             <p className="text-white/70">Your contribution directly enhances the lottery experience for everyone</p>
@@ -419,13 +420,10 @@ export default function DonatePage() {
           </div>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center py-8 border-t border-white/10 mt-8">
-          <p className="text-white/60 text-sm">
-            Donations are processed instantly and recorded on the PulseChain blockchain for complete transparency.
-          </p>
-        </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }

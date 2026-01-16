@@ -14,7 +14,7 @@ The "My Tickets (on-chain)" section had a catastrophic bug where it **could not 
 ### 1. **Incorrect Data Extraction from Wagmi Response**
 **Problem:** The code used `(td as any).firstRoundId` assuming `td` was the ticket data, but Wagmi's `useReadContracts` returns objects with a `result` property containing the actual data.
 
-**Location:** `/morbius_lotto/app/keno/page.tsx:365-389`
+**Location:** `/MORBIUS_lotto/app/keno/page.tsx:365-389`
 
 **Before:**
 ```typescript
@@ -176,7 +176,7 @@ This helps diagnose any future parsing issues without user-reported bugs.
 
 ## Files Modified
 
-1. **`/morbius_lotto/app/keno/page.tsx`**
+1. **`/MORBIUS_lotto/app/keno/page.tsx`**
    - Lines 322-455: Fixed data fetching and parsing
    - Lines 1129-1230: Completely redesigned ticket display UI
 

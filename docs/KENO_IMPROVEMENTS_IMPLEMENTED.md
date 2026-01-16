@@ -471,7 +471,7 @@ contract.on('AutoClaimProcessed', (roundId, ticketId, player, prize) => {
 ## 📞 SUPPORT
 
 ### Questions?
-- Review the contract at: `morbius_lotto/contracts/contracts/CryptoKeno.sol`
+- Review the contract at: `MORBIUS_lotto/contracts/contracts/CryptoKeno.sol`
 - Check event definitions for frontend integration
 - Test on testnet before mainnet deployment
 

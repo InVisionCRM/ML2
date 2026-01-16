@@ -5,7 +5,7 @@
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  HEADER                                                    │
-│  [Morbius]  [Lottery]  [Keno]  [Contracts]  [Connect]    │
+│  [MORBIUS]  [Lottery]  [Keno]  [Contracts]  [Connect]    │
 └────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────┐
@@ -35,11 +35,11 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Buy Tickets (Morbius)  [?]                        │
+│  Buy Tickets (MORBIUS)  [?]                        │
 │  Purchase lottery tickets for the current round     │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  Approval Amount (Morbius)                         │
+│  Approval Amount (MORBIUS)                         │
 │  ┌──────────────────┐  ┌─────────┐                │
 │  │ 1000000          │  │ Approve │                 │
 │  └──────────────────┘  └─────────┘                 │
@@ -65,7 +65,7 @@
 
 ┌─────────────────────────────────────────────────────┐
 │  Buy Tickets with WPLS  [?]                        │
-│  Buy tickets with WPLS - auto-swaps to Morbius     │
+│  Buy tickets with WPLS - auto-swaps to MORBIUS     │
 ├─────────────────────────────────────────────────────┤
 │  [WPLS approval + tickets + extra buffer]          │
 └─────────────────────────────────────────────────────┘
@@ -106,7 +106,7 @@
 │  │ 86400            │  │ Update  │                 │
 │  └──────────────────┘  └─────────┘                 │
 │                                                     │
-│  MegaMorbius Interval (rounds)                     │
+│  MegaMORBIUS Interval (rounds)                     │
 │  ┌──────────────────┐  ┌─────────┐                │
 │  │ 5                │  │ Update  │                 │
 │  └──────────────────┘  └─────────┘                 │
@@ -127,13 +127,13 @@
 │  Round ID        │  State                          │
 │  5               │  OPEN                           │
 │                  │                                 │
-│  Total Morbius   │  Total Tickets                 │
+│  Total MORBIUS   │  Total Tickets                 │
 │  100,000         │  100                           │
 │                  │                                 │
 │  Unique Players  │  Time Remaining                │
 │  42              │  1234m                          │
 │                  │                                 │
-│  MegaMorbius Round                                 │
+│  MegaMORBIUS Round                                 │
 │  YES 🎰                                            │
 └─────────────────────────────────────────────────────┘
 
@@ -156,8 +156,8 @@
 │  Total Claimed         │  Outstanding Prizes       │
 │  625,000               │  100,000                  │
 │                        │                           │
-│  MegaMorbius Bank                                  │
-│  250,000 Morbius                                   │
+│  MegaMORBIUS Bank                                  │
+│  250,000 MORBIUS                                   │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
@@ -171,7 +171,7 @@
 │  Bracket 4  │  Bracket 5  │  Bracket 6           │
 │  15.0%      │  20.0%      │  45.0%               │
 │                                                     │
-│  Winners Pool  │  Burn      │  MegaMorbius        │
+│  Winners Pool  │  Burn      │  MegaMORBIUS        │
 │  60%           │  20%       │  20%                │
 └─────────────────────────────────────────────────────┘
 ```
@@ -183,7 +183,7 @@
 │  Buy Keno Ticket  [?]                              │
 │  Pick your numbers and add-ons for multi-draw      │
 ├─────────────────────────────────────────────────────┤
-│  Approval Amount (Morbius)                         │
+│  Approval Amount (MORBIUS)                         │
 │  ┌──────────────────┐  ┌─────────┐                │
 │  │ 10               │  │ Approve │                 │
 │  └──────────────────┘  └─────────┘                 │
@@ -204,7 +204,7 @@
 │  │ 10               │ │ │ 1                │      │
 │  └──────────────────┘ │ └──────────────────┘      │
 │                                                     │
-│  Wager Per Draw (Morbius)                         │
+│  Wager Per Draw (MORBIUS)                         │
 │  ┌──────────────────────────────────────┐          │
 │  │ 0.001                                │          │
 │  └──────────────────────────────────────┘          │
@@ -260,7 +260,7 @@
 │  Progressive Jackpot Stats  [?]        [Refresh]   │
 ├─────────────────────────────────────────────────────┤
 │  Current Jackpot Pool                              │
-│  150,000 Morbius                                   │
+│  150,000 MORBIUS                                   │
 │                                                     │
 │  Base Seed       │  Cost Per Draw                  │
 │  100,000         │  0.001                          │
@@ -277,20 +277,20 @@
 
 ```
 ┌────────────────────────────────────────────┐
-│  Buy Tickets (Morbius)  [?] ←─────┐       │
+│  Buy Tickets (MORBIUS)  [?] ←─────┐       │
 └────────────────────────────────────│───────┘
                                      │
      ┌───────────────────────────────┘
      │
      ▼
 ┌────────────────────────────────────────────┐
-│  Purchase lottery tickets with Morbius     │
+│  Purchase lottery tickets with MORBIUS     │
 │  tokens                                    │
 │                                            │
 │  Example:                                  │
 │  [[1,2,3,4,5,6], [7,8,9,10,11,12]]        │
 │                                            │
-│  Each ticket costs 1,000 Morbius. You     │
+│  Each ticket costs 1,000 MORBIUS. You     │
 │  must approve the contract first. Pick 6   │
 │  unique numbers between 1-55 per ticket.   │
 └────────────────────────────────────────────┘
@@ -384,7 +384,7 @@ Home Page (/)
 2. Navigate to /contracts
 3. Stay on "Lottery 6-of-55" tab
 4. Click "User Actions"
-5. Approve Morbius tokens
+5. Approve MORBIUS tokens
 6. Enter ticket numbers
 7. Click "Buy Tickets"
 8. Confirm in wallet

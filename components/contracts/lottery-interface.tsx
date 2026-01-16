@@ -25,7 +25,7 @@ export function LotteryContractInterface({ address }: LotteryContractInterfacePr
 
   return (
     <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10">
+      <TabsList className="grid w-full grid-cols-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10">
         <TabsTrigger value="user-actions" className="data-[state=active]:bg-purple-600">
           User Actions
         </TabsTrigger>
@@ -117,22 +117,22 @@ function BuyTicketsSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Buy Tickets (Morbius)
+          Buy Tickets (MORBIUS)
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
                 <HelpCircle className="h-4 w-4 text-white/50" />
               </TooltipTrigger>
               <TooltipContent className="max-w-sm">
-                <p className="font-semibold mb-2">Purchase lottery tickets with Morbius tokens</p>
+                <p className="font-semibold mb-2">Purchase lottery tickets with MORBIUS tokens</p>
                 <p className="text-sm mb-2">
                   <strong>Example:</strong> [[1,2,3,4,5,6], [7,8,9,10,11,12]]
                 </p>
                 <p className="text-xs text-white/70">
-                  Each ticket costs 1,000 Morbius. You must approve the contract first.
+                  Each ticket costs 1,000 MORBIUS. You must approve the contract first.
                   Pick 6 unique numbers between 1-55 per ticket.
                 </p>
               </TooltipContent>
@@ -145,14 +145,14 @@ function BuyTicketsSection({ address }: { address?: `0x${string}` }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="approve-amount">Approval Amount (Morbius)</Label>
+          <Label htmlFor="approve-amount">Approval Amount (MORBIUS)</Label>
           <div className="flex gap-2 mt-2">
             <Input
               id="approve-amount"
               value={approvalAmount}
               onChange={(e) => setApprovalAmount(e.target.value)}
               placeholder="1000000"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleApprove}
@@ -187,7 +187,7 @@ function BuyTicketsSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setTickets(e.target.value)}
             placeholder="[[1,2,3,4,5,6], [7,8,9,10,11,12]]"
             rows={4}
-            className="w-full mt-2 p-3 bg-black/40 border border-white/10 rounded-md text-white font-mono text-sm"
+            className="w-full mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-md text-white font-mono text-sm"
           />
           <p className="text-xs text-white/50 mt-1">
             Format: Array of arrays. Each inner array = 6 numbers (1-55). Max 100 tickets per transaction.
@@ -262,7 +262,7 @@ function BuyTicketsMultiRoundSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Buy Tickets for Multiple Rounds
@@ -280,7 +280,7 @@ function BuyTicketsMultiRoundSection({ address }: { address?: `0x${string}` }) {
                 </p>
                 <p className="text-xs text-white/70">
                   Offset 0 = current round, 1 = next round, etc. Max offset = 100.
-                  Total cost = (tickets × rounds × 1000 Morbius)
+                  Total cost = (tickets × rounds × 1000 MORBIUS)
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -299,7 +299,7 @@ function BuyTicketsMultiRoundSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setTicketGroups(e.target.value)}
             placeholder="[[[1,2,3,4,5,6]], [[7,8,9,10,11,12]]]"
             rows={4}
-            className="w-full mt-2 p-3 bg-black/40 border border-white/10 rounded-md text-white font-mono text-sm"
+            className="w-full mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-md text-white font-mono text-sm"
           />
         </div>
 
@@ -310,7 +310,7 @@ function BuyTicketsMultiRoundSection({ address }: { address?: `0x${string}` }) {
             value={roundOffsets}
             onChange={(e) => setRoundOffsets(e.target.value)}
             placeholder="[0, 1, 2]"
-            className="bg-black/40 border-white/10 font-mono"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10 font-mono"
           />
           <p className="text-xs text-white/50 mt-1">
             0 = current round, 1 = next round, 2 = round after next, etc.
@@ -409,7 +409,7 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Buy Tickets with WPLS
@@ -419,12 +419,12 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
                 <HelpCircle className="h-4 w-4 text-white/50" />
               </TooltipTrigger>
               <TooltipContent className="max-w-sm">
-                <p className="font-semibold mb-2">Purchase tickets using WPLS (auto-swaps to Morbius)</p>
+                <p className="font-semibold mb-2">Purchase tickets using WPLS (auto-swaps to MORBIUS)</p>
                 <p className="text-sm mb-2">
                   <strong>Example:</strong> [[1,2,3,4,5,6]]
                 </p>
                 <p className="text-xs text-white/70">
-                  Contract automatically swaps WPLS to Morbius via PulseX.
+                  Contract automatically swaps WPLS to MORBIUS via PulseX.
                   Default buffer: 11.1% (covers 5.5% tax + 5% slippage).
                   You can add extra buffer if needed (in basis points, 100 = 1%).
                 </p>
@@ -433,7 +433,7 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
           </TooltipProvider>
         </CardTitle>
         <CardDescription className="text-white/60">
-          Buy tickets with WPLS - automatically swaps to Morbius
+          Buy tickets with WPLS - automatically swaps to MORBIUS
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -445,7 +445,7 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
               value={approvalAmount}
               onChange={(e) => setApprovalAmount(e.target.value)}
               placeholder="1"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleApprove}
@@ -480,7 +480,7 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setTickets(e.target.value)}
             placeholder="[[1,2,3,4,5,6]]"
             rows={3}
-            className="w-full mt-2 p-3 bg-black/40 border border-white/10 rounded-md text-white font-mono text-sm"
+            className="w-full mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-md text-white font-mono text-sm"
           />
         </div>
 
@@ -492,7 +492,7 @@ function BuyWithWPLSSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setExtraBuffer(e.target.value)}
             placeholder="0"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
           <p className="text-xs text-white/50 mt-1">
             Optional extra buffer added on top of default 11.1%. 100 = 1%, 1000 = 10%.
@@ -554,7 +554,7 @@ function ClaimWinningsSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Claim Winnings
@@ -589,7 +589,7 @@ function ClaimWinningsSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setRoundId(e.target.value)}
             placeholder="5"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -642,7 +642,7 @@ function FinalizeRoundSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Finalize Round
@@ -765,7 +765,7 @@ function UpdateSettingsSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Update Settings (Owner Only)
@@ -778,7 +778,7 @@ function UpdateSettingsSection({ address }: { address?: `0x${string}` }) {
                 <p className="font-semibold mb-2">Admin functions - only contract owner can execute</p>
                 <p className="text-xs text-white/70">
                   Round Duration: Time in seconds between draws<br />
-                  MegaMorbius Interval: Every Nth round triggers MegaMorbius<br />
+                  MegaMORBIUS Interval: Every Nth round triggers MegaMORBIUS<br />
                   Block Delay: Blocks to wait before using randomness
                 </p>
               </TooltipContent>
@@ -798,7 +798,7 @@ function UpdateSettingsSection({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setRoundDuration(e.target.value)}
               placeholder="86400"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleUpdateDuration}
@@ -811,14 +811,14 @@ function UpdateSettingsSection({ address }: { address?: `0x${string}` }) {
         </div>
 
         <div className="space-y-3">
-          <Label>MegaMorbius Interval (rounds)</Label>
+          <Label>MegaMORBIUS Interval (rounds)</Label>
           <div className="flex gap-2">
             <Input
               value={megaInterval}
               onChange={(e) => setMegaInterval(e.target.value)}
               placeholder="5"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleUpdateMega}
@@ -838,7 +838,7 @@ function UpdateSettingsSection({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setBlockDelay(e.target.value)}
               placeholder="0"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleUpdateBlockDelay}
@@ -875,7 +875,7 @@ function CurrentRoundStats() {
   const stats = data as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Current Round Information
@@ -888,7 +888,7 @@ function CurrentRoundStats() {
                 <p className="font-semibold mb-2">Real-time stats for the active round</p>
                 <p className="text-xs text-white/70">
                   Shows round ID, timestamps, pool size, ticket count, unique players,
-                  time remaining, and whether it's a MegaMorbius round.
+                  time remaining, and whether it's a MegaMORBIUS round.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -921,7 +921,7 @@ function CurrentRoundStats() {
               </p>
             </div>
             <div>
-              <p className="text-xs text-white/50">Total Morbius</p>
+              <p className="text-xs text-white/50">Total MORBIUS</p>
               <p className="text-xl font-bold">{formatUnits(stats[3] || BigInt(0), TOKEN_DECIMALS)}</p>
             </div>
             <div>
@@ -939,7 +939,7 @@ function CurrentRoundStats() {
               </p>
             </div>
             <div className="col-span-2">
-              <p className="text-xs text-white/50">MegaMorbius Round</p>
+              <p className="text-xs text-white/50">MegaMORBIUS Round</p>
               <p className="text-xl font-bold">{stats[7] ? 'YES 🎰' : 'No'}</p>
             </div>
           </div>
@@ -962,7 +962,7 @@ function PlayerStats({ address }: { address?: `0x${string}` }) {
   const stats = data as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Your Lifetime Statistics
@@ -974,7 +974,7 @@ function PlayerStats({ address }: { address?: `0x${string}` }) {
               <TooltipContent className="max-w-sm">
                 <p className="font-semibold mb-2">Your personal stats across all rounds</p>
                 <p className="text-xs text-white/70">
-                  Tracks total tickets bought, Morbius spent, winnings claimed,
+                  Tracks total tickets bought, MORBIUS spent, winnings claimed,
                   and pending claimable prizes.
                 </p>
               </TooltipContent>
@@ -1034,19 +1034,19 @@ function GlobalStats() {
   const { data: totalCollected, isLoading: loadingCollected, refetch: refetchCollected } = useReadContract({
     address: LOTTERY_ADDRESS as `0x${string}`,
     abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'getTotalMorbiusEverCollected',
+    functionName: 'getTotalMORBIUSEverCollected',
   })
 
   const { data: totalClaimed, isLoading: loadingClaimed, refetch: refetchClaimed } = useReadContract({
     address: LOTTERY_ADDRESS as `0x${string}`,
     abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'getTotalMorbiusEverClaimed',
+    functionName: 'getTotalMORBIUSEverClaimed',
   })
 
   const { data: totalClaimable, isLoading: loadingClaimable, refetch: refetchClaimable } = useReadContract({
     address: LOTTERY_ADDRESS as `0x${string}`,
     abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'getTotalMorbiusClaimableAll',
+    functionName: 'getTotalMORBIUSClaimableAll',
   })
 
   const { data: megaBank, isLoading: loadingMega, refetch: refetchMega } = useReadContract({
@@ -1066,7 +1066,7 @@ function GlobalStats() {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Global Statistics
@@ -1078,8 +1078,8 @@ function GlobalStats() {
               <TooltipContent className="max-w-sm">
                 <p className="font-semibold mb-2">Lifetime stats for the entire lottery contract</p>
                 <p className="text-xs text-white/70">
-                  Total tickets sold, Morbius collected, prizes claimed,
-                  outstanding prizes, and MegaMorbius bank balance.
+                  Total tickets sold, MORBIUS collected, prizes claimed,
+                  outstanding prizes, and MegaMORBIUS bank balance.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -1120,9 +1120,9 @@ function GlobalStats() {
               </p>
             </div>
             <div className="col-span-2">
-              <p className="text-xs text-white/50">MegaMorbius Bank</p>
+              <p className="text-xs text-white/50">MegaMORBIUS Bank</p>
               <p className="text-2xl font-bold text-purple-500">
-                {formatUnits((megaBank as bigint) || BigInt(0), TOKEN_DECIMALS)} Morbius
+                {formatUnits((megaBank as bigint) || BigInt(0), TOKEN_DECIMALS)} MORBIUS
               </p>
             </div>
           </div>
@@ -1142,7 +1142,7 @@ function BracketConfig() {
   const config = data as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Prize Distribution Configuration
@@ -1155,7 +1155,7 @@ function BracketConfig() {
                 <p className="font-semibold mb-2">How prizes are distributed</p>
                 <p className="text-xs text-white/70">
                   Shows the percentage allocation for each bracket (1-6 matches),
-                  winners pool, burn amount, and MegaMorbius contribution.
+                  winners pool, burn amount, and MegaMORBIUS contribution.
                   All percentages in basis points (100 = 1%).
                 </p>
               </TooltipContent>
@@ -1182,7 +1182,7 @@ function BracketConfig() {
               <h4 className="font-semibold mb-3">Bracket Percentages (of 60% Winners Pool)</h4>
               <div className="grid grid-cols-3 gap-3">
                 {(config[0] as bigint[])?.map((percent: bigint, idx: number) => (
-                  <div key={idx} className="p-3 bg-black/40 border border-white/10 rounded-lg">
+                  <div key={idx} className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
                     <p className="text-xs text-white/50">Bracket {idx + 1}</p>
                     <p className="text-lg font-bold">{(Number(percent) / 100).toFixed(1)}%</p>
                   </div>
@@ -1191,16 +1191,16 @@ function BracketConfig() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
                 <p className="text-xs text-white/50">Winners Pool</p>
                 <p className="text-lg font-bold">{(Number(config[1]) / 100).toFixed(0)}%</p>
               </div>
-              <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
                 <p className="text-xs text-white/50">Burn</p>
                 <p className="text-lg font-bold">{(Number(config[2]) / 100).toFixed(0)}%</p>
               </div>
-              <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
-                <p className="text-xs text-white/50">MegaMorbius</p>
+              <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
+                <p className="text-xs text-white/50">MegaMORBIUS</p>
                 <p className="text-lg font-bold">{(Number(config[3]) / 100).toFixed(0)}%</p>
               </div>
             </div>

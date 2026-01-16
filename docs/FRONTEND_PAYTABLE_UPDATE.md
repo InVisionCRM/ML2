@@ -9,7 +9,7 @@
 
 Updated frontend Keno page paytable constants to match the real Club Keno values implemented in the smart contract.
 
-**File Modified:** `morbius_lotto/app/keno/page.tsx`
+**File Modified:** `MORBIUS_lotto/app/keno/page.tsx`
 **Lines Changed:** 22-46 (PAYTABLE and BULLSEYE_PAYTABLE constants)
 
 ---

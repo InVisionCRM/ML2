@@ -68,9 +68,9 @@ export function KenoStatsDisplay() {
               <p className="text-sm text-purple-200">Total Wagered</p>
             </div>
             <p className="text-3xl font-bold text-white">
-              {totalWageredEth.toFixed(4)}
+              {totalWageredEth.toFixed(0)}
             </p>
-            <p className="text-xs text-purple-300 mt-1">WPLS</p>
+            <p className="text-xs text-purple-300 mt-1">Morbius</p>
           </div>
         </Card>
 
@@ -85,9 +85,9 @@ export function KenoStatsDisplay() {
               <p className="text-sm text-emerald-200">Claimed</p>
             </div>
             <p className="text-3xl font-bold text-white">
-              {totalWonEth.toFixed(4)}
+              {totalWonEth.toFixed(0)}
             </p>
-            <p className="text-xs text-emerald-300 mt-1">WPLS</p>
+            <p className="text-xs text-emerald-300 mt-1">Morbius</p>
           </div>
         </Card>
 
@@ -125,7 +125,7 @@ export function KenoStatsDisplay() {
             </div>
             <p className="text-3xl font-bold text-white">
               {playerStats.isProfit ? '+' : ''}
-              {playerStats.netProfitLoss.toFixed(4)}
+              {playerStats.netProfitLoss.toFixed(0)}
             </p>
             <p
               className={cn(
@@ -133,7 +133,7 @@ export function KenoStatsDisplay() {
                 playerStats.isProfit ? 'text-green-300' : 'text-red-300'
               )}
             >
-              WPLS
+              Morbius
             </p>
           </div>
         </Card>
@@ -149,9 +149,9 @@ export function KenoStatsDisplay() {
               <p className="text-sm text-blue-200">Unclaimed</p>
             </div>
             <p className="text-3xl font-bold text-white">
-              {unclaimedEth.toFixed(4)}
+              {unclaimedEth.toFixed(0)}
             </p>
-            <p className="text-xs text-blue-200 mt-1">WPLS</p>
+            <p className="text-xs text-blue-200 mt-1">Morbius</p>
           </div>
         </Card>
       </div>

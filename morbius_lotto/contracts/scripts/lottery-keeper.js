@@ -69,11 +69,11 @@ async function main() {
     'function allowance(address owner, address spender) view returns (uint256)',
     'function approve(address spender, uint256 amount) returns (bool)'
   ]
-  const morbiusToken = new ethers.Contract(MORBIUS_TOKEN_ADDRESS, ERC20_ABI, provider)
+  const MORBIUSToken = new ethers.Contract(MORBIUS_TOKEN_ADDRESS, ERC20_ABI, provider)
 
   // Get initial balances
   try {
-    const morbiusBalance = await morbiusToken.balanceOf(wallet.address)
+    const MORBIUSBalance = await MORBIUSToken.balanceOf(wallet.address)
     const plsBalance = await provider.getBalance(wallet.address)
     console.log('🤖 Lottery Keeper Started')
     console.log('━'.repeat(50))
@@ -82,7 +82,7 @@ async function main() {
     console.log(`RPC: ${RPC_URL}`)
     console.log('💰 Initial Balances:')
     console.log(`   PLS: ${ethers.formatEther(plsBalance)} PLS`)
-    console.log(`   Morbius: ${ethers.formatUnits(morbiusBalance, 18)} MORBIUS`)
+    console.log(`   MORBIUS: ${ethers.formatUnits(MORBIUSBalance, 18)} MORBIUS`)
     console.log('━'.repeat(50) + '\n')
   } catch (err) {
     console.error('⚠️  Could not fetch initial balances:', err.message, '\n')
@@ -105,8 +105,8 @@ async function main() {
       console.log('═'.repeat(50))
 
       // Check keeper balance
-      const keeperBalance = await morbiusToken.balanceOf(wallet.address)
-      const ticketPrice = await lottery.ticketPriceMorbius()
+      const keeperBalance = await MORBIUSToken.balanceOf(wallet.address)
+      const ticketPrice = await lottery.ticketPriceMORBIUS()
 
       console.log(`💰 Keeper Balance: ${ethers.formatUnits(keeperBalance, 18)} MORBIUS`)
       console.log(`🎫 Ticket Price: ${ethers.formatUnits(ticketPrice, 18)} MORBIUS`)
@@ -114,13 +114,13 @@ async function main() {
       if (keeperBalance >= ticketPrice) {
         console.log(`🛡️ Purchasing keeper ticket...`)
 
-        // Check if lottery contract is approved to spend keeper's Morbius
-        const currentAllowance = await morbiusToken.allowance(wallet.address, LOTTERY_ADDRESS)
+        // Check if lottery contract is approved to spend keeper's MORBIUS
+        const currentAllowance = await MORBIUSToken.allowance(wallet.address, LOTTERY_ADDRESS)
         console.log(`🔓 Current Allowance: ${ethers.formatUnits(currentAllowance, 18)} MORBIUS`)
 
         if (currentAllowance < ticketPrice) {
-          console.log(`📝 Approving lottery contract to spend Morbius...`)
-          const approveTx = await morbiusToken.connect(wallet).approve(LOTTERY_ADDRESS, ethers.MaxUint256)
+          console.log(`📝 Approving lottery contract to spend MORBIUS...`)
+          const approveTx = await MORBIUSToken.connect(wallet).approve(LOTTERY_ADDRESS, ethers.MaxUint256)
           console.log(`📝 Approval Transaction: ${approveTx.hash}`)
           await approveTx.wait()
           console.log(`✅ Approval confirmed`)

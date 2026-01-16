@@ -15,10 +15,10 @@ interface BracketInfo {
 interface BracketDisplayProps {
   brackets: BracketInfo[]
   isLoading?: boolean
-  hasMegaMorbiusWinners?: boolean
+  hasMegaMORBIUSWinners?: boolean
 }
 
-// Fixed prize amounts (in Morbius)
+// Fixed prize amounts (in MORBIUS)
 const FIXED_PRIZES = [
   { matches: 6, prize: 15000, odds: '1 in 28,989,675', color: 'from-yellow-500 to-amber-600' },
   { matches: 5, prize: 5000, odds: '1 in 145,716', color: 'from-purple-500 to-violet-600' },
@@ -28,7 +28,7 @@ const FIXED_PRIZES = [
   { matches: 1, prize: 100, odds: '1 in 5', color: 'from-gray-500 to-slate-600' },
 ]
 
-export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinners = false }: BracketDisplayProps) {
+export function BracketDisplay({ brackets, isLoading = false, hasMegaMORBIUSWinners = false }: BracketDisplayProps) {
 
   if (isLoading) {
     return (
@@ -43,13 +43,13 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
   }
 
   return (
-    <Card className="p-6 bg-black/40">
+    <Card className="p-6 bg-gradient-to-br from-slate-950 to-slate-900/40">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Trophy className="h-6 w-6 text-primary" />
           Fixed Prize Brackets
         </h2>
-        {hasMegaMorbiusWinners && (
+        {hasMegaMORBIUSWinners && (
           <div className="px-4 py-2 bg-gradient-to-r from-yellow-500/20 to-amber-600/20 border border-yellow-500/30 rounded-lg">
             <p className="text-sm font-bold text-yellow-500 animate-pulse">
               🎰 MEGA-MORBIUS JACKPOT WINNERS!
@@ -68,14 +68,14 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
           }
 
           const hasWinners = Number(bracketData.winnerCount) > 0
-          const isJackpotBracket = bracket.matches >= 5 // 5 and 6 matches get MegaMorbius bonuses
+          const isJackpotBracket = bracket.matches >= 5 // 5 and 6 matches get MegaMORBIUS bonuses
 
           return (
             <div
               key={bracket.matches}
               className={`
                 relative overflow-hidden rounded-lg border
-                ${hasWinners ? 'border-primary/50 bg-gradient-to-r from-primary/5 to-primary/10' : 'border-border bg-black/40'}
+                ${hasWinners ? 'border-primary/50 bg-gradient-to-r from-primary/5 to-primary/10' : 'border-border bg-gradient-to-br from-slate-950 to-slate-900/40'}
                 transition-all duration-200 hover:scale-[1.02]
               `}
             >
@@ -116,11 +116,11 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
                         <span>Fixed Prize</span>
                       </div>
                       <div className="font-bold text-lg">
-                        {bracket.prize.toLocaleString()} <span className="text-xs text-muted-foreground">Morbius</span>
+                        {bracket.prize.toLocaleString()} <span className="text-xs text-muted-foreground">MORBIUS</span>
                       </div>
                       {isJackpotBracket && (
                         <div className="text-xs text-yellow-500 font-semibold mt-1">
-                          + MegaMorbius Bonus
+                          + MegaMORBIUS Bonus
                         </div>
                       )}
                     </div>
@@ -131,7 +131,7 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
                           {Number(bracketData.winnerCount)} Winner{Number(bracketData.winnerCount) !== 1 ? 's' : ''} Paid
                         </div>
                         <div className="font-semibold text-primary">
-                          {(bracket.prize * Number(bracketData.winnerCount)).toLocaleString()} <span className="text-xs">Morbius Total</span>
+                          {(bracket.prize * Number(bracketData.winnerCount)).toLocaleString()} <span className="text-xs">MORBIUS Total</span>
                         </div>
                       </div>
                     )}
@@ -176,7 +176,7 @@ export function BracketDisplay({ brackets, isLoading = false, hasMegaMorbiusWinn
           <div className="flex items-start gap-2">
             <Coins className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold mb-1">MegaMorbius Jackpot</p>
+              <p className="font-semibold mb-1">MegaMORBIUS Jackpot</p>
               <p>5-6 matches get base prize + progressive jackpot bonus</p>
             </div>
           </div>

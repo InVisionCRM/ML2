@@ -10,7 +10,7 @@ All tasks completed successfully. The "Pulse Progressive" jackpot system is now 
 
 ### 1. Smart Contract Updates ✅
 
-**File**: `morbius_lotto/contracts/contracts/CryptoKeno.sol`
+**File**: `MORBIUS_lotto/contracts/contracts/CryptoKeno.sol`
 
 #### New State Variables
 - `progressivePool` - Current jackpot amount
@@ -42,7 +42,7 @@ All tasks completed successfully. The "Pulse Progressive" jackpot system is now 
 ### 2. UI Components ✅
 
 #### PulseProgressive.tsx (Full Display)
-**File**: `morbius_lotto/components/CryptoKeno/pulse-progressive.tsx`
+**File**: `MORBIUS_lotto/components/CryptoKeno/pulse-progressive.tsx`
 
 **Features**:
 - Animated jackpot counter with pulse effects
@@ -67,7 +67,7 @@ All tasks completed successfully. The "Pulse Progressive" jackpot system is now 
 ```
 
 #### PulseProgressiveWidget.tsx (Navbar Widget)
-**File**: `morbius_lotto/components/CryptoKeno/pulse-progressive-widget.tsx`
+**File**: `MORBIUS_lotto/components/CryptoKeno/pulse-progressive-widget.tsx`
 
 **Features**:
 - Compact display for header/navbar
@@ -86,7 +86,7 @@ All tasks completed successfully. The "Pulse Progressive" jackpot system is now 
 ```
 
 #### ProgressiveAddonToggle.tsx (Purchase Flow)
-**File**: `morbius_lotto/components/CryptoKeno/progressive-addon-toggle.tsx`
+**File**: `MORBIUS_lotto/components/CryptoKeno/progressive-addon-toggle.tsx`
 
 **Features**:
 - Toggle switch for enabling progressive
@@ -112,7 +112,7 @@ All tasks completed successfully. The "Pulse Progressive" jackpot system is now 
 
 ### 3. React Hooks ✅
 
-**File**: `morbius_lotto/hooks/usePulseProgressive.ts`
+**File**: `MORBIUS_lotto/hooks/usePulseProgressive.ts`
 
 #### usePulseProgressive()
 Fetches progressive stats from contract with auto-refresh:
@@ -145,7 +145,7 @@ const totalCost = useProgressiveCost(draws) // costPerDraw * draws
 
 ### 4. Documentation ✅
 
-**File**: `morbius_lotto/contracts/PULSE_PROGRESSIVE_README.md`
+**File**: `MORBIUS_lotto/contracts/PULSE_PROGRESSIVE_README.md`
 
 Comprehensive documentation including:
 - Overview and player instructions

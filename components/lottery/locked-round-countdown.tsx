@@ -87,7 +87,7 @@ export function LockedRoundCountdown({ roundId, drawBlock }: LockedRoundCountdow
         ) : (
           <div className="space-y-3">
             {/* Time Display */}
-            <div className="flex items-center justify-center gap-3 p-4 bg-black/40 rounded-lg">
+            <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg">
               <Clock className="h-8 w-8 text-purple-400" />
               <div className="text-center">
                 <div className="text-3xl font-bold text-white">
@@ -99,11 +99,11 @@ export function LockedRoundCountdown({ roundId, drawBlock }: LockedRoundCountdow
 
             {/* Block Info */}
             <div className="grid grid-cols-2 gap-3 text-center text-sm">
-              <div className="p-3 bg-black/30 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/30 rounded-lg">
                 <div className="text-xs text-white/60 mb-1">Blocks Remaining</div>
                 <div className="text-lg font-bold text-purple-300">{blocksRemaining}</div>
               </div>
-              <div className="p-3 bg-black/30 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/30 rounded-lg">
                 <div className="text-xs text-white/60 mb-1">Draw Block</div>
                 <div className="text-lg font-bold text-purple-300">{drawBlock}</div>
               </div>

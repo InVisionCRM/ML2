@@ -54,7 +54,7 @@ http://localhost:3000/contracts
 
 ### SuperStakeLottery6of55V2
 ✅ User Actions
-- Buy Tickets (Morbius)
+- Buy Tickets (MORBIUS)
 - Buy Tickets for Multiple Rounds
 - Buy Tickets with WPLS
 - Claim Winnings
@@ -62,7 +62,7 @@ http://localhost:3000/contracts
 ✅ Admin Actions
 - Finalize Round
 - Update Round Duration
-- Update MegaMorbius Interval
+- Update MegaMORBIUS Interval
 - Update Block Delay
 
 ✅ Statistics
@@ -151,9 +151,9 @@ The interface includes:
 ## Best Practices
 
 1. **Always approve tokens before buying:**
-   - Lottery requires Morbius approval
+   - Lottery requires MORBIUS approval
    - WPLS purchases require WPLS approval
-   - Keno requires Morbius approval
+   - Keno requires MORBIUS approval
 
 2. **Verify parameters before submitting:**
    - Check JSON format for ticket arrays

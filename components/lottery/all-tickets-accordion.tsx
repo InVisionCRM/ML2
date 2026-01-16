@@ -184,7 +184,7 @@ export function AllTicketsAccordion() {
                       size="sm"
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="text-white bg-slate-900 border-white/10 hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="text-white bg-slate-900 border-white/10 hover:bg-gradient-to-br from-slate-950 to-slate-900/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       Previous
@@ -204,7 +204,7 @@ export function AllTicketsAccordion() {
                       size="sm"
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="text-white bg-slate-900 border-white/10 hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="text-white bg-slate-900 border-white/10 hover:bg-gradient-to-br from-slate-950 to-slate-900/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                       Next
                       <ChevronRight className="w-4 h-4" />

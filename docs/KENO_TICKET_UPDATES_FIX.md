@@ -100,7 +100,7 @@ if (activeRoundId < from) {
 ## Implementation
 
 ### File Modified
-`/morbius_lotto/app/keno/page.tsx`
+`/MORBIUS_lotto/app/keno/page.tsx`
 
 ### Key Changes
 

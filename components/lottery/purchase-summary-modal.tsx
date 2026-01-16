@@ -45,7 +45,7 @@ export function PurchaseSummaryModal({
   const { switchChainAsync } = useSwitchChain()
   const [step, setStep] = useState<'idle' | 'approving' | 'buying' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const paymentMethod: 'morbius' = 'morbius' // WPLS temporarily disabled
+  const paymentMethod: 'MORBIUS' = 'MORBIUS' // WPLS temporarily disabled
 
   // Expand tickets by their quantities (critical for multi-quantity purchases)
   const expandedTickets = tickets.flatMap((ticket, index) => {
@@ -54,8 +54,8 @@ export function PurchaseSummaryModal({
     return Array(quantity).fill(ticket)
   })
 
-  // Read pSSH balance
-  const { data: morbiusBalance } = useReadContract({
+  // Read MORBIUS balance
+  const { data: MORBIUSBalance } = useReadContract({
     address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
@@ -66,16 +66,16 @@ export function PurchaseSummaryModal({
     },
   })
 
-  // Read pSSH allowance
+  // Read MORBIUS allowance
   const [optimisticAllowance, setOptimisticAllowance] = useState<bigint | null>(null)
 
-  const { data: morbiusAllowance, refetch: refetchMorbiusAllowance } = useReadContract({
+  const { data: MORBIUSAllowance, refetch: refetchMORBIUSAllowance } = useReadContract({
     address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, LOTTERY_ADDRESS as `0x${string}`] : undefined,
     query: {
-      enabled: !!address && paymentMethod === 'morbius',
+      enabled: !!address && paymentMethod === 'MORBIUS',
       refetchInterval: 3000,
       staleTime: 0,
     },
@@ -97,12 +97,12 @@ export function PurchaseSummaryModal({
     hash: approveHash,
   })
 
-  // Buy tickets with Morbius (pSSH alias)
+  // Buy tickets with MORBIUS (MORBIUS alias)
   const {
     buyTickets,
-    data: buyPsshHash,
-    isPending: isBuyPsshPending,
-    error: buyPsshError,
+    data: buyMORBIUSHash,
+    isPending: isBuyMORBIUSPending,
+    error: buyMORBIUSError,
   } = useBuyTickets()
   const {
     buyTicketsForRounds,
@@ -112,7 +112,7 @@ export function PurchaseSummaryModal({
   } = useBuyTicketsForRounds()
 
   // Wait for buy transaction
-  const buyHash = roundsToPlay > 1 ? buyMultiHash : buyPsshHash
+  const buyHash = roundsToPlay > 1 ? buyMultiHash : buyMORBIUSHash
   const {
     isLoading: isBuyLoading,
     isSuccess: isBuySuccess
@@ -124,13 +124,13 @@ export function PurchaseSummaryModal({
   const ticketCount = expandedTickets.length
   const effectiveRounds = roundsToPlay < 1 ? 1 : roundsToPlay
   const totalEntries = ticketCount * effectiveRounds
-  const morbiusCost = TICKET_PRICE * BigInt(ticketCount) * BigInt(effectiveRounds)
-  const currentAllowance = optimisticAllowance ?? morbiusAllowance ?? BigInt(0)
-  const requiredAmount = morbiusCost
+  const MORBIUSCost = TICKET_PRICE * BigInt(ticketCount) * BigInt(effectiveRounds)
+  const currentAllowance = optimisticAllowance ?? MORBIUSAllowance ?? BigInt(0)
+  const requiredAmount = MORBIUSCost
   const needsApproval = currentAllowance < requiredAmount
 
-  const currentBalance = morbiusBalance
-  const hasEnoughBalance = currentBalance !== undefined && currentBalance >= morbiusCost
+  const currentBalance = MORBIUSBalance
+  const hasEnoughBalance = currentBalance !== undefined && currentBalance >= MORBIUSCost
 
   // Calculate cost per ticket
   const costPerTicket = TICKET_PRICE
@@ -141,13 +141,13 @@ export function PurchaseSummaryModal({
       // Optimistically bump allowance to avoid UI being stuck if RPC refetch lags
       setOptimisticAllowance(requiredAmount)
       const timer = setTimeout(() => {
-        refetchMorbiusAllowance()
+        refetchMORBIUSAllowance()
         setOptimisticAllowance(null)
       }, 1000)
       setStep('idle')
       return () => clearTimeout(timer)
     }
-  }, [isApproveSuccess, refetchMorbiusAllowance, requiredAmount])
+  }, [isApproveSuccess, refetchMORBIUSAllowance, requiredAmount])
 
   // Keep latest onSuccess callback in a ref to avoid effect loops
   const onSuccessRef = useRef<typeof onSuccess>(onSuccess)
@@ -175,7 +175,7 @@ export function PurchaseSummaryModal({
 
   // Safety: if we are in buying state but nothing is pending/loading and no hash, reset
   useEffect(() => {
-    if (step === 'buying' && !isBuyPsshPending && !isBuyMultiPending && !isBuyLoading && !buyHash) {
+    if (step === 'buying' && !isBuyMORBIUSPending && !isBuyMultiPending && !isBuyLoading && !buyHash) {
       const timer = setTimeout(() => {
         setStep('idle')
         if (!errorMessage) {
@@ -184,7 +184,7 @@ export function PurchaseSummaryModal({
       }, 4000)
       return () => clearTimeout(timer)
     }
-  }, [step, isBuyPsshPending, isBuyMultiPending, isBuyLoading, buyHash, errorMessage])
+  }, [step, isBuyMORBIUSPending, isBuyMultiPending, isBuyLoading, buyHash, errorMessage])
 
   // Handle errors
   useEffect(() => {
@@ -199,7 +199,7 @@ export function PurchaseSummaryModal({
   }, [approveError, onError])
 
   useEffect(() => {
-    const buyError = roundsToPlay > 1 ? buyMultiError : buyPsshError
+    const buyError = roundsToPlay > 1 ? buyMultiError : buyMORBIUSError
     if (buyError) {
       setStep('error')
       const message = buyError.message.includes('rejected')
@@ -210,7 +210,7 @@ export function PurchaseSummaryModal({
       setErrorMessage(message)
       onError?.(buyError)
     }
-  }, [buyPsshError, onError, roundsToPlay])
+  }, [buyMORBIUSError, onError, roundsToPlay])
 
   // Reset state when modal closes
   useEffect(() => {
@@ -229,7 +229,7 @@ export function PurchaseSummaryModal({
       await switchChainAsync({ chainId: pulsechain.id })
     }
 
-    const amount = requiredAmount // This is now morbiusCost
+    const amount = requiredAmount // This is now MORBIUSCost
 
     approve({
       address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
@@ -250,7 +250,7 @@ export function PurchaseSummaryModal({
       return
     }
     if (!hasEnoughBalance) {
-      setErrorMessage('Insufficient Morbius balance for this purchase.')
+      setErrorMessage('Insufficient MORBIUS balance for this purchase.')
       return
     }
     if (isProcessing) return
@@ -286,12 +286,12 @@ export function PurchaseSummaryModal({
     })
   }
 
-  const formatPssh = (amount: bigint) => formatToken(amount, 'Morbius')
+  const formatMORBIUS = (amount: bigint) => formatToken(amount, 'MORBIUS')
 
-  const isProcessing = isApprovePending || isApproveLoading || isBuyPsshPending || isBuyMultiPending || isBuyLoading
+  const isProcessing = isApprovePending || isApproveLoading || isBuyMORBIUSPending || isBuyMultiPending || isBuyLoading
 
-  const currentTokenSymbol = 'Morbius' // Updated to use Morbius consistently
-  const displayCost = morbiusCost
+  const currentTokenSymbol = 'MORBIUS' // Updated to use MORBIUS consistently
+  const displayCost = MORBIUSCost
 
   // Group tickets by their original numbers with quantities for display
   const ticketGroups = tickets
@@ -304,7 +304,7 @@ export function PurchaseSummaryModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-black/95 border-white/10 backdrop-blur-md">
+      <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-950 to-slate-900/95 border-white/10 backdrop-blur-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Ticket className="h-6 w-6 text-primary" />
@@ -319,13 +319,13 @@ export function PurchaseSummaryModal({
         <div className="space-y-3 px-6">
           <div className="flex items-center gap-2">
             <Coins className="h-4 w-4" />
-            <span className="text-sm font-medium">Payment Method: Morbius</span>
+            <span className="text-sm font-medium">Payment Method: MORBIUS</span>
             <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
               Best Rate
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            WPLS purchase is temporarily disabled. Please use Morbius to buy tickets.
+            WPLS purchase is temporarily disabled. Please use MORBIUS to buy tickets.
           </p>
         </div>
 
@@ -339,7 +339,7 @@ export function PurchaseSummaryModal({
                 return (
                   <div
                     key={idx}
-                    className="p-4 bg-black/40 border border-white/10 rounded-lg"
+                    className="p-4 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -350,7 +350,7 @@ export function PurchaseSummaryModal({
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">
-                          {formatPssh(cost)} <span className="text-sm text-white/60">Morbius</span>
+                          {formatMORBIUS(cost)} <span className="text-sm text-white/60">MORBIUS</span>
                         </div>
                         {effectiveRounds > 1 && (
                           <div className="text-xs text-white/50">
@@ -394,7 +394,7 @@ export function PurchaseSummaryModal({
                   max={10}
                   value={roundsToPlay}
                   onChange={(e) => onRoundsChange(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
-                  className="w-16 bg-black/40 border border-white/20 rounded px-2 py-1 text-right text-white text-sm"
+                  className="w-16 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/20 rounded px-2 py-1 text-right text-white text-sm"
                 />
                 <span className="text-white/50 text-xs">max 10</span>
               </div>
@@ -439,7 +439,7 @@ export function PurchaseSummaryModal({
             <div className="flex justify-between text-xs pt-2">
               <span className="text-white/60">Your {currentTokenSymbol} Balance:</span>
               <span className={hasEnoughBalance ? 'text-green-400' : 'text-red-400'}>
-                {currentBalance ? formatToken(currentBalance, 'Morbius') : '0'} Morbius
+                {currentBalance ? formatToken(currentBalance, 'MORBIUS') : '0'} MORBIUS
               </span>
             </div>
           </div>
@@ -486,7 +486,7 @@ export function PurchaseSummaryModal({
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Insufficient Morbius balance. You need {formatToken(displayCost - (currentBalance || BigInt(0)), 'Morbius')} more Morbius.
+                Insufficient MORBIUS balance. You need {formatToken(displayCost - (currentBalance || BigInt(0)), 'MORBIUS')} more MORBIUS.
               </AlertDescription>
             </Alert>
           )}
@@ -516,7 +516,7 @@ export function PurchaseSummaryModal({
               ) : (
                 <>
                   <Coins className="h-4 w-4 mr-2" />
-                  Approve Morbius
+                  Approve MORBIUS
                 </>
               )}
             </Button>
@@ -540,7 +540,7 @@ export function PurchaseSummaryModal({
               ) : (
                 <>
                   <Ticket className="h-4 w-4 mr-2" />
-                  Buy {totalEntries} Ticket{totalEntries === 1 ? '' : 's'} with Morbius
+                  Buy {totalEntries} Ticket{totalEntries === 1 ? '' : 's'} with MORBIUS
                 </>
               )}
             </Button>
@@ -548,7 +548,7 @@ export function PurchaseSummaryModal({
 
           {needsApproval && (
             <p className="text-xs text-center text-white/60">
-              You need to approve the lottery contract to spend your Morbius tokens. This is a one-time approval.
+              You need to approve the lottery contract to spend your MORBIUS tokens. This is a one-time approval.
             </p>
           )}
         </div>

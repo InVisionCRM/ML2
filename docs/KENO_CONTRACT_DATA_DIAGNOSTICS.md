@@ -197,7 +197,7 @@ Options:
 
 ## Files Modified
 
-1. **`/morbius_lotto/app/keno/page.tsx`**
+1. **`/MORBIUS_lotto/app/keno/page.tsx`**
    - Lines 196-198: Round ID logging
    - Lines 209-253: Round data logging and validation
    - Lines 826-833: Contract data validity check

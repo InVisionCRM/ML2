@@ -88,7 +88,7 @@ Total Wagers: 0.001 WPLS
 ## Files Created/Modified
 
 ### Modified:
-1. **`/morbius_lotto/app/keno/page.tsx`**
+1. **`/MORBIUS_lotto/app/keno/page.tsx`**
    - Fixed ticket data parsing (line 410)
    - Added auto-refresh on purchase (line 672-699)
    - Added continuous polling (line 331)
@@ -96,11 +96,11 @@ Total Wagers: 0.001 WPLS
    - Added smart status banner (line 826-908)
    - Enhanced ticket display UI (line 1129-1230)
 
-2. **`/morbius_lotto/lib/keno-abi.ts`**
+2. **`/MORBIUS_lotto/lib/keno-abi.ts`**
    - Added `getRound` function to ABI (line 53-81)
 
 ### Created:
-3. **`/morbius_lotto/scripts/check-keno-contract.js`**
+3. **`/MORBIUS_lotto/scripts/check-keno-contract.js`**
    - Contract state inspection tool
    - Shows round timing analysis
    - Easy debugging

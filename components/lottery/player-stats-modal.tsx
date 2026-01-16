@@ -129,7 +129,7 @@ export function PlayerStatsModal() {
                     </thead>
                     <tbody>
                       {history.map((r, i) => (
-                        <tr key={r.id} className={cn("border-b border-white/5 hover:bg-white/5 transition-colors", i % 2 === 0 ? "bg-black/20" : "")}>
+                        <tr key={r.id} className={cn("border-b border-white/5 hover:bg-white/5 transition-colors", i % 2 === 0 ? "bg-gradient-to-br from-slate-950 to-slate-900/20" : "")}>
                           <td className="py-1.5 px-3 font-mono font-semibold text-white">#{r.id}</td>
                           <td className="py-1.5 px-2 text-center text-white/60">{r.tickets}</td>
                           <td className={cn("py-1.5 px-3 text-right font-mono font-semibold", r.wins > 0 ? "text-green-400" : "text-white/30")}>

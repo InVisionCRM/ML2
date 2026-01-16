@@ -5,6 +5,7 @@ const MORBIUS_TOKEN = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1'
 // Known burn addresses to check for
 const BURN_ADDRESSES = [
   '0x0000000000000000000000000000000000000000',
+  '0x000000000000000000000000000000000000dEaD', // Contract burn address
   '0x000000000000000000000000000000000000dead',
   '0x0000000000000000000000000000000000000369',
 ]
@@ -80,17 +81,19 @@ export function useMorbiusBurned() {
           pageCount++
         } while (nextPageParams && pageCount < maxPages)
 
-        console.log(`Total Morbius burned: ${total.toString()}`)
+        console.log(`Total morbius burned: ${total.toString()}`)
 
         if (isMounted) {
           setBurnedAmount(total)
           setIsLoading(false)
+          console.log('🔥 Burned amount updated:', total.toString())
         }
       } catch (err) {
-        console.error('Error fetching burned Morbius:', err)
+        console.error('Error fetching burned morbius:', err)
         if (isMounted) {
           setError(err instanceof Error ? err : new Error('Unknown error'))
           setIsLoading(false)
+          console.log('🔥 Burned amount hook failed, keeping current value')
         }
       }
     }

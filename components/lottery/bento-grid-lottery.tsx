@@ -11,12 +11,17 @@ import {
   IconTrophy,
   IconClock,
   IconUsers,
+  IconQuestionMark,
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import { formatEther } from "viem";
-import { BackgroundGradientAnimation } from "../ui/background-gradient-animation";
+import { GlowingStarsBackgroundCard } from "../ui/glowing-stars";
 import { Meteors } from "../ui/meteors";
 import { DottedGlowBackground } from "../ui/dotted-glow-background";
+import { PixelImage } from "../ui/pixel-image";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface LotteryBentoGridProps {
   onPlayNow?: () => void;
@@ -43,36 +48,276 @@ export function LotteryBentoGrid({
   megaBank,
   isLoadingBurned = false
 }: LotteryBentoGridProps) {
+  const [showHowToPlayModal, setShowHowToPlayModal] = useState(false);
+
+  useEffect(() => {
+    const handleShowHowToPlayModal = () => {
+      setShowHowToPlayModal(true);
+    };
+
+    window.addEventListener('showLotteryHowToPlayModal', handleShowHowToPlayModal);
+
+    return () => {
+      window.removeEventListener('showLotteryHowToPlayModal', handleShowHowToPlayModal);
+    };
+  }, []);
+
   return (
-    <BentoGrid className="max-w-4xl mx-auto md:auto-rows-[20rem]">
-      {items.map((item, i) => (
-        <BentoGridItem
-          key={i}
-          title={item.title}
-          description={item.description}
-          header={typeof item.header === 'function'
-            ? item.header({ megaBank, isLoadingBurned })
-            : item.header
-          }
-          className={cn("[&>p:text-lg]", item.className)}
-          icon={item.icon}
-          onClick={item.onClick ? () => item.onClick({
-            onPlayNow,
-            onShowHistory,
-            onShowTickets,
-            onShowClaim,
-            onShowPayouts,
-            totalTickets,
-            timeRemaining,
-            burnedAmount,
-            megaBank,
-            isLoadingBurned
-          }) : undefined}
-        />
-      ))}
-    </BentoGrid>
+    <>
+      <BentoGrid className="max-w-4xl mx-auto md:auto-rows-[20rem]">
+        {items.map((item, i) => (
+          <BentoGridItem
+            key={i}
+            title={item.title}
+            description={item.description}
+            header={typeof item.header === 'function'
+              ? item.header({ megaBank, isLoadingBurned })
+              : item.header
+            }
+            className={cn("[&>p:text-lg]", item.className)}
+            icon={item.icon}
+            onClick={item.onClick ? () => item.onClick({
+              onPlayNow,
+              onShowHistory,
+              onShowTickets,
+              onShowClaim,
+              onShowPayouts,
+              totalTickets,
+              timeRemaining,
+              burnedAmount,
+              megaBank,
+              isLoadingBurned
+            }) : undefined}
+          />
+        ))}
+      </BentoGrid>
+
+      <LotteryHowToPlayModal
+        isOpen={showHowToPlayModal}
+        onOpenChange={setShowHowToPlayModal}
+      />
+    </>
   );
 }
+
+function LotteryHowToPlayModal({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-800/60 border-white/20 text-white max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="text-center text-2xl font-bold text-pink-400 mb-4">
+            How to Play Lottery
+          </DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="max-h-[70vh] pr-4">
+          <div className="space-y-6 text-sm leading-relaxed">
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-pink-400 mb-3">Getting Started</h3>
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  Connect your Web3 wallet (MetaMask, WalletConnect, etc.) to start playing the Lottery instantly on the PulseChain network.
+                </p>
+                <p>
+                  Select how many tickets you want to buy. You can purchase from 1 to 100 tickets per transaction.
+                </p>
+                <p>
+                  Choose your payment method - pay with MORBIUS tokens or PLS (PulseChain native token).
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-pink-400 mb-3">Game Mechanics</h3>
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  The Lottery draws 6 winning numbers from 1-55 every round. Match all 6 numbers to win the jackpot!
+                </p>
+                <p>
+                  Each ticket costs 100 MORBIUS tokens. Multiple tickets increase your chances of winning.
+                </p>
+                <p>
+                  Winners are automatically determined when the draw finalizes. All prizes are paid instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-pink-400 mb-3">Your Ticket</h3>
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  Your lottery ticket is recorded on the blockchain and contains your selected numbers.
+                </p>
+                <p>
+                  You can view your tickets anytime in "My Tickets" section and track their results.
+                </p>
+                <p>
+                  Winning tickets can be claimed automatically once the draw results are available.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-pink-400 mb-3">Prize Distribution</h3>
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  <strong>House Fee:</strong> 5% of all purchases goes to the house wallet for platform maintenance and development.
+                </p>
+                <p>
+                  <strong>Burn:</strong> 10% of all purchases are burned, reducing total MORBIUS supply.
+                </p>
+                <p>
+                  <strong>Deployer:</strong> 5% goes to the deployer wallet.
+                </p>
+                <p>
+                  <strong>MegaMorbius Bank:</strong> 10% goes to the MegaMorbius Bank for ecosystem development.
+                </p>
+                <p>
+                  <strong>Player Pool:</strong> 70% goes to the player prize pool for lottery winnings.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-pink-400 mb-3">Rollover Mechanics</h3>
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  100% of remaining bracket funds roll over to the next round, creating larger prize pools over time.
+                </p>
+                <p>
+                  This means unclaimed prizes from previous rounds increase the total prize pool for future players.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-amber-400 mb-2">💡 Pro Tips</h3>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li>• Buy multiple tickets to increase your chances of winning</li>
+                <li>• Check the live timer to see when the next draw begins</li>
+                <li>• All transactions are recorded on PulseChain for complete transparency</li>
+                <li>• Winnings are paid instantly once draws are finalized</li>
+                <li>• The MegaMorbius Bank grows with every purchase, increasing future jackpots</li>
+              </ul>
+            </div>
+          </div>
+        </ScrollArea>
+
+        <div className="flex justify-center mt-6">
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="bg-pink-600 hover:bg-pink-700 text-white px-8"
+          >
+            Got it! Let's Play
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const SkeletonHowToPlay = () => {
+  const variants = {
+    initial: {
+      scale: 1,
+      rotate: 0,
+    },
+    hover: {
+      scale: 1.05,
+      rotate: 2,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const howVariants = {
+    initial: {
+      y: 0,
+      x: 0,
+      rotate: 0,
+    },
+    hover: {
+      y: -12,
+      x: 8,
+      rotate: -5,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const toVariants = {
+    initial: {
+      y: 0,
+      x: 0,
+      rotate: 0,
+    },
+    hover: {
+      y: -6,
+      x: -10,
+      rotate: 8,
+      transition: {
+        duration: 0.35,
+        ease: "easeOut",
+        delay: 0.05,
+      },
+    },
+  };
+
+  const playVariants = {
+    initial: {
+      y: 0,
+      x: 0,
+      rotate: 0,
+    },
+    hover: {
+      y: -15,
+      x: 6,
+      rotate: -3,
+      transition: {
+        duration: 0.45,
+        ease: "easeOut",
+        delay: 0.1,
+      },
+    },
+  };
+
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      variants={variants}
+      className="relative w-full h-full min-h-[6rem] overflow-hidden rounded-lg bg-gradient-to-br from-pink-600 via-purple-600 to-teal-700"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.2),transparent_70%)]" />
+      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4">
+        <div className="text-center">
+          <motion.div
+            variants={howVariants}
+            className="text-4xl font-black text-white mb-1 drop-shadow-lg"
+          >
+            How
+          </motion.div>
+          <motion.div
+            variants={toVariants}
+            className="text-3xl font-bold text-white mb-1 drop-shadow-lg"
+          >
+            To
+          </motion.div>
+          <motion.div
+            variants={playVariants}
+            className="text-2xl font-extrabold text-white drop-shadow-lg"
+          >
+            Play
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const SkeletonPlayNow = () => {
   const variants = {
@@ -109,23 +354,23 @@ const SkeletonPlayNow = () => {
     >
       <motion.div
         variants={variants}
-        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-black"
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80"
       >
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 shrink-0" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shrink-0" />
         <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
       </motion.div>
       <motion.div
         variants={variantsSecond}
-        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 w-3/4 ml-auto bg-white dark:bg-black"
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 w-3/4 ml-auto bg-white dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80"
       >
         <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 shrink-0" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shrink-0" />
       </motion.div>
       <motion.div
         variants={variants}
-        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-black"
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80"
       >
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 shrink-0" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shrink-0" />
         <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
       </motion.div>
     </motion.div>
@@ -167,58 +412,41 @@ const SkeletonTimer = () => {
           style={{
             maxWidth: Math.random() * (100 - 40) + 40 + "%",
           }}
-          className="flex flex-row rounded-full border-2 border-blue-500 dark:border-blue-400 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 p-2 items-center space-x-2 w-full h-4"
+          className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-neutral-100 dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80 w-full h-4"
         ></motion.div>
       ))}
     </motion.div>
   );
 };
 
-const MorbiusStats = () => {
+const MORBIUSStats = () => {
   const [tokenData, setTokenData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchMorbiusData = async () => {
+    const fetchMORBIUSData = async () => {
       try {
-        // Fetch Morbius token data from Dexscreener
+        // Fetch MORBIUS token data from Dexscreener
         const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1')
         const data = await response.json()
 
         if (data.pairs && data.pairs.length > 0) {
           // Get the pair with highest liquidity (usually the main pair)
           const mainPair = data.pairs.sort((a: any, b: any) => parseFloat(b.liquidity?.usd || '0') - parseFloat(a.liquidity?.usd || '0'))[0]
-
-          // Ensure the mainPair has all required properties with fallbacks
-          const safeTokenData = {
-            priceUsd: mainPair?.priceUsd || '0.000123',
-            marketCap: mainPair?.marketCap || '1234567',
-            volume: mainPair?.volume || { h24: '987654' },
-            liquidity: mainPair?.liquidity || { usd: '500000' },
-            info: mainPair?.info || {
-              socials: [
-                { type: 'twitter', url: 'https://twitter.com/morbius' },
-                { type: 'telegram', url: 'https://t.me/morbius' },
-                { type: 'website', url: 'https://morbius.finance' }
-              ]
-            }
-          }
-
-          setTokenData(safeTokenData)
+          setTokenData(mainPair)
         }
       } catch (error) {
-        console.error('Failed to fetch Morbius data:', error)
+        console.error('Failed to fetch MORBIUS data:', error)
         // Set fallback data for demo
         setTokenData({
           priceUsd: '0.000123',
           marketCap: '1234567',
           volume: { h24: '987654' },
-          liquidity: { usd: '500000' },
           info: {
             socials: [
-              { type: 'twitter', url: 'https://twitter.com/morbius' },
-              { type: 'telegram', url: 'https://t.me/morbius' },
-              { type: 'website', url: 'https://morbius.finance' }
+              { type: 'twitter', url: 'https://twitter.com/MORBIUS' },
+              { type: 'telegram', url: 'https://t.me/MORBIUS' },
+              { type: 'website', url: 'https://MORBIUS.finance' }
             ]
           }
         })
@@ -227,37 +455,31 @@ const MorbiusStats = () => {
       }
     }
 
-    fetchMorbiusData()
+    fetchMORBIUSData()
 
     // Refresh every 30 seconds
-    const interval = setInterval(fetchMorbiusData, 30000)
+    const interval = setInterval(fetchMORBIUSData, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  const formatPrice = (price: string | undefined) => {
-    if (!price) return '$0.00'
+  const formatPrice = (price: string) => {
     const num = parseFloat(price)
-    if (isNaN(num)) return '$0.00'
     if (num < 0.000001) return `$${num.toExponential(2)}`
     if (num < 0.0001) return `$${num.toFixed(7)}`
     if (num < 0.01) return `$${num.toFixed(6)}`
     return `$${num.toFixed(4)}`
   }
 
-  const formatMarketCap = (marketCap: string | undefined) => {
-    if (!marketCap) return '$0'
+  const formatMarketCap = (marketCap: string) => {
     const num = parseFloat(marketCap)
-    if (isNaN(num)) return '$0'
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
     return `$${num.toFixed(0)}`
   }
 
-  const formatVolume = (volume: string | undefined) => {
-    if (!volume) return '0'
+  const formatVolume = (volume: string) => {
     const num = parseFloat(volume)
-    if (isNaN(num)) return '0'
     if (num >= 1000000000) return `${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(2)}K`
@@ -267,11 +489,11 @@ const MorbiusStats = () => {
   if (isLoading) {
     return (
       <div className="relative flex flex-1 w-full h-full min-h-[10rem] rounded-lg overflow-hidden bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80" />
         <div className="relative z-10 flex items-center justify-center w-full h-full">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <div className="text-white/70 text-sm font-mono">Loading Morbius...</div>
+            <div className="text-white/70 text-sm font-mono">Loading MORBIUS...</div>
           </div>
         </div>
       </div>
@@ -284,7 +506,7 @@ const MorbiusStats = () => {
       <div
         className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-30"
         style={{
-          backgroundImage: "url('/morbius/morbius-logo-2.svg')",
+          backgroundImage: "url('/MORBIUS/MORBIUS-logo-2.svg')",
         }}
       />
 
@@ -296,7 +518,7 @@ const MorbiusStats = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
             <span className="text-xs font-mono text-white/80 uppercase tracking-wider">Live</span>
           </div>
           <span className="text-xs font-mono text-white/60">MORBIUS</span>
@@ -358,25 +580,8 @@ const MorbiusStats = () => {
 
 const SkeletonPerformance = () => {
   return (
-    <div className="w-full h-full min-h-[4rem] relative overflow-hidden">
-      <BackgroundGradientAnimation
-        gradientBackgroundStart="rgb(34, 197, 94)"
-        gradientBackgroundEnd="rgb(22, 163, 74)"
-        firstColor="34, 197, 94"
-        secondColor="22, 163, 74"
-        thirdColor="20, 83, 45"
-        fourthColor="34, 197, 94"
-        fifthColor="22, 163, 74"
-        pointerColor="34, 197, 94"
-        size="60%"
-        blendingValue="soft-light"
-        containerClassName="w-full h-full"
-        className="w-full h-full flex items-center justify-center"
-      >
-        <div className="text-2xl font-bold text-white">
-          PLAY
-        </div>
-      </BackgroundGradientAnimation>
+    <div className="w-full h-full flex items-center justify-center">
+      <PixelImage src="/morbius/MorbiusLogo (3).png" className="w-24 h-24 md:w-32 md:h-32" />
     </div>
   );
 };
@@ -393,7 +598,7 @@ const SkeletonJackpot = ({ jackpotAmount }: { jackpotAmount?: bigint }) => {
             {jackpotDisplay}
           </div>
           <div className="text-xs text-purple-200">
-            MegaMorbius
+            MegaMORBIUS
           </div>
         </div>
       </div>
@@ -406,11 +611,11 @@ const SkeletonMyTickets = () => {
     <div className="relative w-full h-full min-h-[6rem] overflow-hidden">
       <DottedGlowBackground
         className="absolute inset-0"
-        gap={8}
+        gap={10}
         radius={1.5}
-        color="rgba(255,255,255,0.3)"
-        glowColor="rgba(59, 130, 246, 0.6)"
-        opacity={0.7}
+        color="rgb(168, 7, 255)"
+        glowColor="rgb(242, 0, 255)"
+        opacity={1}
         speedMin={0.2}
         speedMax={0.8}
         speedScale={0.5}
@@ -452,20 +657,20 @@ const SkeletonHistory = () => {
     >
       <motion.div
         variants={first}
-        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
+        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80 dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
       >
         <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shrink-0 mb-2" />
         <div className="w-full bg-gray-100 h-2 rounded-full dark:bg-neutral-900 mb-2" />
         <div className="w-3/4 bg-gray-100 h-2 rounded-full dark:bg-neutral-900" />
       </motion.div>
-      <motion.div className="h-full relative z-20 w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center">
+      <motion.div className="h-full relative z-20 w-1/3 rounded-2xl bg-white p-4 dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80 dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center">
         <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shrink-0 mb-2" />
         <div className="w-full bg-gray-100 h-2 rounded-full dark:bg-neutral-900 mb-2" />
         <div className="w-3/4 bg-gray-100 h-2 rounded-full dark:bg-neutral-900" />
       </motion.div>
       <motion.div
         variants={second}
-        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
+        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80 dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
       >
         <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shrink-0 mb-2" />
         <div className="w-full bg-gray-100 h-2 rounded-full dark:bg-neutral-900 mb-2" />
@@ -510,19 +715,19 @@ const SkeletonClaim = () => {
     >
       <motion.div
         variants={variants}
-        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2 items-start space-x-2 bg-white dark:bg-black"
+        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2 items-start space-x-2 bg-white dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80"
       >
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 shrink-0" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-blue-500 shrink-0" />
         <div className="text-xs text-neutral-500">
           Claim your lottery winnings instantly...
         </div>
       </motion.div>
       <motion.div
         variants={variantsSecond}
-        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center justify-end space-x-2 w-3/4 ml-auto bg-white dark:bg-black"
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center justify-end space-x-2 w-3/4 ml-auto bg-white dark:bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900/80"
       >
         <div className="text-xs text-neutral-500">Claim All Now!</div>
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 shrink-0" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-blue-500 shrink-0" />
       </motion.div>
     </motion.div>
   );
@@ -555,40 +760,56 @@ const items = [
       </span>
     ),
     header: <SkeletonPerformance />,
-    className: "md:col-span-1 bg-transparent",
+    className: "md:col-span-1",
     icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
     onClick: ({ onPlayNow }: any) => onPlayNow?.(),
   },
   {
-    title: "My Tickets",
+    title: "Payout Breakdown",
     description: (
       <span className="text-sm">
-        View all your lottery tickets and track their performance
+        View prize distribution and payout calculations
       </span>
     ),
-    header: <SkeletonMyTickets />,
+    header: <SkeletonTimer />,
     className: "md:col-span-1",
-    icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowTickets }: any) => onShowTickets?.(),
+    icon: <IconClock className="h-4 w-4 text-neutral-500" />,
+    onClick: ({ onShowPayouts }: any) => onShowPayouts?.(),
   },
   {
-    title: "Morbius",
+    title: "How to Play",
     description: (
       <span className="text-sm">
-        Real-time Morbius token price, market cap & social links
+        Learn the rules and mechanics of the Lottery - step by step guide
       </span>
     ),
-    header: <MorbiusStats />,
-    className: "col-span-2 md:col-span-1",
+    header: <SkeletonHowToPlay />,
+    className: "md:col-span-1 bg-slate-800/60",
+    icon: <IconQuestionMark className="h-4 w-4 text-neutral-500" />,
     onClick: () => {
-      window.open('https://morbius.io/geicko?address=0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1', '_blank')
+      // Show how to play modal
+      const event = new CustomEvent('showLotteryHowToPlayModal');
+      window.dispatchEvent(event);
+    },
+  },
+  {
+    title: "MORBIUS",
+    description: (
+      <span className="text-sm">
+        Real-time MORBIUS token price, market cap & social links
+      </span>
+    ),
+    header: <MORBIUSStats />,
+    className: "md:col-span-1",
+    onClick: () => {
+      window.open('https://MORBIUS.io/geicko?address=0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1', '_blank')
     },
   },
   {
     title: "Jackpot",
     description: (
       <span className="text-sm">
-        Current MegaMorbius progressive jackpot amount
+        Current MegaMORBIUS progressive jackpot amount
       </span>
     ),
     header: ({ megaBank }: any) => <SkeletonJackpot jackpotAmount={megaBank} />,
@@ -635,15 +856,15 @@ const items = [
     onClick: ({ onShowClaim }: any) => onShowClaim?.(),
   },
   {
-    title: "Payout Breakdown",
+    title: "My Tickets",
     description: (
       <span className="text-sm">
-        View prize distribution and payout calculations
+        View all your lottery tickets and track their performance
       </span>
     ),
-    header: <SkeletonTimer />,
-    className: "col-span-2 md:col-span-1",
-    icon: <IconClock className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowPayouts }: any) => onShowPayouts?.(),
+    header: <SkeletonMyTickets />,
+    className: "md:col-span-1",
+    icon: <IconTicket className="h-4 w-4 text-neutral-500" />,
+    onClick: ({ onShowTickets }: any) => onShowTickets?.(),
   },
 ];

@@ -1,0 +1,897 @@
+
+import React, { useEffect, useRef, useState } from 'react';
+import Matter from 'matter-js';
+import seedrandom from 'seedrandom';
+import {
+  WORLD_WIDTH, WORLD_HEIGHT, ROWS, PEG_SPACING_X, PEG_SPACING_Y,
+  START_Y, BUCKET_Y, PEG_RADIUS, BALL_RADIUS, PHYSICS, MULTIPLIERS
+} from './constants';
+import { RiskLevel } from './types';
+
+interface PlinkoGameProps {
+  onScore: (multiplier: number, bucketIndex: number) => void;
+  lastDrop: any;
+  selectedRiskLevel: RiskLevel;
+}
+
+const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRiskLevel }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<Matter.Engine>(Matter.Engine.create());
+  const ballsToRemove = useRef<Set<Matter.Body>>(new Set());
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  
+
+  // 1. Handle Resize (Visual Only)
+  useEffect(() => {
+    const resize = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        });
+      }
+    };
+    window.addEventListener('resize', resize);
+    resize();
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  // 2. Main Physics & Render Setup
+  useEffect(() => {
+    if (!canvasRef.current || dimensions.width === 0) return;
+
+    const engine = engineRef.current;
+    engine.gravity.y = PHYSICS.GRAVITY;
+
+    // Clear previous world
+    Matter.World.clear(engine.world, false);
+
+    // Build Peg Board
+    const pegs: Matter.Body[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      const rowPegCount = r + 3;
+      const rowWidth = (rowPegCount - 1) * PEG_SPACING_X;
+      const startX = (WORLD_WIDTH - rowWidth) / 2;
+      const y = START_Y + r * PEG_SPACING_Y;
+
+      for (let c = 0; c < rowPegCount; c++) {
+        pegs.push(Matter.Bodies.circle(startX + c * PEG_SPACING_X, y, PEG_RADIUS, {
+          isStatic: true,
+          restitution: PHYSICS.PEG_RESTITUTION,
+          friction: 0,
+          label: 'peg',
+          render: { visible: false }
+        }));
+      }
+    }
+
+    // Build Buckets
+    const bucketWidth = PEG_SPACING_X;
+    const totalBucketsWidth = 17 * bucketWidth;
+    const bucketStartX = (WORLD_WIDTH - totalBucketsWidth) / 2;
+
+    for (let i = 0; i < 17; i++) {
+      const x = bucketStartX + i * bucketWidth + bucketWidth / 2;
+      Matter.World.add(engine.world, Matter.Bodies.rectangle(x, BUCKET_Y + 30, bucketWidth, 60, {
+        isStatic: true,
+        isSensor: true,
+        label: 'bucket',
+        plugin: { index: i },
+        render: { visible: false }
+      }));
+    }
+
+    Matter.World.add(engine.world, pegs);
+
+    // Collision Logic
+    Matter.Events.on(engine, 'collisionStart', (event) => {
+      event.pairs.forEach((pair) => {
+        const { bodyA, bodyB } = pair;
+        const ball = bodyA.label === 'ball' ? bodyA : bodyB.label === 'ball' ? bodyB : null;
+        const bucket = bodyA.label === 'bucket' ? bodyA : bodyB.label === 'bucket' ? bodyB : null;
+
+        if (ball && bucket && !ballsToRemove.current.has(ball)) {
+          const index = bucket.plugin.index;
+          const multiplier = MULTIPLIERS[selectedRiskLevel][index];
+          onScore(multiplier, index);
+          ballsToRemove.current.add(ball);
+        }
+      });
+    });
+
+    // Sub-stepped Game Loop
+    const runner = setInterval(() => {
+      const subStepDelta = PHYSICS.FIXED_TIME_STEP / PHYSICS.SUB_STEPS;
+      for (let i = 0; i < PHYSICS.SUB_STEPS; i++) {
+        Matter.Engine.update(engine, subStepDelta);
+      }
+      renderCanvas();
+    }, PHYSICS.FIXED_TIME_STEP);
+
+    const renderCanvas = () => {
+      const ctx = canvasRef.current?.getContext('2d');
+      if (!ctx) return;
+
+      const scale = Math.min(dimensions.width / WORLD_WIDTH, (dimensions.height * 0.9) / WORLD_HEIGHT);
+      const offsetX = (dimensions.width - WORLD_WIDTH * scale) / 2;
+
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+      ctx.save();
+      ctx.translate(offsetX, 20); // Top Margin
+      ctx.scale(scale, scale);
+
+      // Draw Pegs (White Stake Style)
+      ctx.fillStyle = "#FFFFFF";
+      pegs.forEach(peg => {
+        ctx.beginPath();
+        ctx.arc(peg.position.x, peg.position.y, PEG_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Balls
+      const balls = engine.world.bodies.filter(b => b.label === 'ball');
+      balls.forEach(ball => {
+        ctx.fillStyle = ball.plugin.color;
+        ctx.beginPath();
+        ctx.arc(ball.position.x, ball.position.y, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+
+      // Clean up balls
+      if (ballsToRemove.current.size > 0) {
+        ballsToRemove.current.forEach(b => Matter.World.remove(engine.world, b));
+        ballsToRemove.current.clear();
+      }
+    };
+
+    return () => clearInterval(runner);
+  }, [dimensions, selectedRiskLevel]);
+
+  // 3. Handle Drops (Deterministic)
+  useEffect(() => {
+    if (!lastDrop) return;
+
+    const spawnX = WORLD_WIDTH / 2 + (Math.random() - 0.5) * PHYSICS.SPAWN_RANGE_X;
+
+    const ball = Matter.Bodies.circle(spawnX, 20, BALL_RADIUS, {
+      restitution: PHYSICS.BALL_RESTITUTION,
+      friction: PHYSICS.BALL_FRICTION,
+      frictionAir: PHYSICS.BALL_FRICTION_AIR,
+      label: 'ball',
+      collisionFilter: { group: -1 }, // Balls don't hit each other
+      plugin: { color: "#4392F1" }
+    });
+
+    Matter.Body.setVelocity(ball, { x: (Math.random() - 0.5) * PHYSICS.INITIAL_V_X_VARIANCE, y: PHYSICS.INITIAL_V_Y });
+    Matter.World.add(engineRef.current.world, ball);
+  }, [lastDrop]);
+
+
+
+    // 1. Absolute Geometry - No Ratios
+    const pegGapX = PEG_SPACING_X;
+    const pegGapY = PEG_SPACING_Y;
+
+    // Physics radii (fixed size, no scaling)
+    const physicsBallRadius = BALL_RADIUS;
+    const physicsPegRadius = PEG_RADIUS;
+    const physicsChuteRadius = CHUTE_RADIUS;
+
+    // For compatibility with existing rendering code
+    const scaledPegRadius = physicsPegRadius;
+    const scaledBallRadius = physicsBallRadius;
+    const scaledChuteRadius = physicsChuteRadius;
+
+    // Drop position in physics space
+    const dropY = START_Y + pegGapY - physicsPegRadius - 1;
+
+    // Since we're not scaling, physicsScaleFactor is 1
+    const physicsScaleFactor = 1;
+
+    scaledValuesRef.current = {
+      ballRadius: physicsBallRadius,
+      pegRadius: physicsPegRadius,
+      chuteRadius: physicsChuteRadius,
+      boardOffsetX: PHYSICS_BOARD_OFFSET_X,
+      boardWidth: PHYSICS_BOARD_WIDTH,
+      dropY,
+      displayBallRadius: physicsBallRadius,
+      displayPegRadius: physicsPegRadius,
+      displayChuteRadius: physicsChuteRadius
+    } as any;
+
+    // Peg Loop: 16 rows, Row 0 has 3 pegs, Row 15 has 18 pegs
+    const pegs: Matter.Body[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      const rowPegCount = r + 3; // Row 0: 3 pegs, Row 15: 18 pegs
+      const rowWidth = (rowPegCount - 1) * pegGapX;
+      const startX = (WORLD_WIDTH - rowWidth) / 2; // Center in 800px world
+      const rowY = START_Y + (r * pegGapY);
+
+      for (let c = 0; c < rowPegCount; c++) {
+        const x = startX + c * pegGapX;
+        pegs.push(Matter.Bodies.circle(x, rowY, physicsPegRadius, {
+          isStatic: true,
+          restitution: PHYSICS.PEG_RESTITUTION,
+          friction: PHYSICS.PEG_FRICTION,
+          slop: PHYSICS.SLOP,
+          collisionFilter: {
+            category: COLLISION_CATEGORIES.PEG,
+            mask: COLLISION_CATEGORIES.BALL
+          },
+          render: {
+            fillStyle: '#FFFFFF', // Bright white pegs
+            strokeStyle: '#FFFFFF',
+            lineWidth: 1
+          }
+        }));
+      }
+    }
+    Matter.World.add(engine.world, pegs);
+
+    // 2. Fix the Bucket Calculation (Fixes the BUCKET_Y_OFFSET_RATIO error)
+    // 2. Bucket Logic: 17 buckets, 42px wide each, centered under peg gaps
+    const bucketCount = 17;
+    const bucketWidth = PEG_SPACING_X; // 42px wide to match peg spacing
+    const bucketsTotalWidth = bucketCount * bucketWidth; // 17 * 42 = 714px
+    const bucketsStartX = (WORLD_WIDTH - bucketsTotalWidth) / 2; // Center in 800px world
+
+    // Place buckets at bottom with proper offset
+    const bucketBaseY = WORLD_HEIGHT - BOARD_DIMENSIONS.BUCKET_Y_OFFSET;
+    const tierHeight = BOARD_DIMENSIONS.BUCKET_HEIGHT;
+
+    for (let i = 0; i < bucketCount; i++) {
+      const x = bucketsStartX + i * bucketWidth + bucketWidth / 2;
+      const sensor = Matter.Bodies.rectangle(x, bucketBaseY + tierHeight / 2, bucketWidth, tierHeight, {
+        isStatic: true,
+        isSensor: true,
+        label: CollisionLabel.BUCKET,
+        plugin: { index: i, tier: selectedRiskLevel },
+        collisionFilter: {
+          category: COLLISION_CATEGORIES.BUCKET,
+          mask: COLLISION_CATEGORIES.BALL  // Buckets only collide with balls
+        },
+        render: { fillStyle: 'transparent' }
+      });
+      Matter.World.add(engine.world, sensor);
+    }
+
+    // Note: Contract balls now use keyframe animation instead of physics guidance
+
+    Matter.Events.on(engine, 'collisionStart', (event) => {
+      event.pairs.forEach((pair) => {
+        const { bodyA, bodyB } = pair;
+        const ball = bodyA.label === CollisionLabel.BALL ? bodyA : (bodyB.label === CollisionLabel.BALL ? bodyB : null);
+        const peg = bodyA.label === CollisionLabel.PEG ? bodyA : (bodyB.label === CollisionLabel.PEG ? bodyB : null);
+        const bucket = bodyA.label === CollisionLabel.BUCKET ? bodyA : (bodyB.label === CollisionLabel.BUCKET ? bodyB : null);
+
+        if (ball && peg) {
+          // Track peg hit for animation - only if not already animating
+          const existingHitTime = pegHits.current.get(peg.id);
+          if (!existingHitTime) {
+            // First hit - start animation
+          pegHits.current.set(peg.id, Date.now());
+          }
+          // Don't restart animation if peg is already glowing
+        }
+
+        if (ball && bucket && !ballsToRemove.current.has(ball)) {
+          const index = bucket.plugin.index;
+          const tier = bucket.plugin.tier as RiskLevel; // Get tier from bucket sensor
+          const ballRisk = ball.plugin.risk as RiskLevel; // Get ball's risk level
+
+          // Only activate bucket if ball risk matches bucket tier
+          // Note: Contract balls now use keyframe animation and handle scoring there
+          if (ballRisk === tier) {
+            const multiplier = MULTIPLIERS[tier][index];
+
+            // Free play mode: use physics-determined bucket
+            activeHits.current.set(`${tier}-${index}`, Date.now());
+            onScore(multiplier, index);
+
+            ballsToRemove.current.add(ball);
+
+            // Play appropriate sound based on multiplier
+            if (multiplier > 1) {
+              playBucketHitSound();
+            } else if (multiplier < 1) {
+              playNegativeSound();
+            }
+          }
+        }
+      });
+    });
+
+    // Draw background and elements "Behind" the balls
+    Matter.Events.on(render, 'beforeRender', () => {
+      const ctx = render.context;
+      if (!ctx) return;
+
+      // Apply coordinate transformation: Physics space (600x667) -> Display space
+      ctx.save();
+      ctx.translate(displayBoardOffsetX, displayBoardOffsetY);
+      ctx.scale(scaleX, scaleY);
+
+      // Draw board background with inset/neumorphic styling (in physics coordinates)
+      ctx.save();
+
+      // Main board background - dark gradient
+      const boardGradient = ctx.createLinearGradient(
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y,
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y + PHYSICS_BOARD_HEIGHT
+      );
+      boardGradient.addColorStop(0, '#1a1a2e');
+      boardGradient.addColorStop(1, '#16213e');
+      ctx.fillStyle = boardGradient;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X, PHYSICS_BOARD_START_Y, PHYSICS_BOARD_WIDTH, PHYSICS_BOARD_HEIGHT, 16);
+      ctx.fill();
+
+      // Enhanced inset shadow effect - top and left (darker and more pronounced)
+      const insetShadow1 = ctx.createLinearGradient(
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y,
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y + PHYSICS_BOARD_HEIGHT / 3
+      );
+      insetShadow1.addColorStop(0, 'rgba(0, 0, 0, 0.6)');
+      insetShadow1.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+      ctx.fillStyle = insetShadow1;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X, PHYSICS_BOARD_START_Y, PHYSICS_BOARD_WIDTH, PHYSICS_BOARD_HEIGHT / 3, 16);
+      ctx.fill();
+
+      // Enhanced inset shadow - left edge
+      const insetShadow2 = ctx.createLinearGradient(
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y,
+        PHYSICS_BOARD_OFFSET_X + PHYSICS_BOARD_WIDTH / 4,
+        PHYSICS_BOARD_START_Y
+      );
+      insetShadow2.addColorStop(0, 'rgba(0, 0, 0, 0.6)');
+      insetShadow2.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+      ctx.fillStyle = insetShadow2;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X, PHYSICS_BOARD_START_Y, PHYSICS_BOARD_WIDTH / 4, PHYSICS_BOARD_HEIGHT, 16);
+      ctx.fill();
+
+      // Additional inset shadow - top-left corner for more depth
+      const cornerShadow = ctx.createRadialGradient(
+        PHYSICS_BOARD_OFFSET_X + PHYSICS_BOARD_WIDTH / 6,
+        PHYSICS_BOARD_START_Y + PHYSICS_BOARD_HEIGHT / 6,
+        0,
+        PHYSICS_BOARD_OFFSET_X + PHYSICS_BOARD_WIDTH / 6,
+        PHYSICS_BOARD_START_Y + PHYSICS_BOARD_HEIGHT / 6,
+        PHYSICS_BOARD_WIDTH / 3
+      );
+      cornerShadow.addColorStop(0, 'rgba(0, 0, 0, 0.4)');
+      cornerShadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = cornerShadow;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X, PHYSICS_BOARD_START_Y, PHYSICS_BOARD_WIDTH / 3, PHYSICS_BOARD_HEIGHT / 3, 16);
+      ctx.fill();
+
+      // Enhanced inset highlight - bottom and right (more visible)
+      const insetHighlight1 = ctx.createLinearGradient(
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y + (PHYSICS_BOARD_HEIGHT * 2/3),
+        PHYSICS_BOARD_OFFSET_X,
+        PHYSICS_BOARD_START_Y + PHYSICS_BOARD_HEIGHT
+      );
+      insetHighlight1.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+      insetHighlight1.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+      ctx.fillStyle = insetHighlight1;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X, PHYSICS_BOARD_START_Y + (PHYSICS_BOARD_HEIGHT * 2/3), PHYSICS_BOARD_WIDTH, PHYSICS_BOARD_HEIGHT / 3, 16);
+      ctx.fill();
+
+      // Enhanced inset highlight - right edge
+      const insetHighlight2 = ctx.createLinearGradient(
+        PHYSICS_BOARD_OFFSET_X + (PHYSICS_BOARD_WIDTH * 3/4),
+        PHYSICS_BOARD_START_Y,
+        PHYSICS_BOARD_OFFSET_X + PHYSICS_BOARD_WIDTH,
+        PHYSICS_BOARD_START_Y
+      );
+      insetHighlight2.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+      insetHighlight2.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+      ctx.fillStyle = insetHighlight2;
+      ctx.roundRect(PHYSICS_BOARD_OFFSET_X + (PHYSICS_BOARD_WIDTH * 3/4), PHYSICS_BOARD_START_Y, PHYSICS_BOARD_WIDTH / 4, PHYSICS_BOARD_HEIGHT, 16);
+      ctx.fill();
+
+      ctx.restore();
+
+      const chuteX = PHYSICS_BOARD_OFFSET_X + PHYSICS_BOARD_WIDTH / 2;
+      const chuteY = dropY - 2; // Offset slightly for aesthetics
+
+      ctx.save();
+      // Outer rim
+      ctx.beginPath();
+      ctx.arc(chuteX, chuteY, scaledChuteRadius + 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fill();
+
+      // Deep dark hole
+      ctx.beginPath();
+      ctx.arc(chuteX, chuteY, scaledChuteRadius, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(chuteX, chuteY, 0, chuteX, chuteY, scaledChuteRadius);
+      grad.addColorStop(0, '#000000');
+      grad.addColorStop(0.8, '#0a0a0a');
+      grad.addColorStop(1, '#1a1a1a');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Inner shadow/depth
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      // Restore transformation (physics space -> display space)
+      ctx.restore();
+    });
+
+    Matter.Events.on(render, 'afterRender', () => {
+      const ctx = render.context;
+      if (!ctx) return;
+      const now = Date.now();
+
+      // Apply coordinate transformation: Physics space (600x667) -> Display space
+      ctx.save();
+      ctx.translate(displayBoardOffsetX, displayBoardOffsetY);
+      ctx.scale(scaleX, scaleY);
+
+      // Draw all pegs
+      const pegs = engine.world.bodies.filter(body => body.label === CollisionLabel.PEG);
+
+      // First pass: Clean up expired peg hits BEFORE drawing
+      pegHits.current.forEach((hitTime, pegId) => {
+        const elapsed = now - hitTime;
+        if (elapsed >= 2900) {
+          pegHits.current.delete(pegId);
+        }
+      });
+
+      // Matter.js renders basic pegs, but we add shadows manually for 3D effect
+      pegs.forEach((peg: Matter.Body) => {
+        if (!pegHits.current.has(peg.id)) {
+          ctx.save();
+          // Add shadow for 3D effect
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+
+          // Matter.js already drew the white peg, just add shadow effect
+          ctx.restore();
+        }
+      });
+
+      // Draw hit pegs with white glow animation
+      pegs.forEach((peg: Matter.Body) => {
+        const hitTime = pegHits.current.get(peg.id);
+        if (!hitTime) return;
+
+        const elapsed = now - hitTime;
+
+        ctx.save();
+
+        // Add shadow for depth
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 4 * physicsScaleFactor;
+        ctx.shadowOffsetX = 1 * physicsScaleFactor;
+        ctx.shadowOffsetY = 1 * physicsScaleFactor;
+
+        // Draw base peg with bright white
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(peg.position.x, peg.position.y, physicsPegRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Reset shadow for glow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Draw simple white glow with fade in/out
+          // Calculate opacity with short fade in (150ms) and long fade out
+          let glowOpacity = 0;
+          if (elapsed < 150) {
+            // Quick fade in
+            glowOpacity = elapsed / 150;
+          } else if (elapsed < 400) {
+            // Full opacity in the middle
+            glowOpacity = 1.0;
+        } else if (elapsed < 2900) {
+            // Long fade out (2500ms)
+            glowOpacity = 1.0 - ((elapsed - 400) / 2500);
+          }
+
+        // Clamp opacity to valid range
+        glowOpacity = Math.max(0, Math.min(1, glowOpacity));
+
+        // Apply white glow with opacity (only if visible)
+        if (glowOpacity > 0.01) {
+          // Draw outer glow
+          ctx.shadowColor = `rgba(255, 255, 255, ${glowOpacity * 0.8})`;
+          ctx.shadowBlur = 10 * glowOpacity * physicsScaleFactor;
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${glowOpacity * 0.6})`;
+            ctx.beginPath();
+          ctx.arc(peg.position.x, peg.position.y, physicsPegRadius + 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+        });
+
+      // Draw ball trails (fading neon effect)
+      const balls = engine.world.bodies.filter(body => body.label === CollisionLabel.BALL);
+      balls.forEach((ball: Matter.Body) => {
+        // Store trail positions for this ball
+        if (!ball.plugin.trail) {
+          ball.plugin.trail = [];
+        }
+
+        // Add current position to trail
+        ball.plugin.trail.push({
+          x: ball.position.x,
+          y: ball.position.y,
+          timestamp: now
+        });
+
+        // Keep only recent positions (last 8 positions, ~200ms)
+        if (ball.plugin.trail.length > 8) {
+          ball.plugin.trail.shift();
+        }
+
+        // Remove old positions
+        ball.plugin.trail = ball.plugin.trail.filter((pos: any) => now - pos.timestamp < 200);
+
+        // Draw trail with decreasing opacity
+        const displayBallRadius = scaledValuesRef.current.displayBallRadius || scaledBallRadius;
+        ball.plugin.trail.forEach((pos: any, index: number) => {
+          const age = now - pos.timestamp;
+          const opacity = Math.max(0.1, 1 - (age / 200)); // Fade over 200ms
+          const trailRadius = displayBallRadius * (0.8 - (index * 0.05)); // Shrink trail
+
+          if (trailRadius > 0 && opacity > 0.05) {
+            ctx.save();
+            ctx.globalAlpha = opacity * 0.3; // Make trail semi-transparent
+
+            // Get ball color for trail
+            const trailColor = ball.plugin.risk === 'GREEN' ? COLORS.BALL_GREEN :
+                              ball.plugin.risk === 'YELLOW' ? COLORS.BALL_YELLOW :
+                              COLORS.BALL_RED;
+
+            // Create trail gradient
+            const trailGradient = ctx.createRadialGradient(
+              pos.x - trailRadius * 0.3,
+              pos.y - trailRadius * 0.3,
+              0,
+              pos.x,
+              pos.y,
+              trailRadius
+            );
+
+            // Parse RGB for trail color
+            const rgbMatch = trailColor.match(/#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/);
+            if (rgbMatch) {
+              const [_, r, g, b] = rgbMatch.map(x => parseInt(x, 16));
+              trailGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+              trailGradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${opacity * 0.3})`);
+              trailGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${opacity * 0.1})`);
+            }
+
+            // Draw trail
+            ctx.fillStyle = trailGradient;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, trailRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+          }
+        });
+      });
+
+      // Draw balls with gradient fills (on top of trails)
+      balls.forEach((ball: Matter.Body) => {
+        ctx.save();
+
+        const displayBallRadius = scaledValuesRef.current.displayBallRadius || scaledBallRadius;
+
+        // Create radial gradient for ball fill
+        const gradient = ctx.createRadialGradient(
+          ball.position.x - displayBallRadius * 0.3,
+          ball.position.y - displayBallRadius * 0.3,
+          0,
+          ball.position.x,
+          ball.position.y,
+          displayBallRadius
+        );
+
+        // Get ball color and create gradient
+        const ballColor = ball.plugin.risk === 'GREEN' ? COLORS.BALL_GREEN :
+                         ball.plugin.risk === 'YELLOW' ? COLORS.BALL_YELLOW :
+                         COLORS.BALL_RED;
+
+        // Parse RGB values from ball color
+        const rgbMatch = ballColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+          const [_, r, g, b] = rgbMatch;
+          // Create gradient: center (lighter), middle, edge (darker)
+          gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.9)`);     // Center - bright
+          gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.7)`);   // Middle
+          gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.4)`);     // Edge - darker
+        }
+
+        // Fill ball with gradient
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(ball.position.x, ball.position.y, displayBallRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Add subtle stroke for definition
+        ctx.strokeStyle = ballColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+      });
+
+      // Bucket Multipliers Rendering - Single Row Based on Selected Risk
+      const selectedTier = selectedRiskLevel;
+      const tierColors = {
+        GREEN: { normal: '#AFFC41', dark: '#8CE63A' },
+        YELLOW: { normal: '#4392F1', dark: '#2A6BC8' },
+        RED: { normal: '#FF331F', dark: '#D12822' }
+      };
+
+      // Render only the selected risk level's multipliers
+      const tierHeight = BOARD_DIMENSIONS.BUCKET_HEIGHT;
+      const yBase = bucketBaseY;
+      const mults = MULTIPLIERS[selectedTier];
+      const tierColor = tierColors[selectedTier];
+
+      // Calculate total bucket row dimensions for radial gradient
+      const totalBucketRowWidth = bucketCount * bucketWidth;
+      const bucketRowCenterX = bucketsStartX + totalBucketRowWidth / 2;
+      const bucketRowCenterY = yBase + tierHeight / 2;
+
+      // Create radial gradient for the entire bucket row (white center, cyan edges)
+      const radialGradient = ctx.createRadialGradient(
+        bucketRowCenterX, bucketRowCenterY, 0,  // center point
+        bucketRowCenterX, bucketRowCenterY, totalBucketRowWidth / 2  // radius to edge
+      );
+      radialGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');    // White at center
+      radialGradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.74)');
+      radialGradient.addColorStop(0.9, 'rgba(176, 74, 224, 0.74)');     // Cyan in middle
+      radialGradient.addColorStop(1, 'rgba(126, 11, 214, 0.75)');      // Lighter cyan at edges
+
+      mults.forEach((m, i) => {
+        const x = bucketsStartX + i * bucketWidth;
+        const bW = bucketWidth - 12; // 3px gap between buckets
+        const bH = tierHeight;
+
+        let scale = 1.0;
+        let glowIntensity = 0;
+        const hitKey = `${selectedTier}-${i}`;
+        const hitTime = activeHits.current.get(hitKey);
+
+        // Check for collision hits (both free play and contract mode)
+        if (hitTime) {
+          const elapsed = now - hitTime;
+          if (elapsed < 350) {
+            scale = 1.0 + (Math.sin((elapsed / 350) * Math.PI) * 0.15); // Zoom animation
+          }
+          if (elapsed < 1500) {
+            glowIntensity = 1.0 - (elapsed / 1500);
+          } else {
+            activeHits.current.delete(hitKey);
+          }
+        }
+
+        const finalBW = bW * scale;
+        const finalBH = bH * scale;
+        const offsetX = (finalBW - bW) / 2;
+        const offsetY = (finalBH - bH) / 2;
+
+        ctx.save();
+
+        // Use radial gradient instead of solid color
+        const bucketColor = radialGradient;
+
+        // Draw bucket with 3D effect and darker bottom border
+        // Add drop shadow for floating effect
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+
+        // Glow effect when hit (overrides drop shadow)
+        if (glowIntensity > 0) {
+          ctx.shadowBlur = 20 * glowIntensity;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.shadowColor = `rgba(255, 255, 255, ${glowIntensity * 0.9})`;
+        }
+
+        // Base bucket fill with rounded corners (rounded-sm = smaller radius)
+        ctx.fillStyle = bucketColor;
+        const cornerRadius = 2; // Smaller radius for rounded-sm
+        ctx.beginPath();
+        ctx.roundRect(x - offsetX, yBase - offsetY, finalBW, finalBH, cornerRadius);
+        ctx.fill();
+
+        // Reset shadow for gradients and borders
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowColor = 'transparent';
+
+        // 3D effect: raised highlight - top and left (bright)
+        const highlight1 = ctx.createLinearGradient(x - offsetX, yBase - offsetY, x - offsetX, yBase - offsetY + finalBH / 3);
+        highlight1.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        highlight1.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = highlight1;
+        ctx.beginPath();
+        ctx.roundRect(x - offsetX, yBase - offsetY, finalBW, finalBH / 3, cornerRadius);
+        ctx.fill();
+
+        // 3D effect: raised highlight - left edge
+        const highlight2 = ctx.createLinearGradient(x - offsetX, yBase - offsetY, x - offsetX + finalBW / 4, yBase - offsetY);
+        highlight2.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+        highlight2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = highlight2;
+        ctx.beginPath();
+        ctx.roundRect(x - offsetX, yBase - offsetY, finalBW / 4, finalBH, cornerRadius);
+        ctx.fill();
+
+        // 3D effect: darker bottom border/shadow - bottom and right (for depth)
+        const shadow1 = ctx.createLinearGradient(x - offsetX, yBase - offsetY + (finalBH * 2/3), x - offsetX, yBase - offsetY + finalBH);
+        shadow1.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        shadow1.addColorStop(1, 'rgba(0, 0, 0, 0.3)'); // Darker for more pronounced 3D effect
+        ctx.fillStyle = shadow1;
+        ctx.beginPath();
+        ctx.roundRect(x - offsetX, yBase - offsetY + (finalBH * 2/3), finalBW, finalBH / 3, cornerRadius);
+        ctx.fill();
+
+        // Darker bottom border line
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x - offsetX, yBase - offsetY + finalBH - 1, finalBW, 1, cornerRadius);
+        ctx.stroke();
+
+        // Draw multiplier text - responsive font size for 42px buckets
+        const fontSize = Math.max(10, Math.min(14, bucketWidth / 3)); // Responsive: 10-14px
+        ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Add white outline for better contrast
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.strokeText(m.toString(), x + bW / 2, yBase + bH / 2);
+
+        // Then draw the black fill
+        ctx.fillStyle = '#000000'; // text-black
+        ctx.fillText(m.toString(), x + bW / 2, yBase + bH / 2);
+
+        ctx.restore();
+      });
+
+      // Restore transformation (physics space -> display space)
+      ctx.restore();
+
+      if (ballsToRemove.current.size > 0) {
+        ballsToRemove.current.forEach(ball => Matter.World.remove(engine.world, ball));
+        ballsToRemove.current.clear();
+      }
+    });
+
+    // 2. Fixed Timestep with SUB-STEPPING
+    const fixedTimeStep = PHYSICS.FIXED_TIME_STEP;
+    const subSteps = PHYSICS.SUB_STEPS;
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const gameLoop = () => {
+      if (engineRef.current) {
+        // Sub-stepped update loop to prevent ball glitching through pegs
+        const subSteps = PHYSICS.SUB_STEPS;
+        const subStepDelta = PHYSICS.FIXED_TIME_STEP / subSteps;
+        for (let i = 0; i < subSteps; i++) {
+          Matter.Engine.update(engineRef.current, subStepDelta);
+        }
+      }
+    };
+
+    intervalId = setInterval(gameLoop, fixedTimeStep); // Guaranteed fixed timesteps
+    Matter.Render.run(render);
+
+    return () => {
+      Matter.Render.stop(render);
+      clearInterval(intervalId); // Stop the physics loop
+      Matter.Engine.clear(engine);
+    };
+  }, [dimensions]);
+
+  useEffect(() => {
+    if (!lastDrop || !engineRef.current) return;
+    const risk = lastDrop.risk;
+
+    // Check if this is contract mode with predetermined result
+    const isContractMode = 'contractResult' in lastDrop;
+    const targetBucket = isContractMode ? (lastDrop as any).contractResult.bucket : null;
+
+    // Use PHYSICS board values from ref (these are fixed, not dynamic)
+    const { ballRadius, boardOffsetX, boardWidth, dropY } = scaledValuesRef.current;
+
+    let spawnX: number;
+    let initialVelX: number;
+
+    if (isContractMode && targetBucket !== null) {
+      // CONTRACT MODE: Use seeded deterministic physics with pre-calculated database
+      // Get a pre-calculated seed from the database (instant lookup)
+      const seed = getSeedFromDatabase(targetBucket, risk);
+
+      // Create a seeded RNG for this ball (MUST match seed generation script EXACTLY!)
+      const rng = seedrandom(`bucket-${targetBucket}-attempt-${seed}`);
+
+      // Use seeded random for spawn position and velocity (in PHYSICS space)
+      spawnX = boardOffsetX + (boardWidth / 2) + ((rng() * PHYSICS.SPAWN_RANGE_X) - PHYSICS.SPAWN_RANGE_X / 2);
+      initialVelX = (rng() - 0.5) * PHYSICS.INITIAL_V_X_VARIANCE;
+    } else {
+      // FREE PLAY MODE: Use true random (in PHYSICS space)
+      spawnX = boardOffsetX + (boardWidth / 2) + (Math.random() * PHYSICS.SPAWN_RANGE_X - PHYSICS.SPAWN_RANGE_X / 2);
+      initialVelX = (Math.random() - 0.5) * PHYSICS.INITIAL_V_X_VARIANCE;
+    }
+
+    // Create physics ball (works for both modes)
+    const ball = Matter.Bodies.circle(spawnX, dropY, ballRadius, {
+      restitution: PHYSICS.BALL_RESTITUTION,
+      friction: PHYSICS.BALL_FRICTION,
+      frictionStatic: 0.5,
+      frictionAir: PHYSICS.BALL_FRICTION_AIR,
+      density: PHYSICS.BALL_DENSITY,
+      label: CollisionLabel.BALL,
+      slop: PHYSICS.SLOP,
+      plugin: {
+        risk,
+      },
+      collisionFilter: {
+        category: COLLISION_CATEGORIES.BALL,
+        mask: COLLISION_CATEGORIES.PEG | COLLISION_CATEGORIES.BUCKET
+      },
+      render: {
+        visible: false
+      }
+    });
+
+    Matter.Body.setVelocity(ball, { x: initialVelX, y: PHYSICS.INITIAL_V_Y });
+    Matter.World.add(engineRef.current.world, ball);
+
+    // Play drop sound when ball is released (but not during auto-drop)
+    if (!isAutoDrop) {
+      playDropSound();
+    }
+  }, [lastDrop, isAutoDrop]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full h-full relative"
+    >
+      <canvas ref={canvasRef} />
+      {onTestDrop && (
+        <button
+          onClick={onTestDrop}
+          className="absolute top-4 left-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-10 pointer-events-auto"
+        >
+          Drop Ball
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default PlinkoGame;

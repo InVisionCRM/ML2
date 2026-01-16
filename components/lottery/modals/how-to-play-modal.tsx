@@ -6,7 +6,7 @@ export function HowToPlayModal() {
       {/* Hero Section */}
       <div className="text-center space-y-3">
         <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-          🎰 Win Big with MegaMorbius Lottery! 🎰
+          🎰 Win Big with MegaMORBIUS Lottery! 🎰
         </h2>
         <p className="text-white/70 text-lg">
           Pick 6 numbers, match them to win! The more you match, the bigger your prize! 💰
@@ -17,7 +17,7 @@ export function HowToPlayModal() {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-900/20 border border-purple-500/40 rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-purple-300">100</div>
-          <div className="text-xs text-white/60 uppercase tracking-wider mt-1">Morbius/Ticket</div>
+          <div className="text-xs text-white/60 uppercase tracking-wider mt-1">MORBIUS/Ticket</div>
         </div>
         <div className="bg-gradient-to-br from-pink-500/20 to-pink-900/20 border border-pink-500/40 rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-pink-300">30</div>
@@ -41,7 +41,7 @@ export function HowToPlayModal() {
             <div className="relative z-10 text-center">
               <div className="text-5xl font-bold text-yellow-300 mb-2">6 MATCHES</div>
               <div className="text-xl text-yellow-200 font-semibold">15,000 MORBIUS! 🎊</div>
-              <div className="text-sm text-yellow-100/80 mt-2">+ MegaMorbius Bonus</div>
+              <div className="text-sm text-yellow-100/80 mt-2">+ MegaMORBIUS Bonus</div>
             </div>
           </div>
 
@@ -49,8 +49,8 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-2 border-purple-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-300">5 Matches</div>
-              <div className="text-lg text-purple-200 mt-1">5,000 Morbius!</div>
-              <div className="text-xs text-white/60 mt-2">+ MegaMorbius Bonus</div>
+              <div className="text-lg text-purple-200 mt-1">5,000 MORBIUS!</div>
+              <div className="text-xs text-white/60 mt-2">+ MegaMORBIUS Bonus</div>
             </div>
           </div>
 
@@ -58,7 +58,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/30 to-pink-900/20 border-2 border-pink-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-300">4 Matches</div>
-              <div className="text-lg text-pink-200 mt-1">2,000 Morbius!</div>
+              <div className="text-lg text-pink-200 mt-1">2,000 MORBIUS!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -67,7 +67,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-2 border-blue-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-300">3 Matches</div>
-              <div className="text-lg text-blue-200 mt-1">750 Morbius!</div>
+              <div className="text-lg text-blue-200 mt-1">750 MORBIUS!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -76,7 +76,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/30 to-green-900/20 border-2 border-green-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-green-300">2 Matches</div>
-              <div className="text-lg text-green-200 mt-1">250 Morbius!</div>
+              <div className="text-lg text-green-200 mt-1">250 MORBIUS!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -85,7 +85,7 @@ export function HowToPlayModal() {
           <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/30 to-cyan-900/20 border-2 border-cyan-400/50">
             <div className="text-center">
               <div className="text-3xl font-bold text-cyan-300">1 Match</div>
-              <div className="text-lg text-cyan-200 mt-1">100 Morbius!</div>
+              <div className="text-lg text-cyan-200 mt-1">100 MORBIUS!</div>
               <div className="text-xs text-white/60 mt-2">Guaranteed Prize</div>
             </div>
           </div>
@@ -105,7 +105,7 @@ export function HowToPlayModal() {
               <span className="text-pink-400 font-bold">70%</span>
             </div>
             <div className="flex justify-between items-center p-2 rounded bg-amber-500/10">
-              <span className="text-white/80">MegaMorbius Bank</span>
+              <span className="text-white/80">MegaMORBIUS Bank</span>
               <span className="text-amber-400 font-bold">10%</span>
             </div>
             <div className="flex justify-between items-center p-2 rounded bg-red-500/10">
@@ -123,10 +123,10 @@ export function HowToPlayModal() {
           </div>
         </div>
 
-        {/* MegaMorbius */}
+        {/* MegaMORBIUS */}
         <div className="p-5 rounded-xl bg-gradient-to-br from-amber-900/30 to-amber-950/20 border border-amber-500/30">
           <h4 className="font-bold mb-3 text-lg text-amber-300 flex items-center gap-2">
-            <span>🎰</span> MegaMorbius Progressive Jackpot
+            <span>🎰</span> MegaMORBIUS Progressive Jackpot
           </h4>
           <div className="space-y-3 text-sm text-white/80">
             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -163,7 +163,7 @@ export function HowToPlayModal() {
           </div>
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <div className="text-2xl font-bold text-amber-400">10%</div>
-            <div className="text-xs text-white/60 mt-1">MegaMorbius</div>
+            <div className="text-xs text-white/60 mt-1">MegaMORBIUS</div>
           </div>
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
             <div className="text-2xl font-bold text-red-400">10%</div>
@@ -186,7 +186,7 @@ export function HowToPlayModal() {
         <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-900/20 border border-pink-500/30 text-center">
           <div className="text-2xl mb-2">2️⃣</div>
           <div className="font-semibold text-pink-300 mb-1">Buy Tickets</div>
-          <div className="text-xs text-white/60">100 Morbius each</div>
+          <div className="text-xs text-white/60">100 MORBIUS each</div>
         </div>
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/30 text-center">
           <div className="text-2xl mb-2">3️⃣</div>
@@ -200,7 +200,7 @@ export function HowToPlayModal() {
         </div>
       </div>
 
-      {/* MegaMorbius Donations */}
+      {/* MegaMORBIUS Donations */}
       <div className="space-y-3">
         <h3 className="text-xl font-bold text-center bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
           🎰 Support the Jackpot!
@@ -213,9 +213,9 @@ export function HowToPlayModal() {
             </p>
           </div>
           <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-900/20 border border-yellow-500/30">
-            <h4 className="font-bold text-yellow-300 mb-2">🎯 MegaMorbius Donations</h4>
+            <h4 className="font-bold text-yellow-300 mb-2">🎯 MegaMORBIUS Donations</h4>
             <p className="text-sm text-white/80">
-              Boost the progressive jackpot! Your donation grows the MegaMorbius prize for future winners.
+              Boost the progressive jackpot! Your donation grows the MegaMORBIUS prize for future winners.
             </p>
           </div>
         </div>

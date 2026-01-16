@@ -26,7 +26,7 @@ export function KenoTicketBarcode({ value }: KenoTicketBarcodeProps) {
       {bars.map((width, idx) => (
         <div
           key={idx}
-          className="bg-black h-full"
+          className="bg-gradient-to-br from-slate-950 to-slate-900 h-full"
           style={{
             width: `${width}px`,
             minWidth: '1px',

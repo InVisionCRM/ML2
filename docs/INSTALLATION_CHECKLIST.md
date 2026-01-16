@@ -4,7 +4,7 @@
 
 ### 1. Install Required Dependency
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto
+cd /Users/kyle/MORBlotto/MORBIUS_lotto
 pnpm add @radix-ui/react-checkbox
 ```
 
@@ -93,7 +93,7 @@ pnpm dev
 ### 6. Test Lottery Interface
 
 #### User Actions Tab
-- ⬜ "Buy Tickets (Morbius)" card displays
+- ⬜ "Buy Tickets (MORBIUS)" card displays
 - ⬜ Approval section works
 - ⬜ Ticket input accepts JSON
 - ⬜ Buy button triggers transaction
@@ -320,7 +320,7 @@ pnpm dev
 
 ### 1. Install Dependencies
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto
+cd /Users/kyle/MORBlotto/MORBIUS_lotto
 pnpm add @radix-ui/react-checkbox
 ```
 
@@ -347,7 +347,7 @@ http://localhost:3000/contracts
 
 **Example: Buy Tickets (Wallet required)**
 1. Go to User Actions tab
-2. Approve 1000 Morbius
+2. Approve 1000 MORBIUS
 3. Enter: `[[1,2,3,4,5,6]]`
 4. Click "Buy Tickets"
 5. Confirm in wallet

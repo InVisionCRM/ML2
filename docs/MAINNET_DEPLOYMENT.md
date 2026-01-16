@@ -112,7 +112,7 @@ npx hardhat verify --network pulsechain \
 
 ### Contract Address Updated
 
-**File:** `/Users/kyle/MORBlotto/morbius_lotto/lib/contracts.ts`
+**File:** `/Users/kyle/MORBlotto/MORBIUS_lotto/lib/contracts.ts`
 
 ```typescript
 // OLD (deprecated)
@@ -198,7 +198,7 @@ await kenoContract.startFirstRound()
 
 Or use a script:
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto/scripts
+cd /Users/kyle/MORBlotto/MORBIUS_lotto/scripts
 node start-first-round.js
 ```
 
@@ -207,7 +207,7 @@ node start-first-round.js
 The keeper automatically finalizes rounds every 15 minutes:
 
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto/scripts
+cd /Users/kyle/MORBlotto/MORBIUS_lotto/scripts
 node keno-keeper.js
 ```
 
@@ -217,7 +217,7 @@ node keno-keeper.js
 
 **Check contract status:**
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto/scripts
+cd /Users/kyle/MORBlotto/MORBIUS_lotto/scripts
 node check-keno-contract.js
 ```
 
@@ -365,7 +365,7 @@ For complete Plus 3 implementation details, see:
 - `/Users/kyle/MORBlotto/PLUS3_IMPLEMENTATION_SUMMARY.md`
 
 For contract source code, see:
-- `/Users/kyle/MORBlotto/morbius_lotto/contracts/contracts/CryptoKeno.sol`
+- `/Users/kyle/MORBlotto/MORBIUS_lotto/contracts/contracts/CryptoKeno.sol`
 
 ---
 

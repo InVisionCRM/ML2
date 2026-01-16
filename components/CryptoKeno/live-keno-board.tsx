@@ -7,7 +7,13 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { KenoTicket } from '@/components/CryptoKeno/keno-ticket'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid'
+import { ChevronLeft, ChevronRight, DollarSign, Trophy, TrendingUp, TrendingDown, Target } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useKenoStats } from '@/hooks/use-keno-stats'
+import { useAccount } from 'wagmi'
+import { formatEther } from 'viem'
 
 type Stage = 'idle' | 'multiplier' | 'plus3' | 'drawing' | 'complete'
 const MULTIPLIERS = [1, 2, 3, 5, 10]
@@ -30,12 +36,6 @@ interface LiveKenoBoardProps {
     drawsRemaining: number
     firstRoundId: bigint
     roundTo: number
-    addons: {
-      multiplier: boolean
-      bullsEye: boolean
-      plus3: boolean
-      progressive: boolean
-    }
     isActive: boolean
     currentWin: string
     purchaseTimestamp?: number
@@ -74,11 +74,23 @@ export function LiveKenoBoard({
   const [spinning, setSpinning] = useState(false)
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
   const [ticketIndex, setTicketIndex] = useState(0)
+  const [showExpiredTickets, setShowExpiredTickets] = useState(false)
+
+  // Player stats
+  const { address } = useAccount()
+  const { playerStats, unclaimedWinnings, isLoading: isLoadingStats } = useKenoStats()
 
   const orderedWinning = useMemo(() => winningNumbers.filter((n) => n > 0), [winningNumbers])
   const orderedPlus3 = useMemo(() => plus3Numbers.filter((n) => n > 0), [plus3Numbers])
-  const ticketIdsSignature = useMemo(() => tickets.map((t) => t.ticketId.toString()).join('|'), [tickets])
-  const currentTicket = tickets[ticketIndex] ?? null
+
+  // Filter tickets based on expired toggle
+  const filteredTickets = useMemo(() => {
+    if (showExpiredTickets) return tickets
+    return tickets.filter(t => t.drawsRemaining > 0)
+  }, [tickets, showExpiredTickets])
+
+  const ticketIdsSignature = useMemo(() => filteredTickets.map((t) => t.ticketId.toString()).join('|'), [filteredTickets])
+  const currentTicket = filteredTickets[ticketIndex] ?? null
   const displayNumbers = useMemo(
     () => (drawnNumbers.length ? drawnNumbers : orderedWinning).slice(0, 20),
     [drawnNumbers, orderedWinning]
@@ -101,7 +113,7 @@ export function LiveKenoBoard({
 
   useEffect(() => {
     setTicketIndex(0)
-  }, [tickets.length, roundId, ticketIdsSignature])
+  }, [filteredTickets.length, roundId, ticketIdsSignature, showExpiredTickets])
 
   const clearTimers = () => {
     timeouts.current.forEach((t) => clearTimeout(t))
@@ -200,9 +212,9 @@ export function LiveKenoBoard({
   }, [nextDrawTime])
 
   return (
-    <Card className="relative overflow-hidden border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-black shadow-2xl">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.15),rgba(0,0,0,0))]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(76,29,149,0.12),rgba(0,0,0,0))]" />
+    <Card className="relative overflow-hidden bg-transparent">
+      <div className="absolute inset-0 bg-transparent" />
+      <div className="absolute inset-0 bg-transparent" />
 
       {/* Compact round + close controls */}
       <div className="pointer-events-none absolute inset-0 z-50">
@@ -211,7 +223,7 @@ export function LiveKenoBoard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full bg-black/30 text-white hover:bg-black/50"
+              className="h-8 w-8 rounded-full bg-gradient-to-br from-slate-950 to-slate-900/30 text-white hover:bg-gradient-to-br from-slate-950 to-slate-900/50"
               onClick={onClose}
               aria-label="Close"
             >
@@ -222,41 +234,45 @@ export function LiveKenoBoard({
       </div>
 
       <div className="relative z-10 px-4 py-3">
-        <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4 items-start">
-          {/* Left Column - Main Draw Board */}
-          <div className="relative flex flex-col gap-3 max-h-[840px] mt-4">
-            {stage !== 'complete' && (
-              <div className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                <div className="rounded-md bg-emerald-600/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
-                  Round {roundId ?? '-'}
-                </div>
-              </div>
-            )}
-            {/* Flying ball overlay */}
-            <AnimatePresence>
-              {flyingBall && (
-                <motion.div
-                  key={`${flyingBall.number}-${flyingBall.plus3 ? 'p' : 'w'}`}
-                  initial={{ scale: 2, x: 0, y: 0, opacity: 1 }}
-                  animate={{
-                    scale: [2, 2, 0.35],
-                    x: [0, 0, flyingBall.x],
-                    y: [0, 0, flyingBall.y],
-                    opacity: [1, 1, 0],
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1.8, ease: 'easeInOut', times: [0, 0.4, 1] }}
-                  className={cn(
-                    'pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex h-32 w-32 items-center justify-center rounded-full border text-4xl font-black shadow-2xl',
-                    'bg-green-500 border-white text-white'
+        <BentoGrid className="max-w-none">
+          <BentoGridItem
+            title="Live Draw Board"
+            className="md:col-start-1 md:row-start-1"
+            header={
+              <>
+                {stage !== 'complete' && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-20">
+                    <div className="rounded-md bg-emerald-600/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
+                      Round {roundId ?? '-'}
+                    </div>
+                  </div>
+                )}
+                {/* Flying ball overlay */}
+                <AnimatePresence>
+                  {flyingBall && (
+                    <motion.div
+                      key={`${flyingBall.number}-${flyingBall.plus3 ? 'p' : 'w'}`}
+                      initial={{ scale: 2, x: 0, y: 0, opacity: 1 }}
+                      animate={{
+                        scale: [2, 2, 0.35],
+                        x: [0, 0, flyingBall.x],
+                        y: [0, 0, flyingBall.y],
+                        opacity: [1, 1, 0],
+                      }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1.8, ease: 'easeInOut', times: [0, 0.4, 1] }}
+                      className={cn(
+                        'pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex h-32 w-32 items-center justify-center rounded-full border text-4xl font-black shadow-2xl',
+                        'bg-green-500 border-white text-white'
+                      )}
+                    >
+                      {flyingBall.number.toString().padStart(2, '0')}
+                    </motion.div>
                   )}
-                >
-                  {flyingBall.number.toString().padStart(2, '0')}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Board grid */}
+                </AnimatePresence>
+              </>
+            }
+          >
             <div
               ref={gridRef}
               className={cn(
@@ -307,11 +323,11 @@ export function LiveKenoBoard({
                     exit={{ opacity: 0 }}
                     className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center"
                   >
-                    <div className="w-full h-full rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl overflow-hidden">
-                      <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <div className="w-full h-full rounded-2xl border border-slate-200/50 backdrop-blur-md p-3 text-white shadow-2xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-700">
+                      <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-white">
                         <span />
-                        <span>Drawing: <span className="text-slate-800">{roundId ?? '-'}</span></span>
-                        <span className="text-[11px] text-slate-700">Kicker: <span className="font-bold text-slate-900">{multiplier ? `x${multiplier}` : '—'}</span></span>
+                        <span>Drawing: <span className="text-white">{roundId ?? '-'}</span></span>
+                        <span />
                       </div>
 
                       <div className="grid grid-cols-5 gap-2 justify-items-center mb-3">
@@ -322,7 +338,7 @@ export function LiveKenoBoard({
                             animate={{ scale: 1, opacity: 1, rotateX: 0, y: 0 }}
                             exit={{ scale: 0.85, opacity: 0, rotateX: 25, y: -6 }}
                             transition={{ duration: 0.45, delay: idx * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-800/70 border border-purple-800/50 text-[15px] font-bold text-white shadow-[0_8px_16px_rgba(88,28,135,0.4)]"
+                            className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-white via-white/50 to-white/40 border border-slate-900/80 text-[15px] font-bold text-slate-950 shadow-lg backdrop-blur-md"
                           >
                             {n.toString().padStart(2, '0')}
                           </motion.div>
@@ -361,121 +377,247 @@ export function LiveKenoBoard({
                       )}
 
                       <div className="mt-2 border-t border-slate-200 pt-2 text-center space-y-1">
-                        <div className="text-sm font-semibold text-slate-900">Awaiting Next Draw</div>
-                        <div className="text-sm font-semibold text-slate-700">Next in {timeLabel}</div>
+                        <div className="text-sm font-semibold text-white/70">Awaiting Next Draw</div>
+                        <div className="text-4xl font-semibold text-green-500">Next in {timeLabel}</div>
                       </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+          </BentoGridItem>
 
+          <BentoGridItem
+            title="Your Numbers"
+            className="md:col-start-2 md:row-start-2 md:mx-18"
+            description={`${currentTicket?.drawsRemaining ?? 0} draws remaining`}
+          >
+            {filteredTickets && filteredTickets.length > 0 ? (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 p-0 text-white hover:bg-white/10 disabled:opacity-40"
+                  onClick={() => setTicketIndex((i) => Math.max(0, i - 1))}
+                  disabled={ticketIndex === 0}
+                  aria-label="Previous ticket"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex flex-wrap justify-center gap-2 px-1">
+                  {filteredTickets[ticketIndex]?.numbers.map((n) => {
+                    const isHit = drawnNumbers.includes(n)
+                    const isBullsEye = bullsEyeNumber === n
+
+                    return (
+                      <motion.div
+                        key={n}
+                        layout
+                        className={cn(
+                          'relative flex h-12 w-12 items-center justify-center rounded-full border text-[16px] font-bold transition-all',
+                          isHit
+                            ? 'border-emerald-400 text-emerald-100 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                            : 'border-purple-400 text-purple-100 shadow-[0_0_4px_rgba(168,85,247,0.4)]'
+                        )}
+                      >
+                        {n.toString().padStart(2, '0')}
+                        {isBullsEye && (
+                          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_3px_rgba(59,130,246,0.8)]" />
+                        )}
+                        {isHit && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full bg-emerald-400/25"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.25 }}
+                          />
+                        )}
+                      </motion.div>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 p-0 text-white hover:bg-white/10 disabled:opacity-40"
+                  onClick={() => setTicketIndex((i) => Math.min(filteredTickets.length - 1, i + 1))}
+                  disabled={ticketIndex >= filteredTickets.length - 1}
+                  aria-label="Next ticket"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center text-white/60">No active tickets</div>
+            )}
+          </BentoGridItem>
+
+          <BentoGridItem
+            className="md:col-start-2 md:row-start-1 md:mx-18 relative"
+          >
+            {/* Expired Tickets Toggle - Top Right of Ticket Card */}
+            <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-gradient-to-br from-slate-950/90 to-slate-900/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10 shadow-lg">
+              <Switch
+                id="show-expired"
+                checked={showExpiredTickets}
+                onCheckedChange={setShowExpiredTickets}
+                className="data-[state=checked]:bg-emerald-600"
+              />
+              <Label
+                htmlFor="show-expired"
+                className="text-xs text-white/90 cursor-pointer select-none font-medium whitespace-nowrap"
+              >
+                Show Expired
+              </Label>
             </div>
 
-            {/* Your Numbers anchored under grid inside left column */}
-            {tickets && tickets.length > 0 ? (
-              <div className="pt-2">
-                <div className="relative flex w-full max-w-4xl flex-col gap-3 rounded-lg border border-purple-500/30 bg-purple-950/40 px-3 py-4 shadow-sm backdrop-blur">
-                  <div className="absolute top-0 left-1 right-1 h-px bg-white/15" aria-hidden="true" />
-                  <div className="flex w-full items-center justify-between px-1 pb-1 leading-tight">
-                    {hasWonCurrentRound ? (
-                      <Badge className="h-5 rounded-full bg-emerald-500/20 px-2 text-[11px] font-semibold text-emerald-100 border border-emerald-400/50">
-                        
-                      </Badge>
-                    ) : (
-                      <span className="h-5 px-2 text-[11px] text-transparent select-none" aria-hidden="true">
-                        .
-                      </span>
-                    )}
-                    <p className="flex-1 text-center text-sm font-semibold text-white leading-tight">Your Numbers</p>
-                    <span className="text-[11px] text-gray-200 leading-tight ">
-                      {currentTicket?.drawsRemaining ?? 0} left
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 p-0 text-white hover:bg-white/10 disabled:opacity-40"
-                      onClick={() => setTicketIndex((i) => Math.max(0, i - 1))}
-                      disabled={ticketIndex === 0}
-                      aria-label="Previous ticket"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="flex flex-wrap justify-center gap-2 px-1">
-                      {tickets[ticketIndex]?.numbers.map((n) => {
-                        const isHit = drawnNumbers.includes(n)
-                        const isBullsEye = bullsEyeNumber === n
+            {filteredTickets && filteredTickets.length > 0 ? (
+              <KenoTicket
+                key={`${filteredTickets[ticketIndex].ticketId.toString()}-${roundId ?? 'r'}`}
+                ticketId={filteredTickets[ticketIndex].ticketId}
+                numbers={filteredTickets[ticketIndex].numbers}
+                spotSize={filteredTickets[ticketIndex].spotSize}
+                wager={filteredTickets[ticketIndex].wager}
+                draws={filteredTickets[ticketIndex].draws}
+                drawsRemaining={filteredTickets[ticketIndex].drawsRemaining}
+                firstRoundId={filteredTickets[ticketIndex].firstRoundId}
+                roundTo={filteredTickets[ticketIndex].roundTo}
+                addons={{
+                  multiplier: false,
+                  bullsEye: false,
+                  plus3: false,
+                }}
+                isActive={filteredTickets[ticketIndex].isActive}
+                currentWin={filteredTickets[ticketIndex].currentWin}
+                purchaseTimestamp={filteredTickets[ticketIndex].purchaseTimestamp}
+                roundHistory={filteredTickets[ticketIndex].roundHistory}
+                index={ticketIndex}
+                drawnNumbers={drawnNumbers}
+                bullsEyeNumber={bullsEyeNumber}
+              />
+            ) : (
+              <div className="text-center text-white/60">No active tickets</div>
+            )}
+          </BentoGridItem>
 
-                        return (
-                          <motion.div
-                            key={n}
-                            layout
-                            className={cn(
-                              'relative flex h-9 w-9 items-center justify-center rounded-full border text-[12px] font-bold transition-all',
-                              isHit
-                                ? 'border-emerald-400 bg-emerald-500/40 text-emerald-100 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                                : 'border-purple-400 bg-purple-500/30 text-purple-100 shadow-[0_0_4px_rgba(168,85,247,0.4)]'
-                            )}
-                          >
-                            {n.toString().padStart(2, '0')}
-                            {isBullsEye && (
-                              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_3px_rgba(59,130,246,0.8)]" />
-                            )}
-                            {isHit && (
-                              <motion.div
-                                className="absolute inset-0 rounded-full bg-emerald-400/25"
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.25 }}
-                              />
-                            )}
-                          </motion.div>
-                        )
-                      })}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 p-0 text-white hover:bg-white/10 disabled:opacity-40"
-                      onClick={() => setTicketIndex((i) => Math.min(tickets.length - 1, i + 1))}
-                      disabled={ticketIndex >= tickets.length - 1}
-                      aria-label="Next ticket"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+          {/* Player Statistics */}
+          <BentoGridItem
+            title="Your Statistics"
+            className="md:col-start-1 md:row-start-2 relative"
+            description={address ? 'Live player performance metrics' : 'Connect wallet to view stats'}
+          >
+            {!address ? (
+              <div className="text-center text-white/60 py-8">Connect your wallet to view statistics</div>
+            ) : isLoadingStats ? (
+              <div className="flex items-center justify-center gap-2 py-8">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                <p className="text-white/60">Loading statistics...</p>
               </div>
-            ) : null}
-          </div>
+            ) : !playerStats ? (
+              <div className="text-center text-white/60 py-8">No statistics available</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-px bg-white/10 p-px rounded-lg">
+                {/* Total Wagered */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-900/40 to-purple-950/30 p-4">
+                  <div className="absolute top-0 right-0 opacity-10">
+                    <DollarSign className="h-16 w-16 text-purple-400" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <DollarSign className="h-4 w-4 text-purple-400" />
+                      <p className="text-xs text-purple-200">Total Wagered</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">
+                      {Number(formatEther(playerStats.totalWagered)).toFixed(0)}
+                    </p>
+                    <p className="text-xs text-purple-300 mt-0.5">Morbius</p>
+                  </div>
+                </Card>
 
-          {/* Right Column - Ticket Details */}
-          <div className="space-y-3 w-full lg:max-w-sm lg:ml-auto">
-            {/* Full Ticket Details */}
-            {tickets && tickets.length > 0 && (
-              <div className="mt-4">
-                <KenoTicket
-                  key={`${tickets[ticketIndex].ticketId.toString()}-${roundId ?? 'r'}`}
-                  ticketId={tickets[ticketIndex].ticketId}
-                  numbers={tickets[ticketIndex].numbers}
-                  spotSize={tickets[ticketIndex].spotSize}
-                  wager={tickets[ticketIndex].wager}
-                  draws={tickets[ticketIndex].draws}
-                  drawsRemaining={tickets[ticketIndex].drawsRemaining}
-                  firstRoundId={tickets[ticketIndex].firstRoundId}
-                  roundTo={tickets[ticketIndex].roundTo}
-                  addons={tickets[ticketIndex].addons}
-                  isActive={tickets[ticketIndex].isActive}
-                  currentWin={tickets[ticketIndex].currentWin}
-                  purchaseTimestamp={tickets[ticketIndex].purchaseTimestamp}
-                  roundHistory={tickets[ticketIndex].roundHistory}
-                  index={ticketIndex}
-                />
+                {/* Claimed */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-900/40 to-emerald-950/30 p-4">
+                  <div className="absolute top-0 right-0 opacity-10">
+                    <Trophy className="h-16 w-16 text-emerald-400" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Trophy className="h-4 w-4 text-emerald-400" />
+                      <p className="text-xs text-emerald-200">Claimed</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">
+                      {Number(formatEther(playerStats.totalWon)).toFixed(0)}
+                    </p>
+                    <p className="text-xs text-emerald-300 mt-0.5">Morbius</p>
+                  </div>
+                </Card>
+
+                {/* Net P/L */}
+                <Card
+                  className={cn(
+                    'relative overflow-hidden border-0 p-4',
+                    playerStats.isProfit
+                      ? 'bg-gradient-to-br from-green-900/40 to-green-950/30'
+                      : 'bg-gradient-to-br from-red-900/40 to-red-950/30'
+                  )}
+                >
+                  <div className="absolute top-0 right-0 opacity-10">
+                    {playerStats.isProfit ? (
+                      <TrendingUp className="h-16 w-16 text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-16 w-16 text-red-400" />
+                    )}
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                      {playerStats.isProfit ? (
+                        <TrendingUp className="h-4 w-4 text-green-400" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 text-red-400" />
+                      )}
+                      <p
+                        className={cn(
+                          'text-xs',
+                          playerStats.isProfit ? 'text-green-200' : 'text-red-200'
+                        )}
+                      >
+                        Net P/L
+                      </p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">
+                      {playerStats.isProfit ? '+' : ''}
+                      {playerStats.netProfitLoss.toFixed(0)}
+                    </p>
+                    <p
+                      className={cn(
+                        'text-xs mt-0.5',
+                        playerStats.isProfit ? 'text-green-300' : 'text-red-300'
+                      )}
+                    >
+                      Morbius
+                    </p>
+                  </div>
+                </Card>
+
+                {/* Unclaimed */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-900/40 to-blue-950/30 p-4">
+                  <div className="absolute top-0 right-0 opacity-10">
+                    <Target className="h-16 w-16 text-blue-300" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target className="h-4 w-4 text-blue-300" />
+                      <p className="text-xs text-blue-200">Unclaimed</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">
+                      {Number(formatEther(typeof unclaimedWinnings === 'bigint' ? unclaimedWinnings : BigInt(0))).toFixed(0)}
+                    </p>
+                    <p className="text-xs text-blue-200 mt-0.5">Morbius</p>
+                  </div>
+                </Card>
               </div>
             )}
-          </div>
-        </div>
+          </BentoGridItem>
+        </BentoGrid>
 
       </div>
     </Card>

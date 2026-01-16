@@ -25,10 +25,10 @@ const RPC_URL = process.env.PULSECHAIN_RPC || 'https://rpc.pulsechain.com'
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 
 // ⚠️ IMPORTANT: Set your deployed lottery contract address here or in .env
-// Latest deployment: 0xBF48D5376Cb30ff760aFe3728AFf3A308B019C5E (Block 25278796)
+// Original deployment: 0xD66b4489fbfF99A8d62f969203899840F2ec69c5
 // Get from: lib/contracts.ts or your deployment logs
 const LOTTERY_ADDRESS =
-  process.env.LOTTERY_ADDRESS || '0xBF48D5376Cb30ff760aFe3728AFf3A308B019C5E'
+  process.env.LOTTERY_ADDRESS || '0xD66b4489fbfF99A8d62f969203899840F2ec69c5'
 
 const GAS_LIMIT = parseInt(process.env.KEEPER_GAS_LIMIT || '2000000', 10)
 
@@ -37,12 +37,17 @@ if (!PRIVATE_KEY) {
   process.exit(1)
 }
 
+console.log('🔑 Private key loaded:', PRIVATE_KEY ? '✅ Yes' : '❌ No')
+console.log('📧 Using address:', PRIVATE_KEY ? new ethers.Wallet(PRIVATE_KEY).address : 'N/A')
+
 // Load ABI (supports Hardhat artifact shape)
 const abiPath = path.join(__dirname, '../../abi/lottery6of55-v2.json')
 let ABI
 try {
   const artifact = JSON.parse(fs.readFileSync(abiPath, 'utf8'))
   ABI = Array.isArray(artifact) ? artifact : artifact.abi
+  console.log(`🔍 Loaded ABI with ${ABI.length} entries`)
+  console.log(`🔍 First ABI entry:`, JSON.stringify(ABI[0], null, 2).substring(0, 200) + '...')
 } catch (err) {
   console.error('❌ Failed to load lottery ABI:', err.message)
   console.error('   Expected at:', abiPath)
@@ -63,6 +68,28 @@ async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL)
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
   const lottery = new ethers.Contract(LOTTERY_ADDRESS, ABI, wallet)
+  console.log('✅ Contract instance created')
+  console.log(`🔍 Contract interface methods: ${lottery.interface?.functions ? Object.keys(lottery.interface.functions).length : 'N/A'}`)
+
+  // Debug contract initialization
+  console.log('🔍 Contract initialization check:')
+  console.log(`   Lottery address: ${LOTTERY_ADDRESS}`)
+  console.log(`   ABI loaded: ${ABI ? 'Yes' : 'No'} (${ABI?.length || 0} methods)`)
+  console.log(`   Provider connected: ${provider ? 'Yes' : 'No'}`)
+  console.log(`   Wallet address: ${wallet.address}`)
+
+  // Test contract connection
+  try {
+    const code = await provider.getCode(LOTTERY_ADDRESS)
+    console.log(`   Contract deployed: ${code !== '0x' ? 'Yes' : 'No'}`)
+    if (code === '0x') {
+      console.error('❌ Contract not found at address!')
+      process.exit(1)
+    }
+  } catch (err) {
+    console.error('❌ Failed to check contract:', err.message)
+    process.exit(1)
+  }
 
   const MORBIUS_TOKEN_ADDRESS = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1'
   const ERC20_ABI = [
@@ -72,11 +99,11 @@ async function main() {
     'function allowance(address owner, address spender) view returns (uint256)',
     'function approve(address spender, uint256 amount) returns (bool)'
   ]
-  const morbiusToken = new ethers.Contract(MORBIUS_TOKEN_ADDRESS, ERC20_ABI, provider)
+  const MORBIUSToken = new ethers.Contract(MORBIUS_TOKEN_ADDRESS, ERC20_ABI, provider)
 
   // Get initial balances
   try {
-    const morbiusBalance = await morbiusToken.balanceOf(wallet.address)
+    const MORBIUSBalance = await MORBIUSToken.balanceOf(wallet.address)
     const plsBalance = await provider.getBalance(wallet.address)
     console.log('🤖 Lottery Keeper Started')
     console.log('━'.repeat(50))
@@ -85,7 +112,7 @@ async function main() {
     console.log(`RPC: ${RPC_URL}`)
     console.log('💰 Initial Balances:')
     console.log(`   PLS: ${ethers.formatEther(plsBalance)} PLS`)
-    console.log(`   Morbius: ${ethers.formatUnits(morbiusBalance, 18)} MORBIUS`)
+    console.log(`   MORBIUS: ${ethers.formatUnits(MORBIUSBalance, 18)} MORBIUS`)
     console.log('━'.repeat(50) + '\n')
   } catch (err) {
     console.error('⚠️  Could not fetch initial balances:', err.message, '\n')
@@ -95,8 +122,12 @@ async function main() {
   const MAX_CONSECUTIVE_ERRORS = 10
   let countdownInterval = null // Track countdown timer
 
+  // Tracking variables for enhanced logging
+  let totalGasCostPls = 0
+  let transactionCount = 0
+
   // Buy ticket every 160 seconds (2:40 minutes)
-  const TICKET_INTERVAL_MS = 160000
+  const TICKET_INTERVAL_MS = 3600000
   const COUNTDOWN_UPDATE_MS = 30000 // Update countdown every 30 seconds
 
   console.log(`🎫 Keeper will buy tickets every ${TICKET_INTERVAL_MS / 1000} seconds`)
@@ -116,10 +147,12 @@ async function main() {
 
     countdownInterval = setInterval(() => {
       if (timeRemaining > 0) {
-        console.log(`⏰ Next ticket buy in ${timeRemaining}s...`)
+        // Update countdown on same line using ANSI escape sequence
+        process.stdout.write(`\r⏰ Next ticket buy in ${timeRemaining}s...`)
         timeRemaining -= 30 // Decrease by 30 seconds (since we update every 30s)
       } else {
-        // Clear countdown when we reach 0
+        // Clear countdown line when finished
+        process.stdout.write('\r\x1b[K')
         if (countdownInterval) {
           clearInterval(countdownInterval)
           countdownInterval = null
@@ -136,25 +169,60 @@ async function main() {
       console.log('═'.repeat(50))
 
       // Check keeper balance
-      const keeperBalance = await morbiusToken.balanceOf(wallet.address)
-      const ticketPrice = await lottery.ticketPriceMorbius()
+      let keeperBalance, keeperPlsBalance, ticketPrice
+      try {
+        keeperBalance = await MORBIUSToken.balanceOf(wallet.address)
+        keeperPlsBalance = await provider.getBalance(wallet.address)
 
-      console.log(`💰 Keeper Balance: ${ethers.formatUnits(keeperBalance, 18)} MORBIUS`)
-      console.log(`🎫 Ticket Price: ${ethers.formatUnits(ticketPrice, 18)} MORBIUS`)
+        // Try to get ticket price from contract, fallback to default if it fails
+        try {
+          ticketPrice = await lottery.ticketPriceMORBIUS()
+        } catch (priceError) {
+          console.log(`⚠️ Could not get ticket price from contract (${priceError.message}), using default price`)
+          ticketPrice = ethers.parseUnits('100', 18) // Default 100 MORBIUS
+        }
+
+        console.log(`💰 Keeper Balance: ${ethers.formatUnits(keeperBalance, 18)} MORBIUS`)
+        console.log(`💰 Keeper PLS Balance: ${ethers.formatEther(keeperPlsBalance)} PLS`)
+        console.log(`🎫 Ticket Price: ${ethers.formatUnits(ticketPrice, 18)} MORBIUS`)
+      } catch (balanceError) {
+        console.log(`❌ Failed to get balances: ${balanceError.message}`)
+        console.log('═'.repeat(50) + '\n')
+        consecutiveErrors++
+        startCountdown()
+        return
+      }
 
       if (keeperBalance >= ticketPrice) {
         console.log(`🛡️ Purchasing keeper ticket...`)
 
-        // Check if lottery contract is approved to spend keeper's Morbius
-        const currentAllowance = await morbiusToken.allowance(wallet.address, LOTTERY_ADDRESS)
-        console.log(`🔓 Current Allowance: ${ethers.formatUnits(currentAllowance, 18)} MORBIUS`)
+        // Check if lottery contract is approved to spend keeper's MORBIUS
+        let currentAllowance
+        try {
+          currentAllowance = await MORBIUSToken.allowance(wallet.address, LOTTERY_ADDRESS)
+          console.log(`🔓 Current Allowance: ${ethers.formatUnits(currentAllowance, 18)} MORBIUS`)
+        } catch (allowanceError) {
+          console.log(`❌ Failed to check allowance: ${allowanceError.message}`)
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors++
+          startCountdown()
+          return
+        }
 
         if (currentAllowance < ticketPrice) {
-          console.log(`📝 Approving lottery contract to spend Morbius...`)
-          const approveTx = await morbiusToken.connect(wallet).approve(LOTTERY_ADDRESS, ethers.MaxUint256)
-          console.log(`📝 Approval Transaction: ${approveTx.hash}`)
-          await approveTx.wait()
-          console.log(`✅ Approval confirmed`)
+          console.log(`📝 Approving lottery contract to spend MORBIUS...`)
+          try {
+            const approveTx = await MORBIUSToken.connect(wallet).approve(LOTTERY_ADDRESS, ethers.MaxUint256)
+            console.log(`📝 Approval Transaction: ${approveTx.hash}`)
+            await approveTx.wait()
+            console.log(`✅ Approval confirmed`)
+          } catch (approveError) {
+            console.log(`❌ Approval failed: ${approveError.message}`)
+            console.log('═'.repeat(50) + '\n')
+            consecutiveErrors++
+            startCountdown()
+            return
+          }
         }
 
         // Generate random numbers for keeper ticket
@@ -163,25 +231,128 @@ async function main() {
 
         console.log(`🎲 Keeper Ticket Numbers: [${keeperTicketNumbers.join(', ')}]`)
 
+        // Test basic contract connectivity before proceeding
+        try {
+          console.log(`🔍 Testing contract connectivity...`)
+          const testCall = await lottery.getCurrentRoundInfo()
+          console.log(`✅ Contract connectivity test passed: ${testCall[0]}`)
+        } catch (connectError) {
+          console.log(`❌ Contract connectivity test failed: ${connectError.message}`)
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors++
+          startCountdown()
+          return
+        }
+
+        // Validate ticket numbers
+        const invalidNumbers = keeperTicketNumbers.filter(num => num < 1 || num > 55)
+        if (invalidNumbers.length > 0) {
+          console.log(`❌ Invalid ticket numbers found: ${invalidNumbers.join(', ')}`)
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors++
+          startCountdown()
+          return
+        }
+
+        // Debug contract methods
+
+        // Check gas price - skip if over 300,000 gwei (300 gwei)
+        const feeData = await provider.getFeeData()
+        const currentGasPrice = feeData.gasPrice
+        const currentGasPriceGwei = parseFloat(ethers.formatUnits(currentGasPrice, 'gwei'))
+        const MAX_GAS_PRICE_GWEI = 350000
+
+        console.log(`⛽ Current Gas Price: ${currentGasPriceGwei.toFixed(2)} gwei`)
+
+        if (currentGasPriceGwei > MAX_GAS_PRICE_GWEI) {
+          console.log(`⚠️ Gas price too high (${currentGasPriceGwei.toFixed(2)} gwei > ${MAX_GAS_PRICE_GWEI} gwei). Skipping transaction.`)
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors = 0
+          // Start countdown timer for next purchase
+          startCountdown()
+          return
+        }
+
+        // Transaction Performance & Network Health
+        const network = await provider.getNetwork()
+        const blockNumber = await provider.getBlockNumber()
+        const networkName = network.chainId === 369n ? 'PulseChain' : network.name
+        console.log(`📡 Network: ${networkName} (Chain ID: ${network.chainId}) (Block: ${blockNumber})`)
+
+        // Skip gas estimation for now since it's failing
+        console.log(`⛽ Skipping gas estimation (not available on contract instance)`)
+
+        // Contract State Tracking - Before purchase
+        const roundInfoBefore = await lottery.getCurrentRoundInfo()
+        const roundState = await lottery.currentRoundState()
+        const roundStateNum = Number(roundState) // Convert to number in case it's BigInt
+        console.log(`📊 Pre-Purchase Round: ${roundInfoBefore[0]} | Tickets: ${roundInfoBefore[4]} | Players: ${roundInfoBefore[5]}`)
+        console.log(`📊 Round State: ${roundStateNum === 0 ? 'OPEN' : 'FINALIZED'} (raw: ${roundState}, type: ${typeof roundState})`)
+
+        // Check if round is open (OPEN = 0, FINALIZED = 1)
+        if (roundStateNum !== 0) {
+          console.log(`⚠️ Round is not open (state: ${roundStateNum}). Cannot buy tickets.`)
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors++
+          startCountdown()
+          return
+        }
+
+        // Balance Change Tracking - Before purchase
+        const balanceBefore = await MORBIUSToken.balanceOf(wallet.address)
+        const plsBalanceBefore = await provider.getBalance(wallet.address)
+
         // This will automatically finalize expired rounds and start new ones
-        const tx = await lottery.buyTickets(keeperNumbers, { gasLimit: GAS_LIMIT })
+
+
+        // Try the transaction with detailed error handling
+        let tx
+        try {
+          console.log(`📤 Sending transaction...`)
+          tx = await lottery.buyTickets(keeperNumbers, { gasLimit: GAS_LIMIT })
+          console.log(`📝 Transaction sent: ${tx.hash}`)
+        } catch (txError) {
+          console.log(`❌ Transaction failed to send:`, txError.message)
+          console.log(`   Error code: ${txError.code}`)
+          console.log(`   Error data: ${txError.data}`)
+          console.log(`   Error reason: ${txError.reason}`)
+          if (txError.error) {
+            console.log(`   Nested error:`, txError.error.message)
+          }
+          console.log('═'.repeat(50) + '\n')
+          consecutiveErrors++
+          startCountdown()
+          return
+        }
         console.log(`📝 Transaction: ${tx.hash}`)
         console.log(`⏳ Waiting for confirmation...`)
 
+        const txStart = Date.now()
         const receipt = await tx.wait()
+        const txDuration = Date.now() - txStart
         console.log(`✅ Keeper ticket purchased in block ${receipt.blockNumber}`)
+        console.log(`⚡ Transaction completed in ${txDuration}ms`)
 
         // Start countdown timer for next purchase
         startCountdown()
 
 
-        // Calculate gas cost
+        // Calculate gas cost with average tracking
         const gasUsed = receipt.gasUsed
         const gasPrice = receipt.gasPrice || tx.gasPrice
         const gasCostWei = gasUsed * gasPrice
         const gasCostPls = ethers.formatEther(gasCostWei)
+        totalGasCostPls += parseFloat(gasCostPls)
+        transactionCount++
+        const averageGasCost = totalGasCostPls / transactionCount
         console.log(`⛽ Gas Used: ${gasUsed.toString()} units`)
-        console.log(`💸 Gas Cost: ${gasCostPls} PLS`)
+        console.log(`💸 Gas Cost: ${gasCostPls} PLS (Avg: ${averageGasCost.toFixed(6)} PLS)`)
+
+        // Balance Change Tracking - After purchase
+        const balanceAfter = await MORBIUSToken.balanceOf(wallet.address)
+        const plsBalanceAfter = await provider.getBalance(wallet.address)
+        console.log(`💰 Balance Δ: ${ethers.formatUnits(balanceAfter - balanceBefore, 18)} MORBIUS`)
+        console.log(`💰 PLS Δ: ${ethers.formatEther(plsBalanceAfter - plsBalanceBefore)} PLS`)
 
         // Get current round info to show what happened
         try {
@@ -196,6 +367,10 @@ async function main() {
           console.log(`   Time Remaining: ${timeRemaining}s`)
           console.log(`   Total Tickets: ${totalTickets}`)
           console.log(`   Unique Players: ${uniquePlayers}`)
+
+          // Contract State Tracking - After purchase
+          const roundInfoAfter = await lottery.getCurrentRoundInfo()
+          console.log(`📊 Post-Purchase Round: ${roundInfoAfter[0]} | Tickets: ${roundInfoAfter[4]} | Players: ${roundInfoAfter[5]}`)
         } catch (infoErr) {
           console.log(`⚠️ Could not fetch round info: ${infoErr.message}`)
         }

@@ -51,7 +51,7 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
     },
   })
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -76,7 +76,7 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
           </div>
         </button>
       </DialogTrigger>
-      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-lg max-h-[70vh] overflow-y-auto">
+      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-gradient-to-br from-slate-950 to-slate-900 dark:shadow-none max-w-lg max-h-[70vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-lg">
             Bracket {matchCount} Winners - Round #{roundId}
@@ -86,7 +86,7 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
         <div className="space-y-2">
           <div className="p-2 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg">
             <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1 font-sans">Payout Per Winner</div>
-            <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-sans">{formatPssh(payoutPerWinner)} Morbius</div>
+            <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-sans">{formatMORBIUS(payoutPerWinner)} MORBIUS</div>
           </div>
 
           {ticketData && ticketData.length > 0 ? (
@@ -124,9 +124,9 @@ function BracketWinnersModal({ roundId, bracket, payoutPerWinner }: BracketWinne
                       </div>
                       <div className="text-right">
                         <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100 font-sans">
-                          {formatPssh(payoutPerWinner)}
+                          {formatMORBIUS(payoutPerWinner)}
                         </div>
-                        <div className="text-[10px] text-neutral-600 dark:text-neutral-400 font-sans">Morbius</div>
+                        <div className="text-[10px] text-neutral-600 dark:text-neutral-400 font-sans">MORBIUS</div>
                       </div>
                     </div>
                   </div>
@@ -250,7 +250,7 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
     }
   }
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -262,10 +262,10 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
   }
 
   const roundId = currentRoundIdToFetch
-  const totalPssh = round?.totalMorbiusCollected || BigInt(0)
-  const winnersPool = (totalPssh * BigInt(7000)) / BigInt(10000) // 70%
-  const burnAllocation = (totalPssh * BigInt(1000)) / BigInt(10000) // 10%
-  const megaAllocation = (totalPssh * BigInt(1000)) / BigInt(10000) // 10%
+  const totalMORBIUS = round?.totalMORBIUSCollected || BigInt(0)
+  const winnersPool = (totalMORBIUS * BigInt(7000)) / BigInt(10000) // 70%
+  const burnAllocation = (totalMORBIUS * BigInt(1000)) / BigInt(10000) // 10%
+  const megaAllocation = (totalMORBIUS * BigInt(1000)) / BigInt(10000) // 10%
   const winningNumbers = round?.winningNumbers || []
   const brackets = round?.brackets || []
   const roundState = round?.state || 0
@@ -345,7 +345,7 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
                   </div>
                   <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
                     <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Pool</p>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{formatPssh(totalPssh)}</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-sans">{formatMORBIUS(totalMORBIUS)}</p>
                   </div>
                   <div className="bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded p-2 text-center">
                     <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">Players</p>
@@ -403,15 +403,15 @@ export function RoundHistory({ currentRoundId, maxRounds = 10 }: RoundHistoryPro
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
                   <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">Winners (70%)</p>
-                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(winnersPool)}</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatMORBIUS(winnersPool)}</p>
                 </div>
                 <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
                   <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">Burned (10%)</p>
-                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(burnAllocation)}</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatMORBIUS(burnAllocation)}</p>
                 </div>
                 <div className="p-3 bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200 dark:border-neutral-700 rounded-lg text-center">
-                  <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">MegaMorbius (10%)</p>
-                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatPssh(megaAllocation)}</p>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1 font-sans">MegaMORBIUS (10%)</p>
+                  <p className="text-neutral-900 dark:text-neutral-100 font-bold text-sm font-sans">{formatMORBIUS(megaAllocation)}</p>
                 </div>
               </div>
               <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">

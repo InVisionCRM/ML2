@@ -12,8 +12,8 @@ interface YourResultsModalProps {
     payout: bigint
     numbers: readonly (number | bigint)[]
   }>
-  totalWinningPssh: bigint
-  formatPssh: (amount: bigint) => string
+  totalWinningMORBIUS: bigint
+  formatMORBIUS: (amount: bigint) => string
 }
 
 export function YourResultsModal({
@@ -23,8 +23,8 @@ export function YourResultsModal({
   winningNumbers,
   roundState,
   winningTickets,
-  totalWinningPssh,
-  formatPssh,
+  totalWinningMORBIUS,
+  formatMORBIUS,
 }: YourResultsModalProps) {
   return (
     <div className="space-y-4">
@@ -39,11 +39,11 @@ export function YourResultsModal({
       ) : (
         <div className="space-y-2">
           <div className="text-sm text-white/80">
-            Total Winnings: <span className="font-semibold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">{formatPssh(totalWinningPssh)} pSSH</span>
+            Total Winnings: <span className="font-semibold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">{formatMORBIUS(totalWinningMORBIUS)} MORBIUS</span>
           </div>
           <div className="space-y-2 max-h-64 overflow-auto pr-1">
             {winningTickets.map((t, idx) => (
-              <div key={idx} className="p-3 rounded-lg border border-white/10 bg-black/50 flex items-center justify-between flex-wrap gap-3">
+              <div key={idx} className="p-3 rounded-lg border border-white/10 bg-gradient-to-br from-slate-950 to-slate-900/50 flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                   <span className="text-xs px-2 py-1 rounded bg-white/10 text-white font-semibold">
                     Ticket #{t.ticketId.toString()}
@@ -60,7 +60,7 @@ export function YourResultsModal({
                   ))}
                 </div>
                 <div className="text-sm font-semibold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
-                  +{formatPssh(t.payout)} pSSH
+                  +{formatMORBIUS(t.payout)} MORBIUS
                 </div>
               </div>
             ))}

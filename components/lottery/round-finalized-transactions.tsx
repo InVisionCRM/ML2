@@ -12,7 +12,7 @@ interface RoundFinalizedTx {
   transactionHash: string
   blockNumber: bigint
   winningNumbers: number[]
-  totalPssh: bigint
+  totalMORBIUS: bigint
   totalTickets: bigint
   closingBlock?: bigint
 }
@@ -71,7 +71,7 @@ export function RoundFinalizedTransactions() {
                     transactionHash: log.transactionHash,
                     blockNumber: log.blockNumber || BigInt(0),
                     winningNumbers: [], // RoundLocked doesn't have winning numbers
-                    totalPssh: args.totalPssh || BigInt(0),
+                    totalMORBIUS: args.totalMORBIUS || BigInt(0),
                     totalTickets: args.totalTickets || BigInt(0),
                     closingBlock: args.closingBlock || BigInt(0),
                   })
@@ -119,7 +119,7 @@ export function RoundFinalizedTransactions() {
                       transactionHash: log.transactionHash,
                       blockNumber: log.blockNumber || BigInt(0),
                       winningNumbers: args.winningNumbers ? Array.from(args.winningNumbers).map((n: any) => Number(n)) : [],
-                      totalPssh: args.totalPssh || BigInt(0),
+                      totalMORBIUS: args.totalMORBIUS || BigInt(0),
                       totalTickets: args.totalTickets || BigInt(0),
                     })
                   }
@@ -171,7 +171,7 @@ export function RoundFinalizedTransactions() {
 
   if (transactions.length === 0) {
     return (
-      <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+      <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
         <p className="text-sm text-white/60">No finalized rounds found yet.</p>
       </div>
     )
@@ -182,7 +182,7 @@ export function RoundFinalizedTransactions() {
       {transactions.map((tx) => (
         <div
           key={tx.transactionHash}
-          className="p-3 bg-black/40 border border-white/10 rounded-lg hover:bg-black/60 transition-colors"
+          className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg hover:bg-gradient-to-br from-slate-950 to-slate-900/60 transition-colors"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -197,7 +197,7 @@ export function RoundFinalizedTransactions() {
               <div className="text-xs text-white/50 space-y-0.5">
                 <div>Block: {tx.blockNumber.toString()}</div>
                 <div>
-                  {parseFloat(formatUnits(tx.totalPssh, 9)).toLocaleString()} pSSH • {tx.totalTickets.toString()} tickets
+                  {parseFloat(formatUnits(tx.totalMORBIUS, 9)).toLocaleString()} MORBIUS • {tx.totalTickets.toString()} tickets
                 </div>
               </div>
             </div>

@@ -10,7 +10,7 @@ export const BentoGrid = ({
   return (
     <div
       className={cn(
-        "mx-auto grid max-w-7xl grid-cols-2 gap-4 md:auto-rows-[18rem] md:grid-cols-1",
+        "mx-auto grid max-3xl grid-cols-1 gap-1 md:grid-cols-[1fr_1fr] md:grid-template-rows: 75% 25%",
         className,
       )}
     >
@@ -26,6 +26,7 @@ export const BentoGridItem = ({
   header,
   icon,
   onClick,
+  children,
 }: {
   className?: string;
   title?: string | React.ReactNode;
@@ -33,25 +34,27 @@ export const BentoGridItem = ({
   header?: React.ReactNode;
   icon?: React.ReactNode;
   onClick?: () => void;
+  children?: React.ReactNode;
 }) => {
   return (
     <div
       className={cn(
-        "group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-black p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none",
+        "group/bento shadow-input flex flex-col justify-between space-y-4 rounded-lg border border-neutral-200 bg-gradient-to-br from-slate-900 to-black/20 backdrop-blur-sm p-4 dark:border-white/[0.2] dark:shadow-none",
         onClick && "cursor-pointer hover:scale-105",
         className,
       )}
       onClick={onClick}
     >
       {header}
-      <div className="transition duration-200 group-hover/bento:translate-x-2">
+      <div>
         {icon}
-        <div className="mt-2 mb-2 font-sans font-bold text-neutral-600 dark:text-neutral-200">
+        <div className="mt-1 mb-0.5 font-poppins font-bold text-white dark:text-white text-center">
           {title}
         </div>
-        <div className="font-sans text-xs font-normal text-neutral-600 dark:text-neutral-300">
+        <div className="font-poppins text-xs font-normal text-white dark:text-white text-center">
           {description}
         </div>
+        {children}
       </div>
     </div>
   );

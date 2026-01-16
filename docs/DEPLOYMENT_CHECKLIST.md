@@ -35,7 +35,7 @@ Use this checklist to ensure smooth deployment and integration of the Pulse Prog
 ### 1. Deploy Contract
 
 ```bash
-cd morbius_lotto/contracts
+cd MORBIUS_lotto/contracts
 npx hardhat run scripts/deploy-keno.js --network pulsechain
 ```
 

@@ -21,11 +21,11 @@ Or click "Contracts" in the navigation menu.
 
 ### User Actions
 
-#### 1. Buy Tickets (Morbius)
-**Purpose:** Purchase lottery tickets with Morbius tokens
+#### 1. Buy Tickets (MORBIUS)
+**Purpose:** Purchase lottery tickets with MORBIUS tokens
 
 **Parameters:**
-- Approval Amount: Amount of Morbius to approve for the contract
+- Approval Amount: Amount of MORBIUS to approve for the contract
 - Ticket Numbers: JSON array of number arrays
 
 **Example:**
@@ -34,7 +34,7 @@ Or click "Contracts" in the navigation menu.
 ```
 
 **Notes:**
-- Each ticket costs 1,000 Morbius
+- Each ticket costs 1,000 MORBIUS
 - Must approve contract first
 - Pick 6 unique numbers (1-55) per ticket
 - Max 100 tickets per transaction
@@ -55,10 +55,10 @@ Round Offsets: [0, 1]
 **Notes:**
 - Offset 0 = current round
 - Max offset = 100 rounds ahead
-- Total cost = tickets × rounds × 1000 Morbius
+- Total cost = tickets × rounds × 1000 MORBIUS
 
 #### 3. Buy Tickets with WPLS
-**Purpose:** Purchase tickets using WPLS (auto-swaps to Morbius)
+**Purpose:** Purchase tickets using WPLS (auto-swaps to MORBIUS)
 
 **Parameters:**
 - WPLS Approval Amount
@@ -109,13 +109,13 @@ Round ID: 5
 
 **Parameters:**
 - Round Duration (seconds): Time between draws
-- MegaMorbius Interval (rounds): Every Nth round triggers MegaMorbius
+- MegaMORBIUS Interval (rounds): Every Nth round triggers MegaMORBIUS
 - Block Delay: Blocks to wait for randomness
 
 **Example:**
 ```
 Round Duration: 86400 (24 hours)
-MegaMorbius Interval: 5
+MegaMORBIUS Interval: 5
 Block Delay: 0
 ```
 
@@ -129,11 +129,11 @@ Block Delay: 0
 **Displays:**
 - Round ID
 - State (OPEN/LOCKED/FINALIZED)
-- Total Morbius in pool
+- Total MORBIUS in pool
 - Total Tickets sold
 - Unique Players
 - Time Remaining
-- MegaMorbius Round status
+- MegaMORBIUS Round status
 
 #### 2. Your Lifetime Statistics
 **Displays:**
@@ -148,14 +148,14 @@ Block Delay: 0
 - Total Collected
 - Total Claimed
 - Outstanding Prizes
-- MegaMorbius Bank
+- MegaMORBIUS Bank
 
 #### 4. Prize Distribution Configuration
 **Displays:**
 - Bracket Percentages (1-6 matches)
 - Winners Pool %
 - Burn %
-- MegaMorbius %
+- MegaMORBIUS %
 
 ## CryptoKeno Interface
 
@@ -169,7 +169,7 @@ Block Delay: 0
 - Numbers: Array of 1-10 numbers (1-80)
 - Spot Size: Number of spots (1-10)
 - Draws: Number of consecutive draws
-- Wager Per Draw: Base wager in Morbius
+- Wager Per Draw: Base wager in MORBIUS
 - Add-ons: Optional features
 
 **Example:**
@@ -308,7 +308,7 @@ Max Wager: 0.001
 ### For Players
 
 1. **Buy Lottery Tickets:**
-   - Approve Morbius tokens
+   - Approve MORBIUS tokens
    - Enter ticket numbers
    - Click "Buy Tickets"
 
@@ -342,7 +342,7 @@ Max Wager: 0.001
 
 3. **Update Parameters:**
    - Adjust round duration
-   - Change MegaMorbius interval
+   - Change MegaMORBIUS interval
    - Update paytables
 
 4. **Emergency Operations:**
@@ -412,7 +412,7 @@ For issues or questions:
 
 **Lottery:** Check `LOTTERY_ADDRESS` in `/lib/contracts.ts`
 **Keno:** Check `KENO_ADDRESS` in `/lib/contracts.ts`
-**Morbius Token:** Check `MORBIUS_TOKEN_ADDRESS` in `/lib/contracts.ts`
+**MORBIUS Token:** Check `MORBIUS_TOKEN_ADDRESS` in `/lib/contracts.ts`
 **WPLS Token:** Check `WPLS_TOKEN_ADDRESS` in `/lib/contracts.ts`
 
 ## Technical Details

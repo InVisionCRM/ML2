@@ -647,13 +647,13 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
     // ============ Constants ============
 
-    IERC20 public immutable pSSH_TOKEN;
+    IERC20 public immutable MORBIUS_TOKEN;
     IERC20 public immutable HEX_TOKEN;
 
     address public constant SUPERSTAKE_HEX_STAKE_ADDRESS = 0xdC48205df8aF83c97de572241bB92DB45402Aa0E;
     address public constant HEX_TOKEN_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
 
-    uint256 public constant TICKET_PRICE = 1e9; // 1 pSSH (9 decimals)
+    uint256 public constant TICKET_PRICE = 1e9; // 1 MORBIUS (9 decimals)
     uint8 public constant NUMBERS_PER_TICKET = 6;
     uint8 public constant MIN_NUMBER = 1;
     uint8 public constant MAX_NUMBER = 55;
@@ -695,7 +695,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
     struct BracketWinners {
         uint256 matchCount; // 1-6
-        uint256 poolAmount; // pSSH allocated to this bracket
+        uint256 poolAmount; // MORBIUS allocated to this bracket
         uint256 winnerCount;
         uint256 payoutPerWinner;
         uint256[] winningTicketIds;
@@ -707,7 +707,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         uint256 endTime;
         uint256 closingBlock;
         uint8[6] winningNumbers; // Set when finalized
-        uint256 totalPsshCollected;
+        uint256 totalMORBIUSCollected;
         uint256 totalTickets;
         uint256 uniquePlayers;
         BracketWinners[6] brackets; // Index 0 = bracket 1 (1 match), index 5 = bracket 6 (6 matches)
@@ -726,12 +726,12 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
     RoundState public currentRoundState;
 
     // Banks
-    uint256 public megaPsshBank;
+    uint256 public megaMORBIUSBank;
     uint256 public freeTicketReserve;
     uint256 public hexBankTracked; // Track HEX separately for accounting
 
     // Current round tracking
-    uint256 public currentRoundTotalPssh;
+    uint256 public currentRoundTotalMORBIUS;
     uint256 public currentRoundTotalTickets;
     uint256 public nextTicketId; // Global ticket ID counter
 
@@ -761,20 +761,20 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         uint256 indexed roundId,
         uint256 ticketCount,
         uint256 freeTicketsUsed,
-        uint256 psshSpent
+        uint256 MORBIUSSpent
     );
 
     event RoundLocked(
         uint256 indexed roundId,
         uint256 closingBlock,
         uint256 totalTickets,
-        uint256 totalPssh
+        uint256 totalMORBIUS
     );
 
     event RoundFinalized(
         uint256 indexed roundId,
         uint8[6] winningNumbers,
-        uint256 totalPssh,
+        uint256 totalMORBIUS,
         uint256 totalTickets,
         uint256 uniquePlayers
     );
@@ -818,17 +818,17 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
     /**
      * @notice Initialize the lottery contract
-     * @param _psshTokenAddress Address of SuperStake (pSSH) token
+     * @param _MORBIUSTokenAddress Address of SuperStake (MORBIUS) token
      * @param _initialRoundDuration Duration of each round in seconds
      */
     constructor(
-        address _psshTokenAddress,
+        address _MORBIUSTokenAddress,
         uint256 _initialRoundDuration
     ) Ownable(msg.sender) {
-        require(_psshTokenAddress != address(0), "Invalid pSSH address");
+        require(_MORBIUSTokenAddress != address(0), "Invalid MORBIUS address");
         require(_initialRoundDuration > 0, "Duration must be positive");
 
-        pSSH_TOKEN = IERC20(_psshTokenAddress);
+        MORBIUS_TOKEN = IERC20(_MORBIUSTokenAddress);
         HEX_TOKEN = IERC20(HEX_TOKEN_ADDRESS);
         roundDuration = _initialRoundDuration;
 
@@ -867,12 +867,12 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         }
 
         uint256 ticketsToPayFor = ticketsToBuy - freeTicketsToUse;
-        uint256 psshRequired = ticketsToPayFor * TICKET_PRICE;
+        uint256 MORBIUSRequired = ticketsToPayFor * TICKET_PRICE;
 
-        // Transfer pSSH for paid tickets
-        if (psshRequired > 0) {
-            pSSH_TOKEN.safeTransferFrom(msg.sender, address(this), psshRequired);
-            currentRoundTotalPssh += psshRequired;
+        // Transfer MORBIUS for paid tickets
+        if (MORBIUSRequired > 0) {
+            MORBIUS_TOKEN.safeTransferFrom(msg.sender, address(this), MORBIUSRequired);
+            currentRoundTotalMORBIUS += MORBIUSRequired;
         }
 
         // Validate and store tickets
@@ -904,7 +904,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
             currentRoundId,
             ticketNumbers.length,
             freeTicketsToUse,
-            psshRequired
+            MORBIUSRequired
         );
     }
 
@@ -932,7 +932,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         uint256 amount = claimableWinnings[roundId][msg.sender];
         hasClaimed[roundId][msg.sender] = true;
 
-        pSSH_TOKEN.safeTransfer(msg.sender, amount);
+        MORBIUS_TOKEN.safeTransfer(msg.sender, amount);
 
         emit WinningsClaimed(msg.sender, roundId, amount);
     }
@@ -972,7 +972,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         uint256 roundId,
         uint256 startTime,
         uint256 endTime,
-        uint256 totalPssh,
+        uint256 totalMORBIUS,
         uint256 totalTickets,
         uint256 uniquePlayers,
         uint256 timeRemaining,
@@ -982,7 +982,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         roundId = currentRoundId;
         startTime = currentRoundStartTime;
         endTime = currentRoundStartTime + roundDuration;
-        totalPssh = currentRoundTotalPssh;
+        totalMORBIUS = currentRoundTotalMORBIUS;
         totalTickets = currentRoundTotalTickets;
         uniquePlayers = roundPlayers[currentRoundId].length;
 
@@ -1027,7 +1027,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
      * @notice Get MegaMillions bank balance
      */
     function getMegaMillionsBank() external view returns (uint256) {
-        return megaPsshBank;
+        return megaMORBIUSBank;
     }
 
     /**
@@ -1095,7 +1095,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         currentRoundId++;
         currentRoundStartTime = block.timestamp;
         currentRoundState = RoundState.OPEN;
-        currentRoundTotalPssh = 0;
+        currentRoundTotalMORBIUS = 0;
         currentRoundTotalTickets = 0;
 
         bool isMegaMillions = (currentRoundId % MEGA_MILLIONS_INTERVAL == 0);
@@ -1124,7 +1124,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
             finalizingRoundId,
             closingBlock,
             currentRoundTotalTickets,
-            currentRoundTotalPssh
+            currentRoundTotalMORBIUS
         );
 
         // Handle empty round immediately
@@ -1164,7 +1164,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         emit RoundFinalized(
             finalizingRoundId,
             winningNumbers,
-            currentRoundTotalPssh,
+            currentRoundTotalMORBIUS,
             currentRoundTotalTickets,
             roundPlayers[finalizingRoundId].length
         );
@@ -1180,7 +1180,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
             endTime: block.timestamp,
             closingBlock: block.number,
             winningNumbers: [0, 0, 0, 0, 0, 0],
-            totalPsshCollected: 0,
+            totalMORBIUSCollected: 0,
             totalTickets: 0,
             uniquePlayers: 0,
             brackets: [
@@ -1211,7 +1211,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
             blockhash(targetBlock),
             blockhash(closingBlock),
             roundId,
-            currentRoundTotalPssh,
+            currentRoundTotalMORBIUS,
             currentRoundTotalTickets,
             block.timestamp
         )));
@@ -1283,7 +1283,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
         // Calculate payouts per bracket
         for (uint256 bracket = 1; bracket <= 6; bracket++) {
-            uint256 bracketPool = (currentRoundTotalPssh * BRACKET_PERCENTAGES[bracket - 1]) / TOTAL_PCT;
+            uint256 bracketPool = (currentRoundTotalMORBIUS * BRACKET_PERCENTAGES[bracket - 1]) / TOTAL_PCT;
 
             if (bracketCounts[bracket] > 0) {
                 // Resize winning ticket IDs array
@@ -1306,7 +1306,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
                     uint256 toReserve = (bracketPool * LEFTOVER_TO_FREE_TICKETS_PCT) / TOTAL_PCT;
                     uint256 toMega = bracketPool - toReserve;
                     freeTicketReserve += toReserve;
-                    megaPsshBank += toMega;
+                    megaMORBIUSBank += toMega;
                 }
 
                 rounds[roundId].brackets[bracket - 1] = BracketWinners({
@@ -1329,7 +1329,7 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
         // Store winning numbers
         rounds[roundId].winningNumbers = winningNumbers;
-        rounds[roundId].totalPsshCollected = currentRoundTotalPssh;
+        rounds[roundId].totalMORBIUSCollected = currentRoundTotalMORBIUS;
         rounds[roundId].totalTickets = currentRoundTotalTickets;
         rounds[roundId].uniquePlayers = roundPlayers[roundId].length;
     }
@@ -1360,14 +1360,14 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
         }
 
         // Send 25% to stake address
-        uint256 stakeAllocation = (currentRoundTotalPssh * STAKE_ALLOCATION_PCT) / TOTAL_PCT;
+        uint256 stakeAllocation = (currentRoundTotalMORBIUS * STAKE_ALLOCATION_PCT) / TOTAL_PCT;
         if (stakeAllocation > 0) {
-            pSSH_TOKEN.safeTransfer(SUPERSTAKE_HEX_STAKE_ADDRESS, stakeAllocation);
+            MORBIUS_TOKEN.safeTransfer(SUPERSTAKE_HEX_STAKE_ADDRESS, stakeAllocation);
         }
 
         // Add 20% to MegaMillions bank
-        uint256 megaContribution = (currentRoundTotalPssh * MEGA_BANK_PCT) / TOTAL_PCT;
-        megaPsshBank += megaContribution;
+        uint256 megaContribution = (currentRoundTotalMORBIUS * MEGA_BANK_PCT) / TOTAL_PCT;
+        megaMORBIUSBank += megaContribution;
         rounds[roundId].megaBankContribution = megaContribution;
     }
 
@@ -1375,10 +1375,10 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
      * @dev Handle MegaMillions (every 55th round)
      */
     function _handleMegaMillions(uint256 roundId) private {
-        if (megaPsshBank == 0) return;
+        if (megaMORBIUSBank == 0) return;
 
-        uint256 toBracket6 = (megaPsshBank * 80) / 100;
-        uint256 toBracket5 = megaPsshBank - toBracket6;
+        uint256 toBracket6 = (megaMORBIUSBank * 80) / 100;
+        uint256 toBracket5 = megaMORBIUSBank - toBracket6;
 
         // Add to bracket pools
         rounds[roundId].brackets[5].poolAmount += toBracket6;
@@ -1397,10 +1397,10 @@ contract SuperStakeLottery6of55 is Ownable, ReentrancyGuard {
 
         rounds[roundId].isMegaMillionsRound = true;
 
-        emit MegaMillionsTriggered(roundId, megaPsshBank, toBracket6, toBracket5);
+        emit MegaMillionsTriggered(roundId, megaMORBIUSBank, toBracket6, toBracket5);
 
         // Reset bank
-        megaPsshBank = 0;
+        megaMORBIUSBank = 0;
     }
 
     /**

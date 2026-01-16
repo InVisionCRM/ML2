@@ -5,7 +5,7 @@ import fs from "fs";
 dotenv.config();
 
 async function main() {
-  console.log("Deploying MegaMorbiusLottery...");
+  console.log("Deploying MegaMORBIUSLottery...");
 
   // Connect to PulseChain
   const provider = new ethers.JsonRpcProvider("https://rpc.pulsechain.com");

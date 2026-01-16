@@ -2,13 +2,13 @@
 
 ## Overview
 
-A comprehensive admin/debugging interface has been created for interacting with your Morbius lottery and Keno smart contracts. The interface provides a user-friendly way to execute all contract functions with helpful tooltips and examples.
+A comprehensive admin/debugging interface has been created for interacting with your MORBIUS lottery and Keno smart contracts. The interface provides a user-friendly way to execute all contract functions with helpful tooltips and examples.
 
 ## Quick Start
 
 1. **Install Dependencies:**
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto
+cd /Users/kyle/MORBlotto/MORBIUS_lotto
 pnpm add @radix-ui/react-checkbox
 ```
 
@@ -48,7 +48,7 @@ http://localhost:3000/contracts
 ### SuperStakeLottery6of55V2 Interface
 
 #### User Actions Tab
-1. **Buy Tickets (Morbius)**
+1. **Buy Tickets (MORBIUS)**
    - Token approval UI
    - JSON array input for tickets
    - Example: `[[1,2,3,4,5,6], [7,8,9,10,11,12]]`
@@ -61,7 +61,7 @@ http://localhost:3000/contracts
    - Max 100 rounds ahead
 
 3. **Buy with WPLS**
-   - Auto-swaps WPLS to Morbius via PulseX
+   - Auto-swaps WPLS to MORBIUS via PulseX
    - Includes tax/slippage buffer (11.1%)
    - Optional extra buffer setting
 
@@ -78,7 +78,7 @@ http://localhost:3000/contracts
 
 2. **Update Settings** (Owner Only)
    - Round Duration
-   - MegaMorbius Interval
+   - MegaMORBIUS Interval
    - Block Delay
 
 #### Statistics Tab
@@ -86,7 +86,7 @@ http://localhost:3000/contracts
    - Round ID, State, Pool Size
    - Ticket Count, Players
    - Time Remaining
-   - MegaMorbius indicator
+   - MegaMORBIUS indicator
 
 2. **Player Lifetime Statistics**
    - Tickets Bought
@@ -97,7 +97,7 @@ http://localhost:3000/contracts
    - Total Tickets Ever
    - Total Collected/Claimed
    - Outstanding Prizes
-   - MegaMorbius Bank
+   - MegaMORBIUS Bank
 
 4. **Bracket Configuration**
    - Prize distribution percentages
@@ -218,7 +218,7 @@ Uses existing infrastructure:
 ## File Structure
 
 ```
-morbius_lotto/
+MORBIUS_lotto/
 ├── app/
 │   └── contracts/
 │       └── page.tsx                          # Main page
@@ -246,7 +246,7 @@ morbius_lotto/
 - [ ] Test write functions (with wallet)
 
 ### Lottery Testing
-- [ ] Buy tickets with Morbius
+- [ ] Buy tickets with MORBIUS
 - [ ] Buy multi-round tickets
 - [ ] Buy with WPLS
 - [ ] Claim winnings
@@ -285,7 +285,7 @@ morbius_lotto/
 1. Navigate to `/contracts`
 2. Select "Lottery 6-of-55" tab
 3. Click "User Actions"
-4. Approve 10,000 Morbius
+4. Approve 10,000 MORBIUS
 5. Enter: `[[1,2,3,4,5,6], [7,8,9,10,11,12]]`
 6. Click "Buy Tickets"
 7. Confirm in wallet
@@ -294,7 +294,7 @@ morbius_lotto/
 1. Navigate to `/contracts`
 2. Select "Crypto Keno" tab
 3. Click "Player Actions"
-4. Approve 10 Morbius
+4. Approve 10 MORBIUS
 5. Enter round ID: 1
 6. Enter numbers: `[1,2,3,4,5,6,7,8,9,10]`
 7. Set spot size: 10
@@ -415,7 +415,7 @@ export const KENO_ADDRESS = '0x...' as const
 
 ## Conclusion
 
-The Contract Interface provides a powerful and user-friendly way to interact with your Morbius lottery and Keno contracts. It's organized by use case, includes helpful tooltips, and matches your existing design system.
+The Contract Interface provides a powerful and user-friendly way to interact with your MORBIUS lottery and Keno contracts. It's organized by use case, includes helpful tooltips, and matches your existing design system.
 
 **Ready to use after installing @radix-ui/react-checkbox!**
 

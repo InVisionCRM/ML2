@@ -18,7 +18,7 @@ They’re not pixel-perfect — they’re blueprints for your designer & dev.
 |  Time left: 00:07:32 [███████-----]                    |
 +--------------------------------------------------------+
 |  [ Current Pot ]      [ MegaMillions Bank ]           |
-|   254,310 pSSH         1,203,990 pSSH                |
+|   254,310 MORBIUS         1,203,990 MORBIUS                |
 |  ≈ $123,456            Next Mega: Round #165         |
 +--------------------------------------------------------+
 |  [ HEX Overlay Bank ]                                 |
@@ -28,7 +28,7 @@ They’re not pixel-perfect — they’re blueprints for your designer & dev.
 +--------------------------------------------------------+
 |  Recent winners                                         |
 |  - Round #127: 2x Bracket 4, 16x Bracket 2            |
-|  - Round #126: MegaMillions jackpot (pSSH + HEX)      |
+|  - Round #126: MegaMillions jackpot (MORBIUS + HEX)      |
 +--------------------------------------------------------+
 |  Footer: Links / Docs / Audit / Socials               |
 +--------------------------------------------------------+
@@ -69,7 +69,7 @@ Web3 UX patterns stress transparency around wallet actions and networks.
 
 +------------------ BUY TICKETS (Round #128) -------------------+
 |  Time left: 00:07:32                                          |
-|  Ticket price: 10 pSSH                                        |
+|  Ticket price: 10 MORBIUS                                        |
 +---------------------------------------------------------------+
 |  Select your numbers (1–55), 6 unique per ticket              |
 |                                                               |
@@ -79,11 +79,11 @@ Web3 UX patterns stress transparency around wallet actions and networks.
 |  [ + Add Ticket ]   [ Quick Pick ] [ Clear All ]              |
 +---------------------------------------------------------------+
 |  Summary                                                      |
-|   Tickets: 3        x 10 pSSH = 30 pSSH                       |
+|   Tickets: 3        x 10 MORBIUS = 30 MORBIUS                       |
 |   Bulk discount: 5%                                           |
-|   Total cost: 28.5 pSSH                                       |
+|   Total cost: 28.5 MORBIUS                                       |
 |                                                               |
-|  Balance: 1,204 pSSH  |  Wallet: 0xAbc...123                  |
+|  Balance: 1,204 MORBIUS  |  Wallet: 0xAbc...123                  |
 +---------------------------------------------------------------+
 | [ Cancel ]                                    [ Confirm Buy ] |
 +---------------------------------------------------------------+
@@ -110,8 +110,8 @@ Web3 UX patterns stress transparency around wallet actions and networks.
 +-------------------------------------------------------------+
 |  [ Fill All with Quick Pick ]    [ Validate Uniqueness ]    |
 +-------------------------------------------------------------+
-|  Tickets: 10   | Cost: 100 pSSH   | Discount: 10%           |
-|  Total: 90 pSSH                                            |
+|  Tickets: 10   | Cost: 100 MORBIUS   | Discount: 10%           |
+|  Total: 90 MORBIUS                                            |
 +-------------------------------------------------------------+
 | [ Back ]                                      [ Confirm ]   |
 +-------------------------------------------------------------+
@@ -136,11 +136,11 @@ Patterns from real lottery & Web3 apps: visible history and status indicators.
 |  #2       03 11 15 21 30 55       No      1–6                |
 |  #3       02 14 22 33 41 49       Yes     (Free ticket)      |
 +--------------------------------------------------------------+
-|  Total paid: 20 pSSH   |  Free tickets used: 1               |
+|  Total paid: 20 MORBIUS   |  Free tickets used: 1               |
 +--------------------------------------------------------------+
 |  HISTORY (collapsed list)                                    |
 |  - Round #127  [Results] [Claimed]                           |
-|    Bracket 3 win: +85 pSSH, Free ticket reset.               |
+|    Bracket 3 win: +85 MORBIUS, Free ticket reset.               |
 |  - Round #126  [Results] [Expired]                           |
 +--------------------------------------------------------------+
 
@@ -154,11 +154,11 @@ Patterns from real lottery & Web3 apps: visible history and status indicators.
 
 +------------------ ROUND #127 RESULTS -------------------+
 |  Winning numbers:   07  12  19  27  34  42              |
-|  Pot: 220,000 pSSH   |  HEX overlay: 0 (no 6/6 hit)     |
+|  Pot: 220,000 MORBIUS   |  HEX overlay: 0 (no 6/6 hit)     |
 +---------------------------------------------------------+
 |  Your tickets:                                       v  |
 |  Ticket #1: 07 12 19 27 34 42  ->  Matches: 6  -> B6   |
-|             Prize: 55,000 pSSH                         |
+|             Prize: 55,000 MORBIUS                         |
 |  Ticket #2: 03 11 15 21 30 55  ->  Matches: 0  -> Loss |
 |             Earned free ticket next round ✅            |
 +---------------------------------------------------------+
@@ -175,7 +175,7 @@ Patterns from real lottery & Web3 apps: visible history and status indicators.
 
 ## 7. MegaMillions Countdown Screen
 
-**Purpose:** Build hype around the every-55th-round MegaMillions event using the Mega pSSH bank.   
+**Purpose:** Build hype around the every-55th-round MegaMillions event using the Mega MORBIUS bank.   
 
 **Sketch:**
 
@@ -184,8 +184,8 @@ Patterns from real lottery & Web3 apps: visible history and status indicators.
 |  Current Round: #128                                  |
 |  Rounds remaining: 37                                 |
 +--------------------------------------------------------+
-|  MegaMillions Bank (pSSH):                            |
-|  [██████████----------]  1,203,990 pSSH               |
+|  MegaMillions Bank (MORBIUS):                            |
+|  [██████████----------]  1,203,990 MORBIUS               |
 |  Estimated jackpot (if today): ≈ $X,XXX,XXX           |
 +--------------------------------------------------------+
 |  HEX overlay bank:                                    |
@@ -220,7 +220,7 @@ Web3 UX best practices say: clear explanation of how funds move.
 +--------------------------------------------------------+
 |  TOKEN FLOWS (infographic)                            |
 |  +--------------+    +----------------------+         |
-|  | You (pSSH)   | -> | SuperStake Lottery  |         |
+|  | You (MORBIUS)   | -> | SuperStake Lottery  |         |
 |  +--------------+    +----------------------+         |
 |                         | 55% winners                 |
 |                         | 25% SuperStake stake addr  |
@@ -246,8 +246,8 @@ Web3 UX best practices say: clear explanation of how funds move.
 | SUPERSTAKE LOTTERY       |
 | Round #128  00:07:32     |
 +--------------------------+
-| Pot: 254,310 pSSH        |
-| Mega: 1,203,990 pSSH     |
+| Pot: 254,310 MORBIUS        |
+| Mega: 1,203,990 MORBIUS     |
 +--------------------------+
 | [ Buy Tickets ]          |
 +--------------------------+
@@ -260,7 +260,7 @@ Web3 UX best practices say: clear explanation of how funds move.
 |  [ Edit numbers ]        |
 |  [ Quick Pick ]          |
 +--------------------------+
-| Cost: 10 pSSH            |
+| Cost: 10 MORBIUS            |
 | [ Cancel ] [ Confirm ]   |
 +--------------------------+
 
@@ -291,15 +291,15 @@ Web3 UX best practices say: clear explanation of how funds move.
 |  - Start: 2025-12-01 12:00                             |
 |  - End:   2025-12-01 12:10                             |
 |  - Tickets sold: 1,204                                 |
-|  - Pot: 254,310 pSSH                                   |
+|  - Pot: 254,310 MORBIUS                                   |
 +--------------------------------------------------------+
 |  Controls (for debugging/testing):                     |
 |  [ Simulate Finalize ]  [ View Drawn Numbers ]         |
 +--------------------------------------------------------+
 |  Banks:                                                |
-|  - Mega pSSH Bank: 1,203,990 pSSH                      |
+|  - Mega MORBIUS Bank: 1,203,990 MORBIUS                      |
 |  - HEX Bank: 3,210,000 HEX                             |
-|  - Free Ticket Reserve: 12,340 pSSH                    |
+|  - Free Ticket Reserve: 12,340 MORBIUS                    |
 +--------------------------------------------------------+
 |  Recent rounds:                                        |
 |  #127  CLAIMABLE  B6 hit? Yes (HEX paid)               |

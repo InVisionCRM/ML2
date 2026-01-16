@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title SuperStakeLotterySimple
- * @notice Simplified lottery - just send PSSH tokens directly to contract to buy tickets
- * @dev Users send PSSH tokens directly, contract automatically enters them into lottery
+ * @notice Simplified lottery - just send MORBIUS tokens directly to contract to buy tickets
+ * @dev Users send MORBIUS tokens directly, contract automatically enters them into lottery
  */
 contract SuperStakeLotterySimple is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -18,7 +18,7 @@ contract SuperStakeLotterySimple is Ownable, ReentrancyGuard {
     IERC20 public immutable superstakeToken;
     address public constant SUPERSTAKE_HEX_STAKE_ADDRESS = 0xdC48205df8aF83c97de572241bB92DB45402Aa0E;
     address public constant HEX_TOKEN_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
-    uint256 public constant TOKENS_PER_TICKET = 1 * 10**9; // 1 token = 1 ticket (9 decimals for PSSH)
+    uint256 public constant TOKENS_PER_TICKET = 1 * 10**9; // 1 token = 1 ticket (9 decimals for MORBIUS)
 
     // Distribution percentages (in basis points: 1% = 100 bp)
     uint256 public constant PRIZE_PERCENTAGE = 6000; // 60%
@@ -100,11 +100,11 @@ contract SuperStakeLotterySimple is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Receive function - automatically called when PSSH tokens are sent
+     * @notice Receive function - automatically called when MORBIUS tokens are sent
      * @dev This won't work for token transfers, keeping for native token protection
      */
     receive() external payable {
-        revert("Send PSSH tokens using transfer, not native tokens");
+        revert("Send MORBIUS tokens using transfer, not native tokens");
     }
 
     /**
@@ -139,7 +139,7 @@ contract SuperStakeLotterySimple is Ownable, ReentrancyGuard {
     function _processTicketPurchase(address player, uint256 tokensReceived) private {
         require(tokensReceived > 0, "No tokens received");
 
-        // Calculate tickets (using 9 decimal precision for PSSH)
+        // Calculate tickets (using 9 decimal precision for MORBIUS)
         uint256 ticketsEarned = (tokensReceived * 10**9) / TOKENS_PER_TICKET;
 
         require(ticketsEarned > 0, "Insufficient tokens for ticket");

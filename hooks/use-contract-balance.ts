@@ -13,7 +13,7 @@ interface TokenBalance {
 }
 
 /**
- * Hook to fetch contract's Morbius token balance from PulseScan API
+ * Hook to fetch contract's MORBIUS token balance from PulseScan API
  * This provides live data from the blockchain explorer
  */
 export function useContractBalance() {
@@ -39,26 +39,26 @@ export function useContractBalance() {
 
         const data: TokenBalance[] = await response.json()
 
-        // Find Morbius token balance
-        const morbiusToken = data.find(
+        // Find MORBIUS token balance
+        const MORBIUSToken = data.find(
           (item) => item.token.address.toLowerCase() === MORBIUS_TOKEN_ADDRESS.toLowerCase()
         )
 
-        if (morbiusToken) {
-          const decimals = parseInt(morbiusToken.token.decimals) || 9
-          const balanceValue = BigInt(morbiusToken.value)
+        if (MORBIUSToken) {
+          const decimals = parseInt(MORBIUSToken.token.decimals) || 9
+          const balanceValue = BigInt(MORBIUSToken.value)
           const formatted = formatUnits(balanceValue, decimals)
 
           setBalance(balanceValue)
           setBalanceFormatted(formatted)
 
-          console.log('💰 Contract Morbius Balance (from API):', {
-            raw: morbiusToken.value,
+          console.log('💰 Contract MORBIUS Balance (from API):', {
+            raw: MORBIUSToken.value,
             formatted,
             decimals,
           })
         } else {
-          console.warn('⚠️ Morbius token not found in API response')
+          console.warn('⚠️ MORBIUS token not found in API response')
           setBalance(BigInt(0))
           setBalanceFormatted('0')
         }

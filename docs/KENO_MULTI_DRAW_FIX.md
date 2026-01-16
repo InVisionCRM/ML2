@@ -89,7 +89,7 @@ if (startTime <= now && now < endTime) {
 ## Implementation Details
 
 ### File Modified
-`/morbius_lotto/app/keno/page.tsx`
+`/MORBIUS_lotto/app/keno/page.tsx`
 
 ### Key Changes
 

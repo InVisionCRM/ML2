@@ -27,13 +27,13 @@ const MEGA_BP = BigInt(2_000)
 const BURN_BP = BigInt(2_000)
 const WINNERS_BP = BigInt(6_000)
 
-const formatMorbius = (amount: bigint) =>
+const formatMORBIUS = (amount: bigint) =>
   parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })
 
-export function MorbiusMovementFeed() {
+export function MORBIUSMovementFeed() {
   const publicClient = usePublicClient()
   const [items, setItems] = useState<MovementItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -82,10 +82,10 @@ export function MorbiusMovementFeed() {
               if (decoded.eventName !== 'RoundFinalized') continue
               const args = decoded.args as any
               const roundId = args.roundId || BigInt(0)
-              const totalPssh: bigint = args.totalPssh || BigInt(0)
-              const megaContribution = (totalPssh * MEGA_BP) / BP_TOTAL
-              const burnAmount = (totalPssh * BURN_BP) / BP_TOTAL
-              const winnersAmount = (totalPssh * WINNERS_BP) / BP_TOTAL
+              const totalMORBIUS: bigint = args.totalMORBIUS || BigInt(0)
+              const megaContribution = (totalMORBIUS * MEGA_BP) / BP_TOTAL
+              const burnAmount = (totalMORBIUS * BURN_BP) / BP_TOTAL
+              const winnersAmount = (totalMORBIUS * WINNERS_BP) / BP_TOTAL
 
               movements.push(
                 {
@@ -93,7 +93,7 @@ export function MorbiusMovementFeed() {
                   blockNumber: log.blockNumber || BigInt(0),
                   txHash: log.transactionHash,
                   label: 'Collected this round',
-                  amount: totalPssh,
+                  amount: totalMORBIUS,
                   direction: 'in',
                   kind: 'base',
                 },
@@ -101,7 +101,7 @@ export function MorbiusMovementFeed() {
                   roundId,
                   blockNumber: log.blockNumber || BigInt(0),
                   txHash: log.transactionHash,
-                  label: 'Base to MegaMorbius (20%)',
+                  label: 'Base to MegaMORBIUS (20%)',
                   amount: megaContribution,
                   direction: 'in',
                   kind: 'base',
@@ -194,11 +194,11 @@ export function MorbiusMovementFeed() {
                   roundId,
                   blockNumber: log.blockNumber || BigInt(0),
                   txHash: log.transactionHash,
-                  label: 'MegaMorbius distributed',
+                  label: 'MegaMORBIUS distributed',
                   amount: bankAmount,
                   direction: 'out',
                   kind: 'mega',
-                  detail: `B6: ${formatMorbius(to6)} | B5: ${formatMorbius(to5)}`,
+                  detail: `B6: ${formatMORBIUS(to6)} | B5: ${formatMORBIUS(to5)}`,
                 }
               )
             } catch (err) {
@@ -214,7 +214,7 @@ export function MorbiusMovementFeed() {
         setItems(movements)
       } catch (err) {
         console.error(err)
-        setError('Failed to load Morbius movements')
+        setError('Failed to load MORBIUS movements')
       } finally {
         setIsLoading(false)
       }
@@ -253,10 +253,10 @@ export function MorbiusMovementFeed() {
   }, [items])
 
   return (
-    <Card className="p-6 bg-black/50 border-white/10">
+    <Card className="p-6 bg-gradient-to-br from-slate-950 to-slate-900/50 border-white/10">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Morbius Movements</h3>
+        <h3 className="text-lg font-semibold">MORBIUS Movements</h3>
       </div>
 
       {isLoading ? (
@@ -274,17 +274,17 @@ export function MorbiusMovementFeed() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <Card className="p-3 bg-black/60 border-white/10">
+            <Card className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/60 border-white/10">
               <div className="text-xs text-white/60">Total Burned</div>
-              <div className="text-lg font-bold text-white">{formatMorbius(totals.burned)} Morbius</div>
+              <div className="text-lg font-bold text-white">{formatMORBIUS(totals.burned)} MORBIUS</div>
             </Card>
-            <Card className="p-3 bg-black/60 border-white/10">
+            <Card className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/60 border-white/10">
               <div className="text-xs text-white/60">Winners Pool Total (60%)</div>
-              <div className="text-lg font-bold text-white">{formatMorbius(totals.winnersOut)} Morbius</div>
+              <div className="text-lg font-bold text-white">{formatMORBIUS(totals.winnersOut)} MORBIUS</div>
             </Card>
-            <Card className="p-3 bg-black/60 border-white/10">
-              <div className="text-xs text-white/60">MegaMorbius Net</div>
-              <div className="text-lg font-bold text-white">{formatMorbius(totals.megaNet)} Morbius</div>
+            <Card className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/60 border-white/10">
+              <div className="text-xs text-white/60">MegaMORBIUS Net</div>
+              <div className="text-lg font-bold text-white">{formatMORBIUS(totals.megaNet)} MORBIUS</div>
             </Card>
           </div>
 
@@ -292,7 +292,7 @@ export function MorbiusMovementFeed() {
             {items.map((item, idx) => (
               <div
                 key={`${item.txHash}-${idx}`}
-                className="p-3 bg-black/40 border border-white/10 rounded-lg flex items-start gap-3"
+                className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg flex items-start gap-3"
               >
                 <div
                   className={`mt-1 rounded-full p-1 ${
@@ -313,7 +313,7 @@ export function MorbiusMovementFeed() {
                     </Badge>
                     {item.detail && <span className="text-xs text-white/60">{item.detail}</span>}
                   </div>
-                  <div className="text-sm font-bold text-white">{formatMorbius(item.amount)} Morbius</div>
+                  <div className="text-sm font-bold text-white">{formatMORBIUS(item.amount)} MORBIUS</div>
                   <div className="text-xs text-white/50">
                     Block {item.blockNumber.toString()} · {item.txHash.slice(0, 10)}…
                   </div>

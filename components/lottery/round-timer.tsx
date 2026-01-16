@@ -4,9 +4,13 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { formatUnits, formatEther } from 'viem'
+import { formatUnits } from 'viem'
 import { TOKEN_DECIMALS, TICKET_PRICE } from '@/lib/contracts'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { PlayerTicketsModal } from './player-tickets-modal'
+import { PlayerStatsModal } from './player-stats-modal'
+import { MultiClaimModal } from './modals/multi-claim-modal'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ChevronUp, ChevronDown, History } from 'lucide-react'
 import PhysicsMachine from './ball-draw-simulator/PhysicsMachine'
 import BallResult from './ball-draw-simulator/BallResult'
 import { DrawState } from './ball-draw-simulator/types'
@@ -15,7 +19,7 @@ interface RoundTimerProps {
   endTime: bigint
   fallbackRemaining?: bigint // optional timeRemaining from contract
   roundId?: number | bigint
-  totalPssh?: bigint
+  totalMORBIUS?: bigint
   previousRoundId?: number // Previous round ID for display
   disabled?: boolean
   houseTicketNumbers?: number[] // Contract's own ticket numbers
@@ -26,10 +30,6 @@ interface RoundTimerProps {
     isFreeTicket: boolean
     transactionHash?: string
   }> // User's tickets for this round
-  totalTickets?: bigint // Total tickets for round stats
-  burnedAmount?: bigint // Burned amount for round stats
-  megaBank?: bigint // Mega bank/jackpot amount
-  isLoadingBurned?: boolean // Loading state for burned amount
   onBuyTicketsClick?: () => void // New prop for buy tickets button
   onShowDashboard?: () => void // Callback to show dashboard modal
   onDrawStart?: () => void // Callback when ball draw starts
@@ -47,7 +47,7 @@ const getPhysicsMachineSize = () => {
   return { width: size, height: size }
 }
 
-export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalPssh, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], totalTickets, burnedAmount, megaBank, isLoadingBurned, onBuyTicketsClick, onShowDashboard, onDrawStart, onDrawEnd }: RoundTimerProps) {
+export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, totalMORBIUS, previousRoundId, disabled = false, houseTicketNumbers = [], winningNumbers = [], playerTickets = [], onBuyTicketsClick, onShowDashboard, onDrawStart, onDrawEnd }: RoundTimerProps) {
   // Convert BigInt to number once to avoid recreating dependencies
   const endTimeNum = Number(endTime)
   const fallbackNum = Number(fallbackRemaining)
@@ -211,7 +211,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
   }, [currentTarget])
 
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -221,7 +221,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
 
   return (
     <>
-      <Card className={`px-4 py-0 sm:px-6 sm:py-0 md:px-8 md:py-0 border-white/10 relative min-h-[680px] sm:min-h-[680px] md:min-h-[690px] max-w-3xl w-full mx-auto bg-Black/10 backdrop-blur-md ${cardDisabledClass}`}>
+      <Card className={`px-4 py-0 sm:px-6 sm:py-0 md:px-8 md:py-0 border-white/10 relative min-h-[680px] sm:min-h-[680px] md:min-h-[690px] max-w-3xl w-full mx-auto bg-gradient-to-br from-slate-950 to-slate-900/10 backdrop-blur-md ${cardDisabledClass}`}>
       {/* House Ticket Numbers - Vertical on left */}
       <div className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 sm:gap-2">
         {houseTicketNumbers && houseTicketNumbers.length === 6 ? (
@@ -283,7 +283,7 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
             >
             <div className="absolute inset-0 animate-[spin_30s_linear_infinite] pointer-events-none">
               <span
-                className="absolute inset-0 bg-[url('/morbius/MorbiusLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-75"
+                className="absolute inset-0 bg-[url('/MORBIUS/MORBIUSLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-75"
               />
             </div>
             <PhysicsMachine
@@ -392,66 +392,60 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
         )}
       </div>
 
-      {/* Round Stats Cards - Below Your Numbers */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-4">
-        <div className="flex justify-between gap-0 text-center">
-          {/* Total Tickets */}
-          {totalTickets !== undefined && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
-              <div className="text-xs text-white/60 mb-1">Total Tickets</div>
-              <div className="text-sm font-bold text-white">{Number(totalTickets).toLocaleString()}</div>
+      {/* Action Buttons - Full Width at Bottom */}
+      <div className="absolute bottom-0 left-0 right-0 px-0 z-10">
+        <div className="flex items-center justify-between gap-0 w-full">
+          {/* Round History Button */}
+          <Button
+            variant="outline"
+            onClick={onShowDashboard}
+            className="text-white bg-slate-900 hover:bg-blue-500/60 flex-1 h-10 p-0 text-xs sm:text-sm"
+            title="Round History"
+          >
+            History
+          </Button>
+
+          {/* Claim winnings button */}
+          <div className="flex-1">
+            <MultiClaimModal />
+          </div>
+
+          {/* Dashboard button */}
+          {onShowDashboard && (
+            <Button
+              variant="outline"
+              onClick={onShowDashboard}
+              className="text-white bg-slate-900 border-yellow-500/50 hover:bg-yellow-500/60 flex-1 h-10 p-0 text-xs sm:text-sm"
+              title="Dashboard"
+            >
+              Dashboard
+            </Button>
+          )}
+
+          {/* Your tickets button */}
+          <div className="flex-1">
+            <PlayerTicketsModal roundId={roundId} playerTickets={playerTickets} />
+          </div>
+
+          {/* Payouts button (conditional) */}
+          {totalMORBIUS !== undefined && (
+            <div className="flex-1">
+              <PayoutBreakdownDialog totalMORBIUS={totalMORBIUS} />
             </div>
           )}
 
-          {/* Burned */}
-          {burnedAmount !== undefined && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
-              <div className="text-xs text-white/60 mb-1">Burned</div>
-              <div className="text-sm font-bold text-white">
-                {isLoadingBurned ? (
-                  <span className="text-white/50">...</span>
-                ) : (() => {
-                  const burnedNum = parseFloat(formatEther(burnedAmount))
-                  return burnedNum >= 1_000_000
-                    ? (burnedNum / 1_000_000).toFixed(1) + 'M'
-                    : burnedNum >= 1_000
-                    ? (burnedNum / 1_000).toFixed(1) + 'K'
-                    : burnedNum.toFixed(0)
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* Jackpot */}
-          {megaBank !== undefined && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
-              <div className="text-xs text-white/60 mb-1">Jackpot</div>
-              <div className="text-sm font-bold text-white">
-                {(() => {
-                  const megaNum = parseFloat(formatEther(megaBank))
-                  return megaNum >= 1_000_000
-                    ? (megaNum / 1_000_000).toFixed(1) + 'M'
-                    : megaNum >= 1_000
-                    ? (megaNum / 1_000).toFixed(1) + 'K'
-                    : megaNum.toFixed(0)
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* Round */}
-          {roundId !== undefined && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-none p-2 flex-1">
-              <div className="text-xs text-white/60 mb-1">Next Round</div>
-              <div className="text-sm font-bold text-white">#{Number(roundId)}</div>
-            </div>
+          {/* Tickets Button - BUY */}
+          {onBuyTicketsClick && (
+            <Button
+              variant="outline"
+              className="text-white bg-green-500/50 hover:bg-green-600/60 border-white/10 flex-1 h-10 p-0 font-bold text-sm"
+              title="Buy lottery tickets"
+              onClick={onBuyTicketsClick}
+            >
+              BUY
+            </Button>
           )}
         </div>
-      </div>
-
-      {/* Action Buttons - Below Your Numbers */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
-        {/* No buttons - removed BUY button */}
       </div>
     </Card>
 
@@ -460,14 +454,14 @@ export function RoundTimer({ endTime, fallbackRemaining = BigInt(0), roundId, to
 }
 
 interface PayoutBreakdownDialogProps {
-  totalPssh?: bigint
+  totalMORBIUS?: bigint
 }
 
-export function PayoutBreakdownDialog({ totalPssh }: PayoutBreakdownDialogProps) {
-  if (totalPssh === undefined) return null
+export function PayoutBreakdownDialog({ totalMORBIUS }: PayoutBreakdownDialogProps) {
+  if (totalMORBIUS === undefined) return null
 
-  const total = Number(totalPssh)
-  const formatPssh = (amount: number) =>
+  const total = Number(totalMORBIUS)
+  const formatMORBIUS = (amount: number) =>
     parseFloat(formatUnits(BigInt(Math.floor(amount)), TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -491,25 +485,23 @@ export function PayoutBreakdownDialog({ totalPssh }: PayoutBreakdownDialogProps)
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="text-white z-10 w-10 h-10 p-0 bg-slate-900/50 backdrop-blur-sm border-white/20 hover:bg-red-500/60" title="Payouts">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <Button variant="outline" className="text-white z-10 w-full h-10 p-0 bg-slate-900/50 backdrop-blur-sm border-white/20 hover:bg-red-500/60 text-xs sm:text-sm" title="Payouts">
+          Payouts
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-black border-white/10">
+      <DialogContent className="bg-gradient-to-br from-slate-950 to-slate-900 border-white/10">
         <DialogHeader>
           <DialogTitle>Payout Breakdown</DialogTitle>
           <DialogDescription>Distribution of the current pool</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 text-sm text-white">
-          <div className="bg-black/40 rounded-lg p-4 border border-white/10">
+          <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-4 border border-white/10">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-white">Winners Pool</span>
               <span className="text-white/80">70%</span>
             </div>
-            <div className="text-white/60 mb-3">{formatPssh(winnersPool)} Morbius</div>
+            <div className="text-white/60 mb-3">{formatMORBIUS(winnersPool)} MORBIUS</div>
             <div className="space-y-1.5 pl-2 border-l-2 border-white/10">
               {brackets.map((bracket) => (
                 <div key={bracket.id} className="flex items-center justify-between text-xs">
@@ -517,43 +509,43 @@ export function PayoutBreakdownDialog({ totalPssh }: PayoutBreakdownDialogProps)
                     {bracket.label}
                     {bracket.hasMegaBonus && <span className="text-yellow-400 ml-1">🎰</span>}
                   </span>
-                  <span className="text-white/60">{bracket.amount.toLocaleString()} Morbius</span>
+                  <span className="text-white/60">{bracket.amount.toLocaleString()} MORBIUS</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-black/40 rounded-lg p-4 border border-white/10">
+          <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-4 border border-white/10">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-white">Burn</span>
               <span className="text-white/80">10%</span>
             </div>
-            <div className="text-white/60 mt-1">{formatPssh(burnAllocation)} Morbius</div>
+            <div className="text-white/60 mt-1">{formatMORBIUS(burnAllocation)} MORBIUS</div>
           </div>
 
-          <div className="bg-black/40 rounded-lg p-4 border border-white/10">
+          <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-4 border border-white/10">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-white">MegaMorbius Bank</span>
+              <span className="font-semibold text-white">MegaMORBIUS Bank</span>
               <span className="text-white/80">10%</span>
             </div>
-            <div className="text-white/60 mt-1">{formatPssh(megaBank)} Morbius</div>
+            <div className="text-white/60 mt-1">{formatMORBIUS(megaBank)} MORBIUS</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-black/40 rounded-lg p-3 border border-white/10">
+            <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-3 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-white text-xs">Keeper</span>
                 <span className="text-white/80 text-xs">5%</span>
               </div>
-              <div className="text-white/60 mt-1 text-xs">{formatPssh(keeperFee)} Morbius</div>
+              <div className="text-white/60 mt-1 text-xs">{formatMORBIUS(keeperFee)} MORBIUS</div>
             </div>
 
-            <div className="bg-black/40 rounded-lg p-3 border border-white/10">
+            <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-3 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-white text-xs">Deployer</span>
                 <span className="text-white/80 text-xs">5%</span>
               </div>
-              <div className="text-white/60 mt-1 text-xs">{formatPssh(deployerFee)} Morbius</div>
+              <div className="text-white/60 mt-1 text-xs">{formatMORBIUS(deployerFee)} MORBIUS</div>
             </div>
           </div>
         </div>

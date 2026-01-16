@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useReadContract } from 'wagmi'
-import { WPLS_PSSH_PAIR, WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
+import { WPLS_MORBIUS_PAIR, WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS, TOKEN_DECIMALS } from '@/lib/contracts'
 
 // PulseX Pair ABI (V1/V2 compatible) - only the functions we need
 const PAIR_ABI = [
@@ -33,7 +33,7 @@ const PAIR_ABI = [
   },
 ] as const
 
-// WPLS/token Pair Address on PulseX (Morbius)
+// WPLS/token Pair Address on PulseX (MORBIUS)
 const WPLS_ADDRESS = WPLS_TOKEN_ADDRESS
 const MORBIUS_ADDRESS = MORBIUS_TOKEN_ADDRESS
 
@@ -55,8 +55,8 @@ interface DexScreenerResponse {
 }
 
 /**
- * Hook to fetch WPLS/Morbius price
- * Primary: Uses PulseX V1 liquidity pool reserves (Morbius is on V1)
+ * Hook to fetch WPLS/MORBIUS price
+ * Primary: Uses PulseX V1 liquidity pool reserves (MORBIUS is on V1)
  * Fallback: DexScreener API
  */
 export function useWplsPrice() {
@@ -66,14 +66,14 @@ export function useWplsPrice() {
 
   // Fetch token0 address
   const { data: token0 } = useReadContract({
-    address: WPLS_PSSH_PAIR as `0x${string}`,
+    address: WPLS_MORBIUS_PAIR as `0x${string}`,
     abi: PAIR_ABI,
     functionName: 'token0',
   })
 
   // Fetch reserves from the pair
   const { data: reserves, isLoading: isLoadingReserves, error: reservesError } = useReadContract({
-    address: WPLS_PSSH_PAIR as `0x${string}`,
+    address: WPLS_MORBIUS_PAIR as `0x${string}`,
     abi: PAIR_ABI,
     functionName: 'getReserves',
     query: {
@@ -88,7 +88,7 @@ export function useWplsPrice() {
       setDexError(null)
       try {
         const response = await fetch(
-          `https://api.dexscreener.com/latest/dex/pairs/pulsechain/${WPLS_PSSH_PAIR}`
+          `https://api.dexscreener.com/latest/dex/pairs/pulsechain/${WPLS_MORBIUS_PAIR}`
         )
         if (!response.ok) {
           throw new Error(`DexScreener API error: ${response.status}`)
@@ -96,7 +96,7 @@ export function useWplsPrice() {
         const data: DexScreenerResponse = await response.json()
         if (data.pairs && data.pairs.length > 0 && data.pairs[0].priceNative) {
           // priceNative is the price in terms of the quote token
-          // We need to calculate WPLS amount needed for 1 pSSH
+          // We need to calculate WPLS amount needed for 1 MORBIUS
           const price = parseFloat(data.pairs[0].priceNative)
           // Convert to bigint (with 18 decimals for WPLS)
           const priceInWei = BigInt(Math.floor(price * 1e18))
@@ -119,7 +119,7 @@ export function useWplsPrice() {
   }, [reserves, reservesError])
 
   // Calculate price from reserves
-  let wplsPerPssh: bigint | null = null
+  let wplsPerMORBIUS: bigint | null = null
   let source: 'pulsex' | 'dexscreener' | null = null
 
   if (reserves && token0) {
@@ -130,24 +130,24 @@ export function useWplsPrice() {
     const isToken0Wpls = token0.toLowerCase() === WPLS_ADDRESS.toLowerCase()
 
     const wplsReserve = isToken0Wpls ? reserve0 : reserve1
-    const morbiusReserve = isToken0Wpls ? reserve1 : reserve0
+    const MORBIUSReserve = isToken0Wpls ? reserve1 : reserve0
 
-    if (morbiusReserve > BigInt(0)) {
-      // Calculate WPLS per Morbius token (wei per base unit)
+    if (MORBIUSReserve > BigInt(0)) {
+      // Calculate WPLS per MORBIUS token (wei per base unit)
       const decimalFactor = BigInt(10) ** BigInt(TOKEN_DECIMALS)
-      wplsPerPssh = (BigInt(wplsReserve) * decimalFactor) / BigInt(morbiusReserve)
+      wplsPerMORBIUS = (BigInt(wplsReserve) * decimalFactor) / BigInt(MORBIUSReserve)
       source = 'pulsex'
     }
   }
 
   // Fallback to DexScreener if no reserves available
-  if (!wplsPerPssh && priceFromDex) {
-    wplsPerPssh = priceFromDex
+  if (!wplsPerMORBIUS && priceFromDex) {
+    wplsPerMORBIUS = priceFromDex
     source = 'dexscreener'
   }
 
   return {
-    wplsPerPssh, // Amount of WPLS (in wei) needed to get 1 pSSH (in base units)
+    wplsPerMORBIUS, // Amount of WPLS (in wei) needed to get 1 MORBIUS (in base units)
     isLoading: isLoadingReserves || isLoadingDex,
     error: reservesError || dexError,
     source,
@@ -155,7 +155,7 @@ export function useWplsPrice() {
 }
 
 /**
- * Calculate WPLS amount needed for a given pSSH amount
+ * Calculate WPLS amount needed for a given MORBIUS amount
  * Includes tax and slippage buffer
  */
 export function calculateWplsAmount(

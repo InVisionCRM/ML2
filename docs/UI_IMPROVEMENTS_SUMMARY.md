@@ -4,7 +4,7 @@
 
 ### 1. ✅ Payment Method Toggle - Shadcn Switch
 
-**Before:** Two buttons side-by-side (pSSH / WPLS)
+**Before:** Two buttons side-by-side (MORBIUS / WPLS)
 
 **After:** Elegant toggle switch with animated transition
 
@@ -13,7 +13,7 @@
 - Created a horizontal toggle with labels on both sides
 - Active payment method is highlighted with primary color
 - Inactive payment method is muted
-- "Best Rate" badge appears when pSSH is selected
+- "Best Rate" badge appears when MORBIUS is selected
 - Smooth transitions when switching
 
 **Code Location:** `components/lottery/purchase-summary-modal.tsx` (lines 318-367)
@@ -22,24 +22,24 @@
 <div className="flex items-center gap-3">
   <Label htmlFor="payment-toggle">Payment Method</Label>
   <div className="flex items-center gap-2">
-    <span className={paymentMethod === 'pssh' ? 'text-primary' : 'text-muted'}>
-      <Coins /> pSSH
+    <span className={paymentMethod === 'MORBIUS' ? 'text-primary' : 'text-muted'}>
+      <Coins /> MORBIUS
     </span>
     <Switch
       checked={paymentMethod === 'wpls'}
-      onCheckedChange={(checked) => setPaymentMethod(checked ? 'wpls' : 'pssh')}
+      onCheckedChange={(checked) => setPaymentMethod(checked ? 'wpls' : 'MORBIUS')}
     />
     <span className={paymentMethod === 'wpls' ? 'text-primary' : 'text-muted'}>
       <Zap /> WPLS
     </span>
   </div>
-  {paymentMethod === 'pssh' && <Badge>Best Rate</Badge>}
+  {paymentMethod === 'MORBIUS' && <Badge>Best Rate</Badge>}
 </div>
 ```
 
-### 2. ✅ Savings Display When Using pSSH
+### 2. ✅ Savings Display When Using MORBIUS
 
-**Feature:** Shows how much users save by using pSSH directly instead of WPLS auto-swap
+**Feature:** Shows how much users save by using MORBIUS directly instead of WPLS auto-swap
 
 **What's Displayed:**
 1. **WPLS equivalent cost** - Shows how much WPLS would be needed if using auto-swap
@@ -56,11 +56,11 @@
 **Code Location:** `components/lottery/purchase-summary-modal.tsx` (lines 448-482)
 
 ```tsx
-{paymentMethod === 'pssh' && wplsPerPssh && (
+{paymentMethod === 'MORBIUS' && wplsPerMORBIUS && (
   <>
     {/* Show WPLS equivalent */}
     <div className="text-xs text-white/40">
-      ≈ {formatWPLS(calculateWplsAmount(psshCost, wplsPerPssh, 11.1))} WPLS if using auto-swap
+      ≈ {formatWPLS(calculateWplsAmount(MORBIUSCost, wplsPerMORBIUS, 11.1))} WPLS if using auto-swap
     </div>
 
     {/* Savings Card */}
@@ -80,7 +80,7 @@
         </div>
       </div>
       <p className="text-xs text-green-400/70 mt-2">
-        By using pSSH directly, you avoid swap fees and slippage
+        By using MORBIUS directly, you avoid swap fees and slippage
       </p>
     </div>
   </>
@@ -92,10 +92,10 @@
 ### Savings Calculation:
 ```typescript
 // WPLS cost with 11.1% buffer (swap fees + slippage)
-const wplsWithBuffer = calculateWplsAmount(psshCost, wplsPerPssh, 11.1)
+const wplsWithBuffer = calculateWplsAmount(MORBIUSCost, wplsPerMORBIUS, 11.1)
 
 // WPLS cost without buffer (ideal rate)
-const wplsIdeal = calculateWplsAmount(psshCost, wplsPerPssh, 0)
+const wplsIdeal = calculateWplsAmount(MORBIUSCost, wplsPerMORBIUS, 0)
 
 // Savings = Buffer amount
 const savings = wplsWithBuffer - wplsIdeal
@@ -106,8 +106,8 @@ const savingsPercent = (savings / wplsWithBuffer) * 100
 
 ### Why This Works:
 - The buffer (11.1%) represents the extra cost of using WPLS
-- This includes: 5.5% pSSH transfer tax + 5% slippage + buffer
-- By showing this difference, users clearly see the benefit of using pSSH directly
+- This includes: 5.5% MORBIUS transfer tax + 5% slippage + buffer
+- By showing this difference, users clearly see the benefit of using MORBIUS directly
 
 ## User Experience Benefits
 
@@ -118,15 +118,15 @@ const savingsPercent = (savings / wplsWithBuffer) * 100
 - ✅ "Best Rate" badge provides social proof
 
 ### 2. **Transparent Cost Comparison**
-- ✅ Users see both pSSH and WPLS costs simultaneously
+- ✅ Users see both MORBIUS and WPLS costs simultaneously
 - ✅ Exact savings displayed in WPLS
 - ✅ Percentage makes it easy to understand
 - ✅ Explanation text educates users
 
 ### 3. **Encourages Best Practice**
-- ✅ Green color psychology suggests pSSH is the "good" choice
+- ✅ Green color psychology suggests MORBIUS is the "good" choice
 - ✅ Savings card makes the benefit tangible
-- ✅ Users understand WHY pSSH is better
+- ✅ Users understand WHY MORBIUS is better
 - ✅ Reduces WPLS usage (saves on gas/fees)
 
 ## Visual Design
@@ -164,7 +164,7 @@ const savingsPercent = (savings / wplsWithBuffer) * 100
 ```
 
 ### Icons Used:
-- `Coins` - pSSH payment method
+- `Coins` - MORBIUS payment method
 - `Zap` - WPLS payment method (speed/convenience)
 - `TrendingDown` - Savings indicator (downward cost trend)
 
@@ -209,10 +209,10 @@ const savingsPercent = (savings / wplsWithBuffer) * 100
 
 ## Testing Checklist
 
-- [x] Switch toggles between pSSH and WPLS
+- [x] Switch toggles between MORBIUS and WPLS
 - [x] Active payment method highlighted correctly
-- [x] "Best Rate" badge shows for pSSH only
-- [x] WPLS equivalent cost displays when using pSSH
+- [x] "Best Rate" badge shows for MORBIUS only
+- [x] WPLS equivalent cost displays when using MORBIUS
 - [x] Savings card shows correct WPLS amount
 - [x] Savings percentage calculates correctly
 - [x] Price updates when switching methods
@@ -234,7 +234,7 @@ const savingsPercent = (savings / wplsWithBuffer) * 100
 ### Payment Method Toggle:
 ```
 Payment Method
-[pSSH icon] pSSH  ●—○  [Zap icon] WPLS  [Best Rate]
+[MORBIUS icon] MORBIUS  ●—○  [Zap icon] WPLS  [Best Rate]
 ```
 
 ### Savings Card:
@@ -243,7 +243,7 @@ Payment Method
 │ [↓] You're Saving       1.234 WPLS      │
 │                         ~10.0% cheaper   │
 │                                          │
-│ By using pSSH directly, you avoid       │
+│ By using MORBIUS directly, you avoid       │
 │ swap fees and slippage                  │
 └─────────────────────────────────────────┘
 ```
@@ -258,7 +258,7 @@ Payment Method
 - 🚀 Modern UI/UX
 
 ### Business Benefits:
-- Encourages optimal token usage (pSSH)
+- Encourages optimal token usage (MORBIUS)
 - Reduces load on WPLS swap function
 - Saves users money → higher satisfaction
 - Educates users about costs

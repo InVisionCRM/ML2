@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 async function main() {
-  console.log("Deploying MegaMorbiusLottery to", hre.network.name, "…");
+  console.log("Deploying MegaMORBIUSLottery to", hre.network.name, "…");
 
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deployer:", deployer.address);
@@ -11,7 +11,7 @@ async function main() {
   console.log("Balance:", hre.ethers.formatEther(balance), "PLS");
 
   // Contract parameters
-  const MORBIUS_TOKEN_ADDRESS = "0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1"; // Morbius token on PulseChain
+  const MORBIUS_TOKEN_ADDRESS = "0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1"; // MORBIUS token on PulseChain
   const WPLS_TOKEN_ADDRESS = "0xA1077a294dDE1B09bB078844df40758a5D0f9a27"; // Wrapped PLS on PulseChain
   const PULSEX_ROUTER_ADDRESS = "0x98bf93ebf5c380C0e6Ae8e192A7e2AE08edAcc02"; // PulseX V1 Router (align with Keno)
 
@@ -41,7 +41,7 @@ async function main() {
   console.log("ROUND_DURATION      :", ROUND_DURATION, "seconds");
 
   // Deploy contract
-  const MegaMorbiusLottery = await hre.ethers.getContractFactory("MegaMorbiusLottery");
+  const MegaMORBIUSLottery = await hre.ethers.getContractFactory("MegaMorbiusLottery");
   console.log("\nDeploying…");
 
   // Use increased gas price for reliable deployment
@@ -49,7 +49,7 @@ async function main() {
 
   console.log("Using gas price:", hre.ethers.formatUnits(gasPrice, "gwei"), "Gwei");
 
-  const lottery = await MegaMorbiusLottery.deploy(
+  const lottery = await MegaMORBIUSLottery.deploy(
     MORBIUS_TOKEN_ADDRESS,
     WPLS_TOKEN_ADDRESS,
     PULSEX_ROUTER_ADDRESS,
@@ -65,7 +65,7 @@ async function main() {
   const deploymentTx = lottery.deploymentTransaction();
   const receipt = await lottery.deploymentTransaction().wait();
   const lotteryAddress = await lottery.getAddress();
-  console.log("\n✅ MegaMorbiusLottery deployed at:", lotteryAddress);
+  console.log("\n✅ MegaMORBIUSLottery deployed at:", lotteryAddress);
   console.log("Tx hash:", deploymentTx?.hash);
   console.log("Block number:", receipt?.blockNumber?.toString?.() ?? "unknown");
 
@@ -80,18 +80,18 @@ async function main() {
   const roundInfo = await lottery.getCurrentRoundInfo();
   console.log("Current Round ID:", roundInfo.roundId.toString());
   console.log("Round Duration:", (await lottery.roundDuration()).toString(), "seconds");
-  console.log("MegaMorbius Bank:", (await lottery.getMegaMorbiusBank()).toString());
+  console.log("MegaMORBIUS Bank:", (await lottery.getMegaMORBIUSBank()).toString());
 
   // Display important addresses
   console.log("\n📋 Important Addresses:");
   console.log("- Lottery Contract:", lotteryAddress);
-  console.log("- Morbius Token:", await lottery.MORBIUS_TOKEN());
+  console.log("- MORBIUS Token:", await lottery.MORBIUS_TOKEN());
   console.log("- WPLS Token:", await lottery.WPLS_TOKEN());
   console.log("- PulseX Router:", await lottery.pulseXRouter());
 
   // Display key parameters
   console.log("\n⚙️  Key Parameters (V2 Changes):");
-  console.log("- Ticket Price (Morbius):", (await lottery.ticketPriceMorbius()).toString(), "wei");
+  console.log("- Ticket Price (MORBIUS):", (await lottery.ticketPriceMORBIUS()).toString(), "wei");
   console.log("- Ticket Price (PLS beats):", (await lottery.ticketPricePls()).toString(), "wei");
   console.log("- Numbers Per Ticket:", await lottery.NUMBERS_PER_TICKET());
   console.log("- Number Range:", await lottery.MIN_NUMBER(), "-", await lottery.MAX_NUMBER());
@@ -105,20 +105,20 @@ async function main() {
   console.log("\n🎯 Fixed Prize Brackets:");
   for (let i = 0; i < 6; i++) {
     const amount = await lottery.BRACKET_AMOUNTS(i);
-    console.log(`- Bracket ${i + 1} (${i + 1} matches): ${amount.toString()} Morbius (${Number(amount) / 1e18} MOR)`);
+    console.log(`- Bracket ${i + 1} (${i + 1} matches): ${amount.toString()} MORBIUS (${Number(amount) / 1e18} MOR)`);
   }
 
   console.log("\n🔄 Rollover Logic:");
   console.log("- Unclaimed brackets: 100% to next round winners pool");
 
-  console.log("\n🎰 MegaMorbius Progressive Jackpot:");
+  console.log("\n🎰 MegaMORBIUS Progressive Jackpot:");
   console.log("- Accumulates 10% of all ticket purchases");
   console.log("- Distributes immediately when 5/6 match winners appear");
   console.log("- Distribution: 35% to 5-match winners, 65% to 6-match winners");
 
   console.log("\n💰 WPLS Payment:");
-  console.log("- Auto-swap WPLS → Morbius via PulseX");
-  console.log("- Accounts for 5.5% Morbius tax + 5% slippage");
+  console.log("- Auto-swap WPLS → MORBIUS via PulseX");
+  console.log("- Accounts for 5.5% MORBIUS tax + 5% slippage");
   console.log("- Buffer:", (await lottery.WPLS_SWAP_BUFFER_PCT()).toString(), "bps (11.1%)");
 
   // Save deployment info
@@ -127,7 +127,7 @@ async function main() {
     contractAddress: lotteryAddress,
     deploymentBlock: deploymentBlock,
     deployer: deployer.address,
-    morbiusToken: MORBIUS_TOKEN_ADDRESS,
+    MORBIUSToken: MORBIUS_TOKEN_ADDRESS,
     wplsToken: WPLS_TOKEN_ADDRESS,
     pulseXRouter: PULSEX_ROUTER_ADDRESS,
     keeperWallet: KEEPER_WALLET,
@@ -155,7 +155,7 @@ async function main() {
   console.log(`   node scripts/lottery-keeper.js`);
   console.log("");
   console.log("5. Test the contract:");
-  console.log("   - Buy tickets with Morbius (buyTickets)");
+  console.log("   - Buy tickets with MORBIUS (buyTickets)");
   console.log("   - Buy tickets with WPLS (buyTicketsWithWPLS)");
   console.log("   - Wait for round to expire (2 minutes)");
   console.log("   - Keeper calls finalizeRound() (draws numbers immediately)");

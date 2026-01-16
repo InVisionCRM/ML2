@@ -42,7 +42,7 @@ export function useMultiRoundPurchases(playerAddress?: `0x${string}`) {
               { type: 'address', name: 'player', indexed: true },
               { type: 'uint256[]', name: 'roundIds', indexed: false },
               { type: 'uint256[]', name: 'ticketCounts', indexed: false },
-              { type: 'uint256', name: 'morbiusSpent', indexed: false },
+              { type: 'uint256', name: 'MORBIUSSpent', indexed: false },
             ],
           },
           args: {

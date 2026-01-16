@@ -82,12 +82,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
 
     uint8 public constant NUMBERS = 80;
     uint8 public constant DRAWN = 20;
-    uint8 public constant PLUS3_DRAWN = 3;
     uint8 public constant MIN_SPOT = 1;
-    uint16 public constant ADDON_MULTIPLIER = 1 << 0;
-    uint16 public constant ADDON_BULLSEYE = 1 << 1;
-    uint16 public constant ADDON_PLUS3 = 1 << 2;
-    uint16 public constant ADDON_PROGRESSIVE = 1 << 3;
+    uint8 public constant MAX_DRAWS = 100; // Prevent unbounded round creation
+    uint256 public constant MIN_WAGER = 1 * 10**18; // 1 MORBIUS minimum wager
     uint256 public constant BPS_DENOMINATOR = 10_000;
 
     // ============ Enums ============
@@ -107,18 +104,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         RoundState state;
         bytes32 requestId; // Optional VRF/adapter request id
         bytes32 randomSeed; // Final randomness used for draws
-        uint8 bullsEyeIndex;
-        uint8 bullsEyeNumber;
         uint8[DRAWN] winningNumbers;
-        uint8[PLUS3_DRAWN] plus3Numbers; // 3 additional numbers for Plus 3 add-on
-        uint256 drawnMultiplier; // Round-level multiplier outcome for multiplier add-on (unused when multiplier disabled)
         uint256 totalBaseWager;
         uint256 poolBalance; // Available bankroll for this round's payouts
-        uint256 totalMultiplierAddon;
-        uint256 totalBullsEyeAddon;
-        uint256 totalPlus3Addon;
-        uint256 totalProgressiveAddon;
-        uint256[] progressiveWinners; // Ticket IDs that won progressive this round
     }
 
     struct Ticket {
@@ -126,7 +114,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         uint64 firstRoundId;
         uint8 draws; // Total draws purchased for this ticket
         uint8 spotSize;
-        uint16 addons; // Bitmask of enabled add-ons
         uint8 drawsRemaining;
         uint256 wagerPerDraw;
         uint256 numbersBitmap; // Packed set of chosen numbers (bit i represents number i+1)
@@ -141,29 +128,14 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
     uint256 public roundDuration; // Seconds per draw cadence
     uint256 public currentRoundId;
     uint256 public nextTicketId = 1;
-    uint256 public feeBps; // Protocol fee on gross ticket cost
-    address public feeRecipient;
+    uint256 public feeBps; // Protocol fee on gross ticket cost (20%)
+    address public feeRecipient; // Keeper wallet (5% of gross)
+    address public deployerRecipient; // Deployer wallet (5% of gross)
     IRandomProvider public randomnessProvider; // Optional VRF/adapter
     uint256 public maxWagerPerDraw; // owner-configured cap to bound liability
-    uint256 public multiplierCostPerDraw;
-    uint256 public bullsEyeCostPerDraw;
-    uint256 public progressiveCostPerDraw;
-    uint256[] public multiplierValues;
-    uint256[] public multiplierWeights; // Sum defines distribution
-
-    // Pulse Progressive Jackpot
-    uint256 public progressivePool;        // Current jackpot amount
-    uint256 public progressiveBaseSeed;    // Reset value after win
-    uint256 public progressiveFeeBps;      // % of progressive fee that goes to pool (e.g., 8500 = 85%)
-    uint256 public progressiveTotalCollected; // Lifetime contributions
-    uint256 public progressiveTotalPaid;      // Lifetime payouts
-    uint256 public progressiveWinCount;       // Number of jackpot wins
-    uint256 public lastProgressiveWinRound;   // Round ID of last win
 
     // Paytable: paytable[spot][hits] = multiplier
     mapping(uint8 => uint256[16]) public paytable; // Support up to spotSize <= 15 if desired
-    // Bulls-Eye paytable mirrors base structure
-    mapping(uint8 => uint256[16]) public bullsEyePaytable;
 
     mapping(uint256 => Round) public rounds;
     mapping(uint256 => Ticket) public tickets;
@@ -203,49 +175,82 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         uint256 indexed firstRoundId,
         uint8 draws,
         uint8 spotSize,
-        uint16 addons,
         uint256 wagerPerDraw,
         uint256 grossCost
     );
+
+    // NEW ENHANCED EVENTS
+    event TicketPurchasedDetailed(
+        address indexed player,
+        uint256 indexed ticketId,
+        uint256 indexed firstRoundId,
+        uint8 draws,
+        uint8 spotSize,
+        uint256 costInMORBIUS,
+        bool paidWithPLS,
+        uint8[] pickedNumbers
+    );
+
+    event PLSPurchase(
+        address indexed player,
+        uint256 plsAmountSpent,
+        uint256 morbiusReceived,
+        uint256 indexed ticketId
+    );
+
+    event TicketDrew(
+        uint256 indexed ticketId,
+        uint256 indexed roundId,
+        uint8[] playerNumbers,
+        uint8[DRAWN] winningNumbers,
+        uint8 matches,
+        uint256 payoutAmount,
+        uint256 timestamp
+    );
+
+    event TicketWon(
+        uint256 indexed ticketId,
+        uint256 indexed roundId,
+        uint8 matches,
+        uint256 payoutAmount,
+        address indexed player
+    );
+
+    event TicketExpired(
+        uint256 indexed ticketId,
+        address indexed player,
+        uint256 finalRoundId,
+        uint8 totalDrawsCompleted,
+        uint256 totalWinnings
+    );
+
+    event WinningsClaimed(
+        address indexed player,
+        uint256[] ticketIds,
+        uint256 totalAmountClaimed,
+        uint256 timestamp
+    );
+
     event RoundClosed(uint256 indexed roundId);
     event RoundRandomnessRequested(uint256 indexed roundId, bytes32 requestId);
     event RandomnessCommitted(uint256 indexed roundId, bytes32 commitment);
     event RandomnessRevealed(uint256 indexed roundId, bytes32 seed);
-    event RoundFinalized(
-        uint256 indexed roundId,
-        uint8[DRAWN] winningNumbers,
-        uint8 bullsEyeIndex,
-        uint256 multiplierOutcome
-    );
+    event RoundFinalized(uint256 indexed roundId, uint8[DRAWN] winningNumbers);
     event PrizeClaimed(
         uint256 indexed roundId,
         uint256 indexed ticketId,
         address indexed player,
-        uint256 basePrize,
-        uint256 bullsEyePrize,
-        uint256 multiplierApplied,
+        uint256 prize,
         uint256 paidPrize
     );
     event PrizeShortfall(uint256 indexed roundId, uint256 indexed ticketId, uint256 owed, uint256 paid);
     event PaytableUpdated(uint8 spotSize, uint8 hits, uint256 multiplier);
-    event BullsEyePaytableUpdated(uint8 spotSize, uint8 hits, uint256 multiplier);
-    event MultiplierDistributionUpdated(uint256[] values, uint256[] weights);
-    event AddonCostsUpdated(uint256 multiplierCost, uint256 bullsEyeCost);
     event FeeUpdated(uint256 feeBps, address recipient);
     event RandomnessProviderUpdated(address provider);
     event RoundDurationUpdated(uint256 newDuration);
     event MaxWagerUpdated(uint256 maxWagerPerDraw);
     event AutoClaimEnabled(address indexed player, bool enabled);
     event AutoClaimProcessed(uint256 indexed roundId, uint256 indexed ticketId, address indexed player, uint256 prize);
-    event ProgressiveWon(
-        uint256 indexed roundId,
-        uint256 indexed ticketId,
-        address indexed player,
-        uint256 jackpotAmount,
-        uint256 shareAmount
-    );
-    event ProgressivePoolUpdated(uint256 newAmount, uint256 totalCollected);
-    event ProgressiveConfigUpdated(uint256 baseSeed, uint256 costPerDraw, uint256 feeBps);
     event BurnExecuted(uint256 amount);
     event BurnThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
 
@@ -256,13 +261,13 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
     error RoundNotOpen();
     error RoundNotFinalized();
     error AlreadyClaimed();
-    error InvalidAddonFlags();
     error RoundStillActive();
     error RandomnessNotReady();
     error RoundAlreadyFinalized();
-    error ZeroWeightDistribution();
     error WagerTooHigh();
+    error WagerTooLow();
     error ClaimExpired();
+    error TooManyDraws();
 
     // ============ Constructor ============
 
@@ -288,19 +293,10 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         roundDuration = roundDuration_; // configurable cadence
         feeBps = feeBps_;
         feeRecipient = feeRecipient_;
-        maxWagerPerDraw = 0.001 ether; // lower default cap for testing; adjust via setter post-deploy
-        // Default add-on pricing: multiplier ~0.0005, Bulls-Eye ~0.00025 (18-dec WPLS assumed)
-        multiplierCostPerDraw = 0.0005 ether;
-        bullsEyeCostPerDraw = 0.00025 ether;
-
-        // Pulse Progressive defaults
-        progressiveCostPerDraw = 0.001 ether; // 1 token per draw
-        progressiveBaseSeed = 100_000 ether; // 100k tokens starting jackpot
-        progressivePool = progressiveBaseSeed; // Initialize pool
-        progressiveFeeBps = 8500; // 85% to pool, 15% to protocol
+        deployerRecipient = msg.sender; // Deployer gets 5% of gross
+        maxWagerPerDraw = 1000 * 10**18; // allow up to 1000 MORBIUS per draw
 
         _initDefaultPaytables();
-        _initDefaultMultiplierDistribution();
         _startFirstRound();
     }
 
@@ -318,31 +314,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         require(hits <= spotSize, "hits out of range");
         paytable[spotSize][hits] = multiplier_;
         emit PaytableUpdated(spotSize, hits, multiplier_);
-    }
-
-    function setBullsEyePaytable(uint8 spotSize, uint8 hits, uint256 multiplier_) external onlyOwner {
-        require(spotSize >= MIN_SPOT && spotSize <= maxSpot, "spot out of range");
-        require(hits <= spotSize, "hits out of range");
-        bullsEyePaytable[spotSize][hits] = multiplier_;
-        emit BullsEyePaytableUpdated(spotSize, hits, multiplier_);
-    }
-
-    function setMultiplierDistribution(uint256[] calldata values, uint256[] calldata weights) external onlyOwner {
-        require(values.length == weights.length, "length mismatch");
-        uint256 totalWeight;
-        for (uint256 i = 0; i < weights.length; i++) {
-            totalWeight += weights[i];
-        }
-        if (totalWeight == 0) revert ZeroWeightDistribution();
-        multiplierValues = values;
-        multiplierWeights = weights;
-        emit MultiplierDistributionUpdated(values, weights);
-    }
-
-    function setAddonCosts(uint256 multiplierCost, uint256 bullsEyeCost) external onlyOwner {
-        multiplierCostPerDraw = multiplierCost;
-        bullsEyeCostPerDraw = bullsEyeCost;
-        emit AddonCostsUpdated(multiplierCost, bullsEyeCost);
     }
 
     function setFee(uint256 feeBps_, address recipient) external onlyOwner {
@@ -366,24 +337,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
     function setMaxWagerPerDraw(uint256 maxWager) external onlyOwner {
         maxWagerPerDraw = maxWager;
         emit MaxWagerUpdated(maxWager);
-    }
-
-    function setProgressiveConfig(
-        uint256 baseSeed,
-        uint256 costPerDraw,
-        uint256 feeBps_
-    ) external onlyOwner {
-        require(feeBps_ <= BPS_DENOMINATOR, "fee too high");
-        progressiveBaseSeed = baseSeed;
-        progressiveCostPerDraw = costPerDraw;
-        progressiveFeeBps = feeBps_;
-        emit ProgressiveConfigUpdated(baseSeed, costPerDraw, feeBps_);
-    }
-
-    function seedProgressivePool(uint256 amount) external onlyOwner {
-        token.safeTransferFrom(msg.sender, address(this), amount);
-        progressivePool += amount;
-        emit ProgressivePoolUpdated(progressivePool, progressiveTotalCollected);
     }
 
     function startNextRound() external whenNotPaused onlyOwner {
@@ -441,8 +394,7 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
      * @param roundId Round to start playing.
      * @param numbers Player picks (length == spotSize, unique ints in [1,80]).
      * @param spotSize Number of spots (1-10).
-     * @param draws Number of consecutive draws (e.g. 1-20).
-     * @param addons Bitmask of enabled add-ons (Multiplier, Bulls-Eye).
+     * @param draws Number of consecutive draws (e.g. 1-100).
      * @param wagerPerDraw Base wager per draw.
      */
     function buyTicket(
@@ -450,27 +402,38 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         uint8[] calldata numbers,
         uint8 spotSize,
         uint8 draws,
-        uint16 addons,
         uint256 wagerPerDraw
     ) external whenNotPaused nonReentrant onlyExistingRound(roundId) {
         roundId = _ensureOpenRound(roundId);
         if (spotSize < MIN_SPOT || spotSize > maxSpot) revert InvalidSpotSize();
         if (draws == 0) revert InvalidNumbers();
+        if (draws > MAX_DRAWS) revert TooManyDraws();
+        if (wagerPerDraw < MIN_WAGER) revert WagerTooLow();
         if (maxWagerPerDraw > 0 && wagerPerDraw > maxWagerPerDraw) revert WagerTooHigh();
         _ensureFutureRounds(roundId, draws);
-        _validateAddonFlags(addons);
 
         uint256 numbersBitmap = _packNumbers(numbers, spotSize);
 
-        uint256 addonCostPerDraw = _addonCost(addons, wagerPerDraw);
-        uint256 grossPerDraw = wagerPerDraw + addonCostPerDraw;
+        uint256 grossPerDraw = wagerPerDraw;
         uint256 feePerDraw = (grossPerDraw * feeBps) / BPS_DENOMINATOR;
         uint256 netPerDraw = grossPerDraw - feePerDraw;
         uint256 gross = grossPerDraw * draws;
         uint256 fee = feePerDraw * draws;
         uint256 net = netPerDraw * draws;
 
-        _accrueBurn(fee);
+        // Split fee: 5% keeper, 5% deployer, 10% burn (50% of fee)
+        uint256 keeperFee = fee / 4; // 25% of fee = 5% of gross
+        uint256 deployerFee = fee / 4; // 25% of fee = 5% of gross
+        uint256 burnFee = fee / 2; // 50% of fee = 10% of gross
+
+        // Transfer fees
+        if (keeperFee > 0) token.safeTransferFrom(msg.sender, feeRecipient, keeperFee);
+        if (deployerFee > 0) token.safeTransferFrom(msg.sender, deployerRecipient, deployerFee);
+
+        // Accrue burn portion
+        _accrueBurn(burnFee);
+
+        // Transfer remaining net to contract
         token.safeTransferFrom(msg.sender, address(this), net);
 
         uint256 ticketId = nextTicketId++;
@@ -479,7 +442,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             firstRoundId: uint64(roundId),
             draws: draws,
             spotSize: spotSize,
-            addons: addons,
             drawsRemaining: draws,
             wagerPerDraw: wagerPerDraw,
             numbersBitmap: numbersBitmap
@@ -491,22 +453,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             ticketsByRound[rid].push(ticketId);
             Round storage r = rounds[rid];
             r.totalBaseWager += wagerPerDraw;
-            if ((addons & ADDON_MULTIPLIER) != 0) {
-                r.totalMultiplierAddon += multiplierCostPerDraw;
-            }
-            if ((addons & ADDON_BULLSEYE) != 0) {
-                r.totalBullsEyeAddon += bullsEyeCostPerDraw;
-            }
-            if ((addons & ADDON_PLUS3) != 0) {
-                r.totalPlus3Addon += wagerPerDraw; // Plus 3 costs same as base wager (doubles it)
-            }
-            if ((addons & ADDON_PROGRESSIVE) != 0) {
-                r.totalProgressiveAddon += progressiveCostPerDraw;
-                // Add portion to progressive pool
-                uint256 toPool = (progressiveCostPerDraw * progressiveFeeBps) / BPS_DENOMINATOR;
-                progressivePool += toPool;
-                progressiveTotalCollected += toPool;
-            }
             r.poolBalance += netPerDraw;
         }
 
@@ -525,7 +471,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             roundId,
             draws,
             spotSize,
-            addons,
             wagerPerDraw,
             gross
         );
@@ -540,20 +485,19 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         uint8[] calldata numbers,
         uint8 spotSize,
         uint8 draws,
-        uint16 addons,
         uint256 wagerPerDraw
     ) external payable whenNotPaused nonReentrant onlyExistingRound(roundId) {
         roundId = _ensureOpenRound(roundId);
         if (spotSize < MIN_SPOT || spotSize > maxSpot) revert InvalidSpotSize();
         if (draws == 0) revert InvalidNumbers();
+        if (draws > MAX_DRAWS) revert TooManyDraws();
+        if (wagerPerDraw < MIN_WAGER) revert WagerTooLow();
         if (maxWagerPerDraw > 0 && wagerPerDraw > maxWagerPerDraw) revert WagerTooHigh();
         _ensureFutureRounds(roundId, draws);
-        _validateAddonFlags(addons);
 
         uint256 numbersBitmap = _packNumbers(numbers, spotSize);
 
-        uint256 addonCostPerDraw = _addonCost(addons, wagerPerDraw);
-        uint256 grossPerDraw = wagerPerDraw + addonCostPerDraw;
+        uint256 grossPerDraw = wagerPerDraw;
         uint256 feePerDraw = (grossPerDraw * feeBps) / BPS_DENOMINATOR;
         uint256 netPerDraw = grossPerDraw - feePerDraw;
         uint256 gross = grossPerDraw * draws;
@@ -562,17 +506,24 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         path[0] = address(wrappedPulse);
         path[1] = address(token);
         uint256[] memory amountsIn = pulseXRouter.getAmountsIn(gross, path);
-        uint256 wplsNeeded = amountsIn[0];
+        uint256 basePlsCost = amountsIn[0];
+
+        // Add 50% tax to discourage PLS payments (like lottery contract)
+        uint256 taxedAmount = (basePlsCost * 15000) / 10000;
+
+        // Add 20% buffer for slippage and fees
+        uint256 wplsNeeded = (taxedAmount * 12000) / 10000;
 
         require(msg.value >= wplsNeeded, "Insufficient PLS");
 
-        wrappedPulse.deposit{value: wplsNeeded}();
-        wrappedPulse.approve(address(pulseXRouter), wplsNeeded);
+        wrappedPulse.deposit{value: taxedAmount}(); // Deposit taxed amount
+        wrappedPulse.approve(address(pulseXRouter), taxedAmount);
 
         uint256 tokenBefore = token.balanceOf(address(this));
 
+        // FIX: Swap the amount we actually deposited (taxedAmount), not wplsNeeded
         pulseXRouter.swapExactTokensForTokens(
-            wplsNeeded,
+            taxedAmount,
             0, // allow any output; enforce below
             path,
             address(this),
@@ -586,9 +537,17 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             payable(msg.sender).transfer(msg.value - wplsNeeded);
         }
 
-        if (fee > 0) {
-            _accrueBurn(fee);
-        }
+        // Split fee: 5% keeper, 5% deployer, 10% burn (50% of fee)
+        uint256 keeperFee = fee / 4; // 25% of fee = 5% of gross
+        uint256 deployerFee = fee / 4; // 25% of fee = 5% of gross
+        uint256 burnFee = fee / 2; // 50% of fee = 10% of gross
+
+        // Transfer fees from contract balance (already swapped)
+        if (keeperFee > 0) token.safeTransfer(feeRecipient, keeperFee);
+        if (deployerFee > 0) token.safeTransfer(deployerRecipient, deployerFee);
+
+        // Accrue burn portion
+        _accrueBurn(burnFee);
 
         uint256 ticketId = nextTicketId++;
         tickets[ticketId] = Ticket({
@@ -596,7 +555,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             firstRoundId: uint64(roundId),
             draws: draws,
             spotSize: spotSize,
-            addons: addons,
             drawsRemaining: draws,
             wagerPerDraw: wagerPerDraw,
             numbersBitmap: numbersBitmap
@@ -608,22 +566,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             ticketsByRound[rid].push(ticketId);
             Round storage r = rounds[rid];
             r.totalBaseWager += wagerPerDraw;
-            if ((addons & ADDON_MULTIPLIER) != 0) {
-                r.totalMultiplierAddon += multiplierCostPerDraw;
-            }
-            if ((addons & ADDON_BULLSEYE) != 0) {
-                r.totalBullsEyeAddon += bullsEyeCostPerDraw;
-            }
-            if ((addons & ADDON_PLUS3) != 0) {
-                r.totalPlus3Addon += wagerPerDraw; // Plus 3 costs same as base wager (doubles it)
-            }
-            if ((addons & ADDON_PROGRESSIVE) != 0) {
-                r.totalProgressiveAddon += progressiveCostPerDraw;
-                // Add portion to progressive pool
-                uint256 toPool = (progressiveCostPerDraw * progressiveFeeBps) / BPS_DENOMINATOR;
-                progressivePool += toPool;
-                progressiveTotalCollected += toPool;
-            }
             r.poolBalance += netPerDraw;
         }
 
@@ -642,7 +584,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             roundId,
             draws,
             spotSize,
-            addons,
             wagerPerDraw,
             gross
         );
@@ -682,44 +623,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         _processClaimInternal(roundId, ticketId, msg.sender);
     }
 
-    /**
-     * @notice Distribute progressive jackpot to winners after round is finalized
-     * @dev Can be called by anyone, only works once per round with winners
-     */
-    function distributeProgressive(uint256 roundId) external whenNotPaused nonReentrant onlyExistingRound(roundId) {
-        Round storage roundInfo = rounds[roundId];
-        require(roundInfo.state == RoundState.FINALIZED, "not finalized");
-        require(roundInfo.progressiveWinners.length > 0, "no winners");
-
-        uint256 totalJackpot = progressivePool;
-        uint256 winnerCount = roundInfo.progressiveWinners.length;
-        uint256 sharePerWinner = totalJackpot / winnerCount;
-
-        // Pay each winner their share
-        for (uint256 i = 0; i < winnerCount; i++) {
-            uint256 ticketId = roundInfo.progressiveWinners[i];
-            Ticket storage ticket = tickets[ticketId];
-
-            token.safeTransfer(ticket.player, sharePerWinner);
-
-            playerTotalWon[ticket.player] += sharePerWinner;
-            globalTotalWon += sharePerWinner;
-
-            emit ProgressiveWon(roundId, ticketId, ticket.player, totalJackpot, sharePerWinner);
-        }
-
-        // Reset progressive pool to base seed
-        progressiveTotalPaid += totalJackpot;
-        progressiveWinCount++;
-        lastProgressiveWinRound = roundId;
-        progressivePool = progressiveBaseSeed;
-
-        // Clear winners array to prevent double-payment
-        delete roundInfo.progressiveWinners;
-
-        emit ProgressivePoolUpdated(progressivePool, progressiveTotalCollected);
-    }
-
     // ============ Views ============
 
     function getRound(uint256 roundId) external view returns (Round memory) {
@@ -728,11 +631,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
 
     function getTicket(uint256 ticketId) external view returns (Ticket memory) {
         return tickets[ticketId];
-    }
-
-    function addonCost(uint16 addons, uint256 wagerPerDraw) external view returns (uint256) {
-        _validateAddonFlags(addons);
-        return _addonCost(addons, wagerPerDraw);
     }
 
     // ============ Player Statistics Views ============
@@ -843,28 +741,8 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             return (false, 0);
         }
 
-        bool hasPlus3 = (ticket.addons & ADDON_PLUS3) != 0;
-        (uint256 hits, bool hasBullsEye) = _scoreTicket(
-            ticket.numbersBitmap,
-            roundInfo.winningNumbers,
-            roundInfo.plus3Numbers,
-            roundInfo.bullsEyeNumber,
-            hasPlus3
-        );
-
-        uint256 basePrize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
-        uint256 bullsEyePrize = 0;
-        if (hasBullsEye && (ticket.addons & ADDON_BULLSEYE) != 0) {
-            bullsEyePrize = ticket.wagerPerDraw * bullsEyePaytable[ticket.spotSize][hits];
-        }
-
-        prize = basePrize + bullsEyePrize;
-
-        if ((ticket.addons & ADDON_MULTIPLIER) != 0 && prize > 0) {
-            uint256 multiplierApplied = roundInfo.drawnMultiplier == 0 ? 1 : roundInfo.drawnMultiplier;
-            prize = prize * multiplierApplied;
-        }
-
+        uint256 hits = _scoreTicket(ticket.numbersBitmap, roundInfo.winningNumbers);
+        prize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
         isWinner = prize > 0;
     }
 
@@ -886,28 +764,8 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
                 Round storage roundInfo = rounds[roundId];
 
                 if (roundInfo.state == RoundState.FINALIZED && !claimed[roundId][ticketId]) {
-                    bool hasPlus3 = (ticket.addons & ADDON_PLUS3) != 0;
-                    (uint256 hits, bool hasBullsEye) = _scoreTicket(
-                        ticket.numbersBitmap,
-                        roundInfo.winningNumbers,
-                        roundInfo.plus3Numbers,
-                        roundInfo.bullsEyeNumber,
-                        hasPlus3
-                    );
-
-                    uint256 basePrize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
-                    uint256 bullsEyePrize = 0;
-                    if (hasBullsEye && (ticket.addons & ADDON_BULLSEYE) != 0) {
-                        bullsEyePrize = ticket.wagerPerDraw * bullsEyePaytable[ticket.spotSize][hits];
-                    }
-
-                    uint256 prize = basePrize + bullsEyePrize;
-
-                    if ((ticket.addons & ADDON_MULTIPLIER) != 0 && prize > 0) {
-                        uint256 multiplierApplied = roundInfo.drawnMultiplier == 0 ? 1 : roundInfo.drawnMultiplier;
-                        prize = prize * multiplierApplied;
-                    }
-
+                    uint256 hits = _scoreTicket(ticket.numbersBitmap, roundInfo.winningNumbers);
+                    uint256 prize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
                     totalUnclaimed += prize;
                 }
             }
@@ -934,33 +792,6 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             results[i] = tickets[ticketIds[i]];
         }
         return results;
-    }
-
-    /**
-     * @notice Get Pulse Progressive jackpot stats
-     */
-    function getProgressiveStats()
-        external
-        view
-        returns (
-            uint256 currentPool,
-            uint256 baseSeed,
-            uint256 costPerDraw,
-            uint256 totalCollected,
-            uint256 totalPaid,
-            uint256 winCount,
-            uint256 lastWinRound
-        )
-    {
-        return (
-            progressivePool,
-            progressiveBaseSeed,
-            progressiveCostPerDraw,
-            progressiveTotalCollected,
-            progressiveTotalPaid,
-            progressiveWinCount,
-            lastProgressiveWinRound
-        );
     }
 
     // ============ Auto-Claim Feature ============
@@ -1061,18 +892,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             state: RoundState.OPEN,
             requestId: bytes32(0),
             randomSeed: bytes32(0),
-            bullsEyeIndex: 0,
-            bullsEyeNumber: 0,
             winningNumbers: _emptyWinning(),
-            plus3Numbers: _emptyPlus3(),
-            drawnMultiplier: 0,
             totalBaseWager: 0,
-            poolBalance: 0,
-            totalMultiplierAddon: 0,
-            totalBullsEyeAddon: 0,
-            totalPlus3Addon: 0,
-            totalProgressiveAddon: 0,
-            progressiveWinners: new uint256[](0)
+            poolBalance: 0
         });
         emit RoundStarted(currentRoundId, start, end);
     }
@@ -1091,18 +913,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
                     state: RoundState.OPEN,
                     requestId: bytes32(0),
                     randomSeed: bytes32(0),
-                    bullsEyeIndex: 0,
-                    bullsEyeNumber: 0,
                     winningNumbers: _emptyWinning(),
-                    plus3Numbers: _emptyPlus3(),
-                    drawnMultiplier: 0,
                     totalBaseWager: 0,
-                    poolBalance: 0,
-                    totalMultiplierAddon: 0,
-                    totalBullsEyeAddon: 0,
-                    totalPlus3Addon: 0,
-                    totalProgressiveAddon: 0,
-                    progressiveWinners: new uint256[](0)
+                    poolBalance: 0
                 });
                 emit RoundStarted(rid, start, end);
             }
@@ -1121,18 +934,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             state: RoundState.OPEN,
             requestId: bytes32(0),
             randomSeed: bytes32(0),
-            bullsEyeIndex: 0,
-            bullsEyeNumber: 0,
             winningNumbers: _emptyWinning(),
-            plus3Numbers: _emptyPlus3(),
-            drawnMultiplier: 0,
             totalBaseWager: 0,
-            poolBalance: 0,
-            totalMultiplierAddon: 0,
-            totalBullsEyeAddon: 0,
-            totalPlus3Addon: 0,
-            totalProgressiveAddon: 0,
-            progressiveWinners: new uint256[](0)
+            poolBalance: 0
         });
         currentRoundId = newRoundId;
         emit RoundStarted(newRoundId, start, end);
@@ -1182,15 +986,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         uint256 seed = uint256(roundInfo.randomSeed);
         uint8[DRAWN] memory winning = _drawNumbers(seed);
         roundInfo.winningNumbers = winning;
-        roundInfo.bullsEyeIndex = uint8(seed % DRAWN);
-        roundInfo.bullsEyeNumber = winning[roundInfo.bullsEyeIndex];
-        roundInfo.drawnMultiplier = _drawMultiplier(seed);
-
-        // Draw Plus 3 numbers (drawn from remaining numbers not in the original 20)
-        roundInfo.plus3Numbers = _drawPlus3Numbers(seed, winning);
 
         roundInfo.state = RoundState.FINALIZED;
-        emit RoundFinalized(roundId, winning, roundInfo.bullsEyeIndex, roundInfo.drawnMultiplier);
+        emit RoundFinalized(roundId, winning);
 
         // Process auto-claims for eligible tickets (gas-limited)
         _processAutoClaims(roundId);
@@ -1238,33 +1036,9 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             ticket.drawsRemaining -= 1;
         }
 
-        bool hasPlus3 = (ticket.addons & ADDON_PLUS3) != 0;
-        (uint256 hits, bool hasBullsEye) = _scoreTicket(
-            ticket.numbersBitmap,
-            roundInfo.winningNumbers,
-            roundInfo.plus3Numbers,
-            roundInfo.bullsEyeNumber,
-            hasPlus3
-        );
-        uint256 basePrize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
-        uint256 bullsEyePrize = 0;
-        if (hasBullsEye && (ticket.addons & ADDON_BULLSEYE) != 0) {
-            bullsEyePrize = ticket.wagerPerDraw * bullsEyePaytable[ticket.spotSize][hits];
-        }
-        uint256 totalPrize = basePrize + bullsEyePrize;
-        uint256 multiplierApplied = 1;
-        if ((ticket.addons & ADDON_MULTIPLIER) != 0 && totalPrize > 0) {
-            multiplierApplied = roundInfo.drawnMultiplier == 0 ? 1 : roundInfo.drawnMultiplier;
-            totalPrize = totalPrize * multiplierApplied;
-        }
-
-        uint256 paid = _payoutFromPool(roundInfo, ticketId, totalPrize);
-
-        // Check for Pulse Progressive win
-        // Win condition: 9+ hits on 9/10-spot game with progressive add-on
-        if ((ticket.addons & ADDON_PROGRESSIVE) != 0 && ticket.spotSize >= 9 && hits >= 9) {
-            roundInfo.progressiveWinners.push(ticketId);
-        }
+        uint256 hits = _scoreTicket(ticket.numbersBitmap, roundInfo.winningNumbers);
+        uint256 prize = ticket.wagerPerDraw * paytable[ticket.spotSize][hits];
+        uint256 paid = _payoutFromPool(roundInfo, ticketId, prize);
 
         // Update player statistics if won
         if (paid > 0) {
@@ -1273,7 +1047,7 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
             globalTotalWon += paid;
         }
 
-        emit PrizeClaimed(roundId, ticketId, ticket.player, basePrize, bullsEyePrize, multiplierApplied, paid);
+        emit PrizeClaimed(roundId, ticketId, ticket.player, prize, paid);
     }
 
     function _drawNumbers(uint256 seed) internal pure returns (uint8[DRAWN] memory result) {
@@ -1292,88 +1066,12 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    function _drawMultiplier(uint256 seed) internal view returns (uint256) {
-        if (multiplierValues.length == 0) {
-            // Default distribution from the README if unset
-            uint256 roll = uint256(keccak256(abi.encode(seed, "multiplier"))) % 100;
-            if (roll < 60) return 1;
-            if (roll < 85) return 2;
-            if (roll < 95) return 3;
-            if (roll < 99) return 5;
-            return 10;
-        }
-        uint256 totalWeight;
-        for (uint256 i = 0; i < multiplierWeights.length; i++) {
-            totalWeight += multiplierWeights[i];
-        }
-        uint256 rnd = uint256(keccak256(abi.encode(seed, "multiplier-custom"))) % totalWeight;
-        uint256 cumulative;
-        for (uint256 i = 0; i < multiplierValues.length; i++) {
-            cumulative += multiplierWeights[i];
-            if (rnd < cumulative) {
-                return multiplierValues[i];
-            }
-        }
-        return multiplierValues[multiplierValues.length - 1];
-    }
-
-    function _drawPlus3Numbers(uint256 seed, uint8[DRAWN] memory alreadyDrawn)
-        internal
-        pure
-        returns (uint8[PLUS3_DRAWN] memory result)
-    {
-        // Draw 3 additional numbers from the 60 numbers NOT in the original 20
-        // First create a bitmap of already drawn numbers for quick lookup
-        uint256 drawnBitmap = 0;
-        for (uint8 i = 0; i < DRAWN; i++) {
-            drawnBitmap |= (uint256(1) << (alreadyDrawn[i] - 1));
-        }
-
-        // Create pool of remaining 60 numbers
-        uint8[NUMBERS - DRAWN] memory remainingPool;
-        uint8 poolIndex = 0;
-        for (uint8 n = 1; n <= NUMBERS; n++) {
-            if ((drawnBitmap & (uint256(1) << (n - 1))) == 0) {
-                remainingPool[poolIndex++] = n;
-            }
-        }
-
-        // Use Fisher-Yates to select 3 numbers from the remaining pool
-        uint256 randomSeed = uint256(keccak256(abi.encode(seed, "plus3")));
-        for (uint8 i = 0; i < PLUS3_DRAWN; i++) {
-            uint256 swapIndex = i + (uint256(keccak256(abi.encode(randomSeed, i))) % (NUMBERS - DRAWN - i));
-            uint8 temp = remainingPool[i];
-            remainingPool[i] = remainingPool[swapIndex];
-            remainingPool[swapIndex] = temp;
-            result[i] = remainingPool[i];
-        }
-    }
-
-    function _scoreTicket(
-        uint256 numbersBitmap,
-        uint8[DRAWN] memory winning,
-        uint8[PLUS3_DRAWN] memory plus3Numbers,
-        uint8 bullsEyeNumber,
-        bool hasPlus3Addon
-    ) internal pure returns (uint256 hits, bool hasBullsEye) {
-        // Score hits from the base 20 winning numbers
+    function _scoreTicket(uint256 numbersBitmap, uint8[DRAWN] memory winning) internal pure returns (uint256 hits) {
+        // Score hits from the 20 winning numbers
         for (uint8 i = 0; i < DRAWN; i++) {
             uint8 n = winning[i];
             if ((numbersBitmap & (uint256(1) << (n - 1))) != 0) {
                 hits++;
-                if (n == bullsEyeNumber) {
-                    hasBullsEye = true;
-                }
-            }
-        }
-
-        // If Plus 3 is enabled, add hits from the 3 additional numbers
-        if (hasPlus3Addon) {
-            for (uint8 i = 0; i < PLUS3_DRAWN; i++) {
-                uint8 n = plus3Numbers[i];
-                if ((numbersBitmap & (uint256(1) << (n - 1))) != 0) {
-                    hits++;
-                }
             }
         }
     }
@@ -1410,34 +1108,8 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    function _validateAddonFlags(uint16 addons) internal pure {
-        uint16 allowed = ADDON_MULTIPLIER | ADDON_BULLSEYE | ADDON_PLUS3 | ADDON_PROGRESSIVE;
-        if ((addons | allowed) != allowed) revert InvalidAddonFlags();
-    }
-
-    function _addonCost(uint16 addons, uint256 wagerPerDraw) internal view returns (uint256 cost) {
-        if ((addons & ADDON_MULTIPLIER) != 0) {
-            cost += multiplierCostPerDraw;
-        }
-        if ((addons & ADDON_BULLSEYE) != 0) {
-            cost += bullsEyeCostPerDraw;
-        }
-        if ((addons & ADDON_PLUS3) != 0) {
-            cost += wagerPerDraw; // Plus 3 doubles the wager (costs same as base wager)
-        }
-        if ((addons & ADDON_PROGRESSIVE) != 0) {
-            cost += progressiveCostPerDraw;
-        }
-    }
-
     function _emptyWinning() internal pure returns (uint8[DRAWN] memory arr) {
         for (uint8 i = 0; i < DRAWN; i++) {
-            arr[i] = 0;
-        }
-    }
-
-    function _emptyPlus3() internal pure returns (uint8[PLUS3_DRAWN] memory arr) {
-        for (uint8 i = 0; i < PLUS3_DRAWN; i++) {
             arr[i] = 0;
         }
     }
@@ -1449,138 +1121,60 @@ contract CryptoKeno is Ownable, ReentrancyGuard, Pausable {
         // Based on authentic Club Keno prize structure
 
         // 1-SPOT GAME
-        paytable[1][1] = 2;
+        paytable[1][1] = 2;           // $2 payout
 
         // 2-SPOT GAME
-        paytable[2][2] = 11;
+        paytable[2][2] = 11;          // $11 payout
 
         // 3-SPOT GAME
-        paytable[3][3] = 27;
-        paytable[3][2] = 1; // Reduced from 2
+        paytable[3][3] = 27;          // $27 payout
+        paytable[3][2] = 2;           // $2 payout
 
         // 4-SPOT GAME
-        paytable[4][4] = 120; // Increased from 72
-        paytable[4][3] = 3; // Reduced from 5
-        paytable[4][2] = 0; // Reduced from 1
+        paytable[4][4] = 72;          // $72 payout
+        paytable[4][3] = 5;           // $5 payout
+        paytable[4][2] = 1;           // $1 payout
 
         // 5-SPOT GAME
-        paytable[5][5] = 600; // Increased from 410
-        paytable[5][4] = 30; // Increased from 18
-        paytable[5][3] = 1; // Reduced from 2
+        paytable[5][5] = 410;         // $410 payout
+        paytable[5][4] = 18;          // $18 payout
+        paytable[5][3] = 2;           // $2 payout
 
         // 6-SPOT GAME
-        paytable[6][6] = 1650; // Increased from 1100
-        paytable[6][5] = 90; // Increased from 57
-        paytable[6][4] = 12; // Increased from 7
-        paytable[6][3] = 0; // Reduced from 1
+        paytable[6][6] = 1100;        // $1,100 payout
+        paytable[6][5] = 57;          // $57 payout
+        paytable[6][4] = 7;           // $7 payout
+        paytable[6][3] = 1;           // $1 payout
 
         // 7-SPOT GAME
-        paytable[7][7] = 2000;
-        paytable[7][6] = 150; // Increased from 100
-        paytable[7][5] = 18; // Increased from 11
-        paytable[7][4] = 8; // Increased from 5
-        paytable[7][3] = 0; // Reduced from 1
+        paytable[7][7] = 2000;        // $2,000 payout
+        paytable[7][6] = 100;         // $100 payout
+        paytable[7][5] = 11;          // $11 payout
+        paytable[7][4] = 5;           // $5 payout
+        paytable[7][3] = 1;           // $1 payout
 
         // 8-SPOT GAME
-        paytable[8][8] = 10000;
-        paytable[8][7] = 300;
-        paytable[8][6] = 80; // Increased from 50
-        paytable[8][5] = 25; // Increased from 15
-        paytable[8][4] = 3; // Increased from 2
+        paytable[8][8] = 10000;       // $10,000 payout
+        paytable[8][7] = 300;         // $300 payout
+        paytable[8][6] = 50;          // $50 payout
+        paytable[8][5] = 15;          // $15 payout
+        paytable[8][4] = 2;           // $2 payout
 
         // 9-SPOT GAME
-        paytable[9][9] = 25000;
-        paytable[9][8] = 2000;
-        paytable[9][7] = 100;
-        paytable[9][6] = 35; // Increased from 20
-        paytable[9][5] = 8; // Increased from 5
-        paytable[9][4] = 3; // Increased from 2
+        paytable[9][9] = 25000;       // $25,000 payout
+        paytable[9][8] = 2000;        // $2,000 payout
+        paytable[9][7] = 100;         // $100 payout
+        paytable[9][6] = 20;          // $20 payout
+        paytable[9][5] = 5;           // $5 payout
+        paytable[9][4] = 2;           // $2 payout
 
         // 10-SPOT GAME
-        paytable[10][10] = 100000;
-        paytable[10][9] = 5000;
-        paytable[10][8] = 500;
-        paytable[10][7] = 50;
-        paytable[10][6] = 18; // Increased from 10
-        paytable[10][5] = 4; // Increased from 2
-        paytable[10][0] = 5;  // Special: Zero hits consolation prize
-
-        // Bulls-Eye paytable (bonus when Bulls-Eye number is hit)
-        // Scaled at ~3x base payouts for balanced enhancement
-
-        // 1-SPOT BULLS-EYE
-        bullsEyePaytable[1][1] = 6;  // 3x of base 2
-
-        // 2-SPOT BULLS-EYE
-        bullsEyePaytable[2][2] = 33;  // 3x of base 11
-
-        // 3-SPOT BULLS-EYE
-        bullsEyePaytable[3][3] = 81;  // 3x of base 27
-        bullsEyePaytable[3][2] = 6;   // 3x of base 2
-
-        // 4-SPOT BULLS-EYE
-        bullsEyePaytable[4][4] = 216;  // 3x of base 72
-        bullsEyePaytable[4][3] = 15;   // 3x of base 5
-        bullsEyePaytable[4][2] = 3;    // 3x of base 1
-
-        // 5-SPOT BULLS-EYE
-        bullsEyePaytable[5][5] = 1230;  // 3x of base 410
-        bullsEyePaytable[5][4] = 54;    // 3x of base 18
-        bullsEyePaytable[5][3] = 6;     // 3x of base 2
-
-        // 6-SPOT BULLS-EYE
-        bullsEyePaytable[6][6] = 3300;  // 3x of base 1100
-        bullsEyePaytable[6][5] = 171;   // 3x of base 57
-        bullsEyePaytable[6][4] = 21;    // 3x of base 7
-        bullsEyePaytable[6][3] = 3;     // 3x of base 1
-
-        // 7-SPOT BULLS-EYE
-        bullsEyePaytable[7][7] = 6000;  // 3x of base 2000
-        bullsEyePaytable[7][6] = 300;   // 3x of base 100
-        bullsEyePaytable[7][5] = 33;    // 3x of base 11
-        bullsEyePaytable[7][4] = 15;    // 3x of base 5
-        bullsEyePaytable[7][3] = 3;     // 3x of base 1
-
-        // 8-SPOT BULLS-EYE
-        bullsEyePaytable[8][8] = 30000;  // 3x of base 10000
-        bullsEyePaytable[8][7] = 900;    // 3x of base 300
-        bullsEyePaytable[8][6] = 150;    // 3x of base 50
-        bullsEyePaytable[8][5] = 45;     // 3x of base 15
-        bullsEyePaytable[8][4] = 6;      // 3x of base 2
-
-        // 9-SPOT BULLS-EYE
-        bullsEyePaytable[9][9] = 75000;  // 3x of base 25000
-        bullsEyePaytable[9][8] = 6000;   // 3x of base 2000
-        bullsEyePaytable[9][7] = 300;    // 3x of base 100
-        bullsEyePaytable[9][6] = 60;     // 3x of base 20
-        bullsEyePaytable[9][5] = 15;     // 3x of base 5
-        bullsEyePaytable[9][4] = 6;      // 3x of base 2
-
-        // 10-SPOT BULLS-EYE
-        bullsEyePaytable[10][10] = 300000;  // 3x of base 100000
-        bullsEyePaytable[10][9] = 15000;    // 3x of base 5000
-        bullsEyePaytable[10][8] = 1500;     // 3x of base 500
-        bullsEyePaytable[10][7] = 150;      // 3x of base 50
-        bullsEyePaytable[10][6] = 30;       // 3x of base 10
-        bullsEyePaytable[10][5] = 6;        // 3x of base 2
-        bullsEyePaytable[10][0] = 15;       // 3x of base 5 (zero hits bonus)
-    }
-
-    function _initDefaultMultiplierDistribution() internal {
-        // Mirrors README example: 1x 60%, 2x 25%, 3x 10%, 5x 4%, 10x 1%.
-        uint256[] memory values = new uint256[](5);
-        uint256[] memory weights = new uint256[](5);
-        values[0] = 1;
-        values[1] = 2;
-        values[2] = 3;
-        values[3] = 5;
-        values[4] = 10;
-        weights[0] = 60;
-        weights[1] = 25;
-        weights[2] = 10;
-        weights[3] = 4;
-        weights[4] = 1;
-        multiplierValues = values;
-        multiplierWeights = weights;
+        paytable[10][10] = 100000;    // $100,000 payout
+        paytable[10][9] = 5000;       // $5,000 payout
+        paytable[10][8] = 500;        // $500 payout
+        paytable[10][7] = 50;         // $50 payout
+        paytable[10][6] = 10;         // $10 payout
+        paytable[10][5] = 2;          // $2 payout
+        paytable[10][0] = 5;          // $5 consolation
     }
 }

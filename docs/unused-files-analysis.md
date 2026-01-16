@@ -2,7 +2,7 @@
 
 **Analysis Date:** December 12, 2025
 **Total Files Analyzed:** 147
-**Workspace:** /Users/kyle/MORBlotto/morbius_lotto
+**Workspace:** /Users/kyle/MORBlotto/MORBIUS_lotto
 **Analysis Method:** Static import/reference analysis
 
 ## Executive Summary
@@ -23,13 +23,13 @@
 ### Asset Files
 | File Path | Size | Reason | Safe to Delete? |
 |-----------|------|--------|----------------|
-| `public/morbius/074ed94f-163a-4fd2-a4c6-66afb4905a9b.png` | ~500KB | Not referenced in any component | Yes |
-| `public/morbius/47dbb439-f5e8-447e-ad73-f7e234f19f6b.png` | ~400KB | Not referenced in any component | Yes |
-| `public/morbius/6f4a92af-ecc2-4cf5-aca9-18a429a4b181.png` | ~300KB | Not referenced in any component | Yes |
-| `public/morbius/88f05272-ed62-4f9e-9fd6-1e65ab8c50f1.png` | ~350KB | Not referenced in any component | Yes |
-| `public/morbius/93b5f1bd-88f8-48a6-b59b-ae17577a97cc.png` | ~250KB | Not referenced in any component | Yes |
-| `public/morbius/a49e6753-1cd0-49f3-8e1d-c62fcd87e9ca.png` | ~200KB | Not referenced in any component | Yes |
-| `public/morbius/MorbiusLogo (3).png` | ~150KB | Not referenced in any component | Yes |
+| `public/MORBIUS/074ed94f-163a-4fd2-a4c6-66afb4905a9b.png` | ~500KB | Not referenced in any component | Yes |
+| `public/MORBIUS/47dbb439-f5e8-447e-ad73-f7e234f19f6b.png` | ~400KB | Not referenced in any component | Yes |
+| `public/MORBIUS/6f4a92af-ecc2-4cf5-aca9-18a429a4b181.png` | ~300KB | Not referenced in any component | Yes |
+| `public/MORBIUS/88f05272-ed62-4f9e-9fd6-1e65ab8c50f1.png` | ~350KB | Not referenced in any component | Yes |
+| `public/MORBIUS/93b5f1bd-88f8-48a6-b59b-ae17577a97cc.png` | ~250KB | Not referenced in any component | Yes |
+| `public/MORBIUS/a49e6753-1cd0-49f3-8e1d-c62fcd87e9ca.png` | ~200KB | Not referenced in any component | Yes |
+| `public/MORBIUS/MORBIUSLogo (3).png` | ~150KB | Not referenced in any component | Yes |
 | `public/be072188-bdcd-41d1-973d-d742282fb87c.MP4` | ~800KB | Not referenced in any component | Yes |
 
 ## Potentially Unused Files
@@ -86,7 +86,7 @@
 
 ### Immediate Actions (Safe to Delete)
 1. **Delete backup file:** `components/lottery/purchase-summary-modal.tsx.backup`
-2. **Delete unused images:** All 7 unreferenced PNG files in `public/morbius/` (~2.1MB savings)
+2. **Delete unused images:** All 7 unreferenced PNG files in `public/MORBIUS/` (~2.1MB savings)
 3. **Delete unused video:** `public/be072188-bdcd-41d1-973d-d742282fb87c.MP4` (~800KB savings)
 
 ### Files Requiring Manual Review

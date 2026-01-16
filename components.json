@@ -4,12 +4,13 @@
   "rsc": true,
   "tsx": true,
   "tailwind": {
-    "config": "@tailwindcss/postcss",
+    "config": "tailwind.config.ts",
     "css": "app/globals.css",
     "baseColor": "neutral",
-    "cssVariables": true
+    "cssVariables": true,
+    "prefix": ""
   },
-  "iconLibrary": "radix",
+  "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
@@ -21,4 +22,3 @@
     "@aceternity": "https://ui.aceternity.com/registry/{name}.json"
   }
 }
-

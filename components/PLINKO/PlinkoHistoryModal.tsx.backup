@@ -1,0 +1,384 @@
+'use client'
+
+import React, { useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+// import { PlinkoDrop, PlinkoPlayerStats } from '@/lib/plinko-types'
+import { RiskLevel } from '@/app/PLINKO/types'
+import PlinkoGame from './PlinkoGame'
+
+interface PlinkoHistoryModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  drops: PlinkoDrop[]
+  stats: PlinkoPlayerStats | null
+  isConnected: boolean
+  playerKey: string
+  onExport: () => void
+  onClear: () => void
+  onFilterChange: (filter: {
+    dateFrom?: string;
+    dateTo?: string;
+    minBet?: number;
+    maxBet?: number;
+    minWin?: number;
+    maxWin?: number;
+    minMultiplier?: number;
+    maxMultiplier?: number;
+  }) => void
+}
+
+export function PlinkoHistoryModal({
+  open,
+  onOpenChange,
+  drops,
+  stats,
+  isConnected,
+  playerKey,
+  onExport,
+  onClear,
+  onFilterChange,
+}: PlinkoHistoryModalProps) {
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    minBet: '',
+    maxBet: '',
+    minWin: '',
+    maxWin: '',
+    minMultiplier: '',
+    maxMultiplier: '',
+  });
+
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+
+    // Convert string values to numbers where appropriate
+    const filterData: any = {}
+    if (newFilters.dateFrom) filterData.dateFrom = newFilters.dateFrom
+    if (newFilters.dateTo) filterData.dateTo = newFilters.dateTo
+    if (newFilters.minBet) filterData.minBet = parseFloat(newFilters.minBet)
+    if (newFilters.maxBet) filterData.maxBet = parseFloat(newFilters.maxBet)
+    if (newFilters.minWin) filterData.minWin = parseFloat(newFilters.minWin)
+    if (newFilters.maxWin) filterData.maxWin = parseFloat(newFilters.maxWin)
+    if (newFilters.minMultiplier) filterData.minMultiplier = parseFloat(newFilters.minMultiplier)
+    if (newFilters.maxMultiplier) filterData.maxMultiplier = parseFloat(newFilters.maxMultiplier)
+
+    onFilterChange(filterData)
+  }
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString()
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-[90vw] max-h-[80vh] overflow-y-auto bg-slate-950/95 border-cyan-500/30 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black text-center text-cyan-400">
+            PLINKO HISTORY
+          </DialogTitle>
+          <div className="text-center text-sm text-white/60">
+            {isConnected ? (
+              <span>Wallet: {playerKey.slice(0, 6)}...{playerKey.slice(-4)}</span>
+            ) : (
+              <span>Anonymous Session (Connect wallet to save history permanently)</span>
+            )}
+          </div>
+        </DialogHeader>
+
+        {/* Stats Dashboard */}
+        {stats && (
+          <div className="grid grid-cols-2 gap-3 my-4">
+            <StatCard
+              label="Total Drops"
+              value={stats.totalDrops.toString()}
+              color="cyan"
+            />
+            <StatCard
+              label="Net Profit"
+              value={<FormatCurrency amount={stats.netProfit} />}
+              color={stats.netProfit >= 0 ? 'green' : 'red'}
+            />
+            <StatCard
+              label="Win Rate"
+              value={`${stats.winRate.toFixed(1)}%`}
+              color="yellow"
+            />
+            <StatCard
+              label="Biggest Win"
+              value={<FormatCurrency amount={stats.biggestWin} />}
+              color="purple"
+            />
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="border-t border-b border-white/10 py-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            {/* Date Range */}
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Date From</Label>
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Date To</Label>
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+
+            {/* Bet Amount */}
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Min Bet ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={filters.minBet}
+                onChange={(e) => handleFilterChange('minBet', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Max Bet ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={filters.maxBet}
+                onChange={(e) => handleFilterChange('maxBet', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+
+            {/* Win Amount */}
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Min Win ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={filters.minWin}
+                onChange={(e) => handleFilterChange('minWin', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Max Win ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={filters.maxWin}
+                onChange={(e) => handleFilterChange('maxWin', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+
+            {/* Multiplier */}
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Min Multiplier</Label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="0.0"
+                value={filters.minMultiplier}
+                onChange={(e) => handleFilterChange('minMultiplier', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-white/80">Max Multiplier</Label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="0.0"
+                value={filters.maxMultiplier}
+                onChange={(e) => handleFilterChange('maxMultiplier', e.target.value)}
+                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* History Table */}
+        <div className="overflow-x-auto rounded-md border border-white/10">
+          {drops.length === 0 ? (
+            <div className="flex items-center justify-center gap-2 text-white/60 p-8">
+              No drops yet. Start playing to build your history!
+            </div>
+          ) : (
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="flex justify-between w-full">
+                  <TableHead className="text-cyan-400 flex-1 text-center">Time</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Wager</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Multi</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Win Amount</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Risk</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Replay</TableHead>
+                  <TableHead className="text-cyan-400 flex-1 text-center">Tx Hash</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {drops.map((drop) => (
+                  <TableRow
+                    key={drop.id}
+                    className="flex justify-between w-full hover:bg-white/5 transition-colors"
+                  >
+                    <TableCell className="flex-1 text-xs text-white/80 text-center">
+                      {formatDate(drop.timestamp)}
+                    </TableCell>
+                    <TableCell className="flex-1 text-white font-medium text-center">
+                      <FormatCurrency amount={drop.wager} />
+                    </TableCell>
+                    <TableCell className="flex-1 text-yellow-400 font-bold text-center">
+                      {drop.multiplier}x
+                    </TableCell>
+                    <TableCell className="flex-1 text-white font-medium text-center">
+                      <FormatCurrency amount={drop.winAmount} />
+                    </TableCell>
+                    <TableCell className="flex-1 flex items-center justify-center">
+                      <div
+                        className={`w-5 h-5 rounded-full inline-block ${
+                          drop.riskLevel === 'GREEN'
+                            ? 'bg-gradient-to-br from-lime-400 to-lime-600'
+                            : drop.riskLevel === 'YELLOW'
+                            ? 'bg-gradient-to-br from-blue-400 to-blue-600'
+                            : 'bg-gradient-to-br from-red-400 to-red-600'
+                        } shadow-lg`}
+                        title={drop.riskLevel}
+                      />
+                    </TableCell>
+                    <TableCell className="flex-1 text-center">
+                      {drop.seed && (
+                        <span className="text-xs text-cyan-400/60" title="Replay coming soon">
+                          <i className="fas fa-play text-xs"></i>
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="flex-1 text-xs text-cyan-400 text-center">
+                      {drop.transactionHash ? (
+                        <a
+                          href={`https://scan.pulsechain.com/tx/${drop.transactionHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-cyan-300 underline transition-colors"
+                          title="View on PulseChain Explorer"
+                        >
+                          {drop.transactionHash.slice(0, 6)}...{drop.transactionHash.slice(-4)}
+                        </a>
+                      ) : (
+                        <span className="text-white/40">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="pt-4 border-t border-white/10">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={onExport}
+              disabled={drops.length === 0}
+              className="bg-slate-800 hover:bg-slate-700 border-cyan-500/30 text-white text-sm"
+            >
+              <i className="fas fa-download mr-1 sm:mr-2"></i>
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">CSV</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClear}
+              disabled={drops.length === 0}
+              className="bg-slate-800 hover:bg-red-900/50 border-red-500/30 text-red-400 text-sm"
+            >
+              <i className="fas fa-trash mr-1 sm:mr-2"></i>
+              <span className="hidden sm:inline">Clear History</span>
+              <span className="sm:hidden">Clear</span>
+            </Button>
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    </>
+  )
+
+// Helper component for currency formatting
+const FormatCurrency = ({ amount }: { amount: number }) => {
+  const wholeNumber = Math.round(amount)
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <img
+        src="/morbius/MorbiusLogo (3).png"
+        alt="Morbius"
+        className="w-4 h-4 object-contain"
+      />
+      <span>{wholeNumber.toLocaleString()}</span>
+    </div>
+  )
+}
+
+// Helper component for stat cards
+function StatCard({
+  label,
+  value,
+  color,
+}: {
+  label: string
+  value: React.ReactNode
+  color: 'cyan' | 'green' | 'red' | 'yellow' | 'purple'
+}) {
+  const colorClasses = {
+    cyan: 'from-cyan-600 to-cyan-700 border-cyan-500/30',
+    green: 'from-green-600 to-green-700 border-green-500/30',
+    red: 'from-red-600 to-red-700 border-red-500/30',
+    yellow: 'from-yellow-600 to-yellow-700 border-yellow-500/30',
+    purple: 'from-purple-600 to-purple-700 border-purple-500/30',
+  }
+
+  return (
+    <div
+      className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]} border text-center`}
+    >
+      <div className="text-xs text-white/80 uppercase tracking-wide mb-1">
+        {label}
+      </div>
+      <div className="text-xl font-black text-white">{value}</div>
+    </div>
+  )
+}

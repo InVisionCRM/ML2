@@ -77,7 +77,7 @@ function TicketPNLSummary({ ticket, publicClient, calculateRoundWin }) {
   const isProfitable = netPNL > 0
 
   return (
-    <div className={isProfitable ? "bg-emerald-500/20" : "bg-black/20"}>
+    <div className={isProfitable ? "bg-emerald-500/20" : "bg-gradient-to-br from-slate-950 to-slate-900/20"}>
       <div className="grid grid-cols-3">
         <div>Total Cost: {totalCost.toFixed(4)} WPLS</div>
         <div>Total Winnings: {totalWinnings.toFixed(4)} WPLS</div>
@@ -168,7 +168,7 @@ function TicketPNLSummary({ ticket, publicClient, calculateRoundWin }) {
 ## Technical Implementation
 
 ### Files Modified
-- `/Users/kyle/MORBlotto/morbius_lotto/app/keno/page.tsx`
+- `/Users/kyle/MORBlotto/MORBIUS_lotto/app/keno/page.tsx`
 
 ### Key Changes
 

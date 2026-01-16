@@ -75,6 +75,20 @@ export function useHouseTicket(roundId: number) {
   })
 }
 
+// Read round players array
+export function useRoundPlayers(roundId: number) {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'roundPlayers',
+    args: [BigInt(roundId)],
+    query: {
+      enabled: isValidAddress && roundId > 0,
+    },
+  })
+}
+
 // Read round history
 export function useRound(roundId: number) {
   const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
@@ -90,13 +104,13 @@ export function useRound(roundId: number) {
   })
 }
 
-// Read MegaMorbius bank balance (progressive jackpot)
+// Read MegaMORBIUS bank balance (progressive jackpot)
 export function useMegaMillionsBank() {
   const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
   return useReadContract({
     address: LOTTERY_ADDRESS as `0x${string}`,
     abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'getMegaMorbiusBank',
+    functionName: 'getMegaMORBIUSBank',
     query: {
       enabled: isValidAddress,
       refetchInterval: isValidAddress ? 10000 : false, // Refetch every 10 seconds
@@ -165,7 +179,146 @@ export function useClaimableWinnings(roundId: number, playerAddress?: `0x${strin
   })
 }
 
-// Write: Buy tickets with pSSH
+// Read current round totals (roundId, totalMORBIUS, totalTickets, uniquePlayers, rolloverReserve, megaMORBIUSBank, currentRoundState)
+export function useCurrentRoundTotals() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getCurrentRoundTotals',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read pending MORBIUS and tickets for a future round
+export function usePendingForRound(roundId: number) {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getPendingForRound',
+    args: [BigInt(roundId)],
+    query: {
+      enabled: isValidAddress && roundId > 0,
+    },
+  })
+}
+
+// Read rollover reserve and mega MORBIUS bank balances
+export function useRolloverState() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getRolloverState',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read bracket configuration (percentages and distribution)
+export function useBracketConfig() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getBracketConfig',
+    query: {
+      enabled: isValidAddress,
+    },
+  })
+}
+
+// Read unclaimed winnings breakdown for a round
+export function useUnclaimedForRound(roundId: number) {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getUnclaimedForRound',
+    args: [BigInt(roundId)],
+    query: {
+      enabled: isValidAddress && roundId > 0,
+    },
+  })
+}
+
+// Read total tickets ever sold across all rounds
+export function useTotalTicketsEver() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getTotalTicketsEver',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read total MORBIUS ever collected across all rounds
+export function useTotalMORBIUSEverCollected() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getTotalMORBIUSEverCollected',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read total MORBIUS ever claimed by winners
+export function useTotalMORBIUSEverClaimed() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getTotalMORBIUSEverClaimed',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read total outstanding claimable MORBIUS across all rounds
+export function useTotalMORBIUSClaimableAll() {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getTotalMORBIUSClaimableAll',
+    query: {
+      enabled: isValidAddress,
+      refetchInterval: 10000,
+    },
+  })
+}
+
+// Read historical totals for a specific round
+export function useRoundHistoryTotals(roundId: number) {
+  const isValidAddress = (LOTTERY_ADDRESS as string) !== '0x0000000000000000000000000000000000000000'
+  return useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'getRoundHistoryTotals',
+    args: [BigInt(roundId)],
+    query: {
+      enabled: isValidAddress && roundId > 0,
+    },
+  })
+}
+
+// Write: Buy tickets with MORBIUS
 export function useBuyTickets() {
   const { writeContract, ...rest } = useWriteContract()
 
@@ -184,17 +337,13 @@ export function useBuyTickets() {
 
     console.log('🛒 buyTickets: raw tickets:', tickets)
 
-    // Filter to only valid tickets and ensure proper typing
-    const validTickets = tickets
-      .filter(ticket => ticket.length === 6)
-      .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
-
     // Convert to the exact format expected by the contract: uint8[6][]
+    // wagmi/viem should handle the conversion from number[][] to uint8[6][]
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTickets',
-      args: [validTickets],
+      args: [tickets as any], // Type assertion needed for wagmi
       chainId: pulsechain.id,
     })
   }
@@ -202,36 +351,25 @@ export function useBuyTickets() {
   return { buyTickets, ...rest }
 }
 
-// Write: Buy tickets for multiple rounds (pSSH only)
+// Write: Buy tickets for multiple rounds (MORBIUS only)
 export function useBuyTicketsForRounds() {
   const { writeContract, ...rest } = useWriteContract()
 
   const buyTicketsForRounds = (ticketGroups: number[][][], offsets: number[]) => {
-    // Ensure each ticket is exactly 6 numbers and convert to the expected format
     const formattedGroups = ticketGroups.map(group =>
-      group
-        .filter(ticket => ticket.length === 6) // Only include valid 6-number tickets
-        .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
-    ) as unknown as readonly [readonly [number, number, number, number, number, number]][]
+      group.map(ticket => ticket.map(n => n as number))
+    ) as unknown as readonly [readonly [number, number, number, number, number, number][]][]
 
     const formattedOffsets = offsets.map(o => BigInt(o))
 
     // Calculate total tickets across all groups for gas estimation
     const totalTickets = ticketGroups.reduce((sum, group) => sum + group.length, 0)
 
-    console.log('🎫 buyTicketsForRounds input:', {
-      ticketGroups,
-      offsets,
-      formattedGroups,
-      formattedOffsets,
-      totalTickets
-    })
-
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTicketsForRounds',
-      args: [formattedGroups, formattedOffsets],
+      args: [formattedGroups as any, formattedOffsets as any],
       chainId: pulsechain.id,
     })
   }
@@ -245,63 +383,21 @@ export function useBuyTicketsWithWPLS(defaultExtraBufferBp: number = 2500) {
 
   const buyTicketsWithWPLS = (tickets: number[][], extraBufferBp?: number) => {
     const bufferBp = extraBufferBp ?? defaultExtraBufferBp
-
-    // Validate and filter tickets
-    const validTickets = tickets
-      .filter(ticket => ticket.length === 6)
-      .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
-
-    console.log('💰 buyTicketsWithWPLS: valid tickets:', validTickets, 'buffer:', bufferBp)
+    // Convert to uint8[6][] format
+    const formattedTickets = tickets.map(ticket =>
+      ticket.map(n => n as number)
+    ) as unknown as readonly [number, number, number, number, number, number][]
 
     writeContract({
       address: LOTTERY_ADDRESS as `0x${string}`,
       abi: LOTTERY_6OF55_V2_ABI,
       functionName: 'buyTicketsWithWPLSAndBuffer',
-      args: [validTickets, BigInt(bufferBp)],
+      args: [formattedTickets as any, BigInt(bufferBp)],
       chainId: pulsechain.id,
     })
   }
 
   return { buyTicketsWithWPLS, ...rest }
-}
-
-// Write: Buy tickets for multiple rounds with PLS
-export function useBuyTicketsWithPLSForRounds() {
-  const { writeContract, ...rest } = useWriteContract()
-
-  const buyTicketsWithPLSForRounds = (ticketGroups: number[][][], offsets: number[], valueWei: bigint) => {
-    // Ensure each ticket is exactly 6 numbers and convert to the expected format
-    const formattedGroups = ticketGroups.map(group =>
-      group
-        .filter(ticket => ticket.length === 6) // Only include valid 6-number tickets
-        .map(ticket => ticket.map(n => n as number) as unknown as readonly [number, number, number, number, number, number])
-    ) as unknown as readonly [readonly [number, number, number, number, number, number]][]
-
-    const formattedOffsets = offsets.map(o => BigInt(o))
-
-    // Calculate total tickets across all groups for gas estimation
-    const totalTickets = ticketGroups.reduce((sum, group) => sum + group.length, 0)
-
-    console.log('💰 buyTicketsWithPLSForRounds input:', {
-      ticketGroups,
-      offsets,
-      formattedGroups,
-      formattedOffsets,
-      valueWei: valueWei.toString(),
-      totalTickets
-    })
-
-    writeContract({
-      address: LOTTERY_ADDRESS as `0x${string}`,
-      abi: LOTTERY_6OF55_V2_ABI,
-      functionName: 'buyTicketsWithPLSForRounds',
-      args: [formattedGroups, formattedOffsets],
-      value: valueWei,
-      chainId: pulsechain.id,
-    })
-  }
-
-  return { buyTicketsWithPLSForRounds, ...rest }
 }
 
 // Write: Buy tickets with native PLS (wraps and swaps on-chain)
@@ -322,6 +418,30 @@ export function useBuyTicketsWithPLS() {
   }
 
   return { buyTicketsWithPLS, ...rest }
+}
+
+// Write: Buy tickets for multiple rounds with native PLS (wraps and swaps on-chain)
+export function useBuyTicketsWithPLSForRounds() {
+  const { writeContract, ...rest } = useWriteContract()
+
+  const buyTicketsWithPLSForRounds = (ticketGroups: number[][][], offsets: number[], valueWei: bigint) => {
+    const formattedGroups = ticketGroups.map(group =>
+      group.map(ticket => ticket.map(n => n as number))
+    ) as unknown as readonly [readonly [number, number, number, number, number, number][]][]
+
+    const formattedOffsets = offsets.map(o => BigInt(o))
+
+    writeContract({
+      address: LOTTERY_ADDRESS as `0x${string}`,
+      abi: LOTTERY_6OF55_V2_ABI,
+      functionName: 'buyTicketsWithPLSForRounds',
+      args: [formattedGroups as any, formattedOffsets as any],
+      chainId: pulsechain.id,
+      value: valueWei,
+    })
+  }
+
+  return { buyTicketsWithPLSForRounds, ...rest }
 }
 
 // Write: Finalize round
@@ -359,7 +479,7 @@ export function useClaimWinnings() {
 
 // Watch for RoundFinalized events
 export function useWatchRoundFinalized(
-  onRoundFinalized: (roundId: bigint, winningNumbers: number[], totalPssh: bigint) => void
+  onRoundFinalized: (roundId: bigint, winningNumbers: number[], totalMORBIUS: bigint) => void
 ) {
   useWatchContractEvent({
     address: LOTTERY_ADDRESS as `0x${string}`,
@@ -367,11 +487,11 @@ export function useWatchRoundFinalized(
     eventName: 'RoundFinalized',
     onLogs(logs) {
       logs.forEach((log: any) => {
-        if (log.args?.roundId && log.args?.winningNumbers && log.args?.totalPssh) {
+        if (log.args?.roundId && log.args?.winningNumbers && log.args?.totalMORBIUS) {
           onRoundFinalized(
             log.args.roundId,
             Array.from(log.args.winningNumbers).map(n => Number(n)),
-            log.args.totalPssh
+            log.args.totalMORBIUS
           )
         }
       })

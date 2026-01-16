@@ -10,7 +10,7 @@
 Your CryptoKeno contract paytables have been updated to match authentic Club Keno prize structures.
 
 ### Contract File Modified:
-`morbius_lotto/contracts/contracts/CryptoKeno.sol`
+`MORBIUS_lotto/contracts/contracts/CryptoKeno.sol`
 
 **Lines Changed:** 1060-1180 (`_initDefaultPaytables()` function)
 

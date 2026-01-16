@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+import hre from "hardhat";
 
 async function main() {
   console.log("Deploying CryptoKeno to", hre.network.name, "…");
@@ -12,7 +12,7 @@ async function main() {
   const TOKEN_ADDRESS = process.env.KENO_TOKEN_ADDRESS || "0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1";
   const MAX_SPOT = parseInt(process.env.KENO_MAX_SPOT || "10", 10);
   const ROUND_DURATION = parseInt(process.env.KENO_ROUND_DURATION || "180", 10); // constructor currently sets 180s; kept for signature compatibility
-  const FEE_BPS = parseInt(process.env.KENO_FEE_BPS || "0", 10);
+  const FEE_BPS = parseInt(process.env.KENO_FEE_BPS || "2000", 10);
   const FEE_RECIPIENT = process.env.KENO_FEE_RECIPIENT || deployer.address;
   const PROGRESSIVE_BASE_SEED = 0; // ignored by contract, placeholder for signature compatibility
   const WPLS_ADDRESS = process.env.KENO_WPLS_ADDRESS || "0xA1077a294dDE1B09bB078844df40758a5D0f9a27";
@@ -24,7 +24,7 @@ async function main() {
   console.log("ROUND_DURATION(arg) :", ROUND_DURATION, "(constructor default 180 seconds)");
   console.log("FEE_BPS             :", FEE_BPS);
   console.log("FEE_RECIPIENT       :", FEE_RECIPIENT);
-  console.log("MAX_WAGER_PER_DRAW  : 0.01 (hardcoded in contract, 18-dec token assumed)");
+  console.log("MAX_WAGER_PER_DRAW  : 1000 MORBIUS (set in constructor)");
   console.log("WPLS_ADDRESS        :", WPLS_ADDRESS);
   console.log("ROUTER_ADDRESS      :", ROUTER_ADDRESS);
 
@@ -41,8 +41,8 @@ async function main() {
     WPLS_ADDRESS,
     ROUTER_ADDRESS,
     {
-      // Higher limit to avoid constructor OOG on mainnet RPCs
-      gasLimit: 10_000_000,
+      // Very high limit for large contract with many getters
+      gasLimit: 30000000,
       gasPrice,
     }
   );

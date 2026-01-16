@@ -14,7 +14,7 @@ import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
 import { usePlayerRoundHistory, useRound, usePlayerTickets } from '@/hooks/use-lottery-6of55'
 import { toast } from 'sonner'
 import { Loader2, Coins, CheckCircle2, History, XCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, triggerSuccessConfetti } from '@/lib/utils'
 
 interface Ticket {
   ticketId: bigint
@@ -336,7 +336,8 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
           totalAmount += batchAmount
 
-          toast.success(`Transaction sent! Claiming ${fmt(batchAmount)} Morbius from ${batch.length} round${batch.length > 1 ? 's' : ''}...`)
+          toast.success(`Transaction sent! Claiming ${fmt(batchAmount)} MORBIUS from ${batch.length} round${batch.length > 1 ? 's' : ''}...`)
+          triggerSuccessConfetti()
 
           try {
             // Wait for transaction with a longer timeout and retry logic
@@ -380,7 +381,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
         toast.success(
           <div className="flex flex-col gap-2">
-            <div>Claim successful! {fmt(totalAmount)} Morbius claimed from {totalRounds} round{totalRounds > 1 ? 's' : ''} across {successfulClaims.length} transaction{successfulClaims.length > 1 ? 's' : ''}</div>
+            <div>Claim successful! {fmt(totalAmount)} MORBIUS claimed from {totalRounds} round{totalRounds > 1 ? 's' : ''} across {successfulClaims.length} transaction{successfulClaims.length > 1 ? 's' : ''}</div>
             {allHashes.length === 1 ? (
               <div className="text-xs opacity-75 break-all">
                 Txn: <a
@@ -410,6 +411,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
           </div>,
           { duration: 10000 }
         )
+        triggerSuccessConfetti()
       }
 
       if (failedBatches.length > 0) {
@@ -497,7 +499,8 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
       const hash = await walletClient.writeContract(request)
 
-      toast.success(`Transaction sent! Claiming ${fmt(claimableAmount)} Morbius from Round #${singleRoundId}...`)
+      toast.success(`Transaction sent! Claiming ${fmt(claimableAmount)} MORBIUS from Round #${singleRoundId}...`)
+      triggerSuccessConfetti()
 
       try {
         // Wait for transaction with a longer timeout and retry logic
@@ -510,7 +513,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
         toast.success(
           <div className="flex flex-col gap-2">
-            <div>Claim successful! {fmt(claimableAmount)} Morbius claimed from Round #{singleRoundId}</div>
+            <div>Claim successful! {fmt(claimableAmount)} MORBIUS claimed from Round #{singleRoundId}</div>
             <div className="text-xs opacity-75 break-all">
               Txn: <a
                 href={`https://scan.pulsechain.com/tx/${hash}`}
@@ -524,6 +527,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
           </div>,
           { duration: 8000 }
         )
+        triggerSuccessConfetti()
 
         // Store transaction hash for the claimed round
         if (address && singleRoundId) {
@@ -554,6 +558,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
           </div>,
           { duration: 8000 }
         )
+        triggerSuccessConfetti()
 
         // Reset form even if receipt isn't found
         setSingleRoundId('')
@@ -595,7 +600,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
 
     if (isLoadingRound || isLoadingTickets) {
       return (
-        <div className="mt-2 p-3 bg-black/20 rounded border border-white/10">
+        <div className="mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/20 rounded border border-white/10">
           <div className="flex items-center gap-2 text-white/60">
             <Loader2 className="w-3 h-3 animate-spin" />
             Loading round details...
@@ -611,7 +616,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
     const tickets = userTickets || []
 
     return (
-      <div className="mt-2 p-3 bg-black/20 rounded border border-white/10 space-y-2">
+      <div className="mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/20 rounded border border-white/10 space-y-2">
         {/* Winning Numbers */}
         {winningNumbers && Array.isArray(winningNumbers) && (
           <div className="text-xs">
@@ -677,12 +682,12 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
     <Dialog open={open} onOpenChange={onOpenChange}>
       {!open && !onOpenChange && (
         <DialogTrigger asChild>
-          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-green-500/60 w-10 h-10 p-0" title="Claim Winnings">
-            <Coins className="w-5 h-5" />
+          <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-green-500/60 w-full h-10 p-0 text-xs sm:text-sm" title="Claim Winnings">
+            Claim
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-md max-h-[80vh]">
+      <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-gradient-to-br from-slate-950 to-slate-900 dark:shadow-none max-w-md max-h-[80vh]">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Coins className="w-6 h-6 text-neutral-600 dark:text-neutral-200" />
@@ -736,7 +741,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
             {/* Total Winnings Summary */}
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400 font-sans mb-1">
-                {fmt(totalClaimable)} Morbius
+                {fmt(totalClaimable)} MORBIUS
               </div>
               <div className="text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                 Available to claim from {claimableRounds.length} round{claimableRounds.length !== 1 ? 's' : ''}
@@ -784,7 +789,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
         {/* Advanced Modal */}
         {showAdvanced && (
           <Dialog open={showAdvanced} onOpenChange={setShowAdvanced}>
-            <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-black dark:shadow-none max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="group/bento shadow-input row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-200 bg-white p-4 transition duration-200 hover:shadow-xl dark:border-white/[0.2] dark:bg-gradient-to-br from-slate-950 to-slate-900 dark:shadow-none max-w-4xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center gap-3 mb-4">
                 <History className="w-5 h-5 text-neutral-600 dark:text-neutral-200" />
                 <div className="font-sans font-bold text-neutral-600 dark:text-neutral-200 text-lg">
@@ -846,12 +851,12 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
                         <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/30 border-b border-neutral-200 dark:border-neutral-700">
                           <div className="flex items-center justify-between mb-2">
                             <div className="text-xs text-neutral-600 dark:text-neutral-300 font-sans">Total Claimable</div>
-                            <div className="text-sm font-bold text-green-600 dark:text-green-400 font-sans">{fmt(totalClaimable)} Morbius</div>
+                            <div className="text-sm font-bold text-green-600 dark:text-green-400 font-sans">{fmt(totalClaimable)} MORBIUS</div>
                           </div>
                           {selectedRounds.size > 0 && (
                             <div className="flex items-center justify-between">
                               <div className="text-xs text-neutral-600 dark:text-neutral-300 font-sans">Selected to Claim</div>
-                              <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400 font-sans">{fmt(totalSelected)} Morbius</div>
+                              <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400 font-sans">{fmt(totalSelected)} MORBIUS</div>
                             </div>
                           )}
                         </div>
@@ -919,7 +924,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
                                     {expandedRounds.has(round.roundId) ? '−' : '+'}
                                   </Button>
                                   <div className="text-sm font-bold text-green-600 dark:text-green-400 font-sans">
-                                    {fmt(round.amount)} Morbius
+                                    {fmt(round.amount)} MORBIUS
                                   </div>
                                 </div>
 
@@ -948,7 +953,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
                           ) : (
                             <>
                               <Coins className="w-4 h-4 mr-2" />
-                              Claim {selectedRounds.size} Round{selectedRounds.size !== 1 ? 's' : ''} ({fmt(totalSelected)} Morbius)
+                              Claim {selectedRounds.size} Round{selectedRounds.size !== 1 ? 's' : ''} ({fmt(totalSelected)} MORBIUS)
                             </>
                           )}
                         </Button>
@@ -1028,7 +1033,7 @@ export function MultiClaimModal({ open, onOpenChange }: MultiClaimModalProps = {
                               round.status === 'claimable' ? "text-green-600 dark:text-green-400" :
                               "text-neutral-600 dark:text-neutral-400"
                             )}>
-                              {round.amount > 0 ? fmt(round.amount) : '0'} Morbius
+                              {round.amount > 0 ? fmt(round.amount) : '0'} MORBIUS
                             </div>
                           </div>
                         ))}

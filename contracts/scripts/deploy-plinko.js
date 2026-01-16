@@ -1,0 +1,84 @@
+import hre from "hardhat";
+
+async function main() {
+  console.log("Deploying Plinko to", hre.network.name, "…");
+
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deployer:", deployer.address);
+  const balance = await hre.ethers.provider.getBalance(deployer.address);
+  console.log("Balance:", hre.ethers.formatEther(balance), "PLS");
+
+  // Config (env overrides)
+  const MORBIUS_TOKEN = process.env.PLINKO_MORBIUS_TOKEN || "0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1";
+  const WPLS_TOKEN = process.env.PLINKO_WPLS_TOKEN || "0xA1077a294dDE1B09bB078844df40758a5D0f9a27";
+  const PULSEX_ROUTER = process.env.PLINKO_ROUTER || "0x98bf93ebf5c380C0e6Ae8e192A7e2AE08edAcc02";
+  const DEPLOYER_RECIPIENT = process.env.PLINKO_DEPLOYER_RECIPIENT || deployer.address;
+  const MIN_WAGER = process.env.PLINKO_MIN_WAGER || hre.ethers.parseEther("10"); // 10 MORBIUS
+  const MAX_WAGER = process.env.PLINKO_MAX_WAGER || hre.ethers.parseEther("10000"); // 10,000 MORBIUS
+
+  console.log("\nConfig:");
+  console.log("MORBIUS_TOKEN       :", MORBIUS_TOKEN);
+  console.log("WPLS_TOKEN          :", WPLS_TOKEN);
+  console.log("PULSEX_ROUTER       :", PULSEX_ROUTER);
+  console.log("DEPLOYER_RECIPIENT  :", DEPLOYER_RECIPIENT);
+  console.log("MIN_WAGER_PER_BALL  :", hre.ethers.formatEther(MIN_WAGER), "MORBIUS");
+  console.log("MAX_WAGER_PER_BALL  :", hre.ethers.formatEther(MAX_WAGER), "MORBIUS");
+
+  const Plinko = await hre.ethers.getContractFactory("Plinko");
+  console.log("\nDeploying…");
+  const gasPrice = hre.ethers.parseUnits("400000", "gwei");
+  const plinko = await Plinko.deploy(
+    MORBIUS_TOKEN,
+    WPLS_TOKEN,
+    PULSEX_ROUTER,
+    DEPLOYER_RECIPIENT,
+    MIN_WAGER,
+    MAX_WAGER,
+    {
+      gasLimit: 10000000,
+      gasPrice,
+    }
+  );
+
+  const deploymentTx = plinko.deploymentTransaction();
+  console.log("Deploy tx hash:", deploymentTx?.hash);
+  const receipt = await plinko.deploymentTransaction().wait();
+  const addr = await plinko.getAddress();
+  console.log("\n✅ Plinko deployed at:", addr);
+  console.log("Tx hash:", deploymentTx?.hash);
+  console.log("Block number:", receipt?.blockNumber?.toString?.() ?? "unknown");
+
+  console.log("\n📊 Configuration (V5 - VARIABLE WAGERS):");
+  console.log("- Min Wager: 10 MORBIUS per ball");
+  console.log("- Max Wager: 10,000 MORBIUS per ball");
+  console.log("- Deployer Fee: 5%");
+  console.log("\n🎲 RISK LEVELS:");
+  console.log("LOW:    [7x, 5.5x, 4x, 2.5x, 1.7x, 1.3x, 1x, 0.5x, 1x, 1.3x, 1.7x, 2.5x, 4x, 5.5x, 7x]");
+  console.log("MEDIUM: [15x, 7x, 5.5x, 2.5x, 1.7x, 1x, 0.8x, 0.2x, 0.8x, 1x, 1.7x, 2.5x, 5.5x, 7x, 15x]");
+  console.log("HIGH:   [35x, 15x, 7x, 2.5x, 1x, 0.5x, 0.2x, 0x, 0.2x, 0.5x, 1x, 2.5x, 7x, 15x, 35x]");
+
+  console.log("\n⚠️  V5 CHANGES:");
+  console.log("✅ Variable Wagers: Players choose their own wager amount (10-10,000 MORBIUS per ball)");
+  console.log("✅ Simplified: Only buyBallsAndDrop() and buyBallsWithPLSAndDrop() functions");
+  console.log("✅ No more ball balance - everything in one transaction");
+
+  console.log("\n⚠️  IMPORTANT - Fund the Contract:");
+  console.log("The contract needs initial liquidity to pay winners. Fund it with:");
+  console.log(`  npx hardhat run scripts/fund-plinko.js --network ${hre.network.name}`);
+  console.log("Or manually call fundContract(amount) on the contract.");
+  console.log("\nRecommended initial funding: 100,000+ MORBIUS");
+
+  console.log("\n✅ Next steps:");
+  console.log("1. Fund the contract with MORBIUS tokens (see above)");
+  console.log("2. Update PLINKO_ADDRESS in lib/contracts.ts:");
+  console.log(`   export const PLINKO_ADDRESS = '${addr}' as const`);
+  console.log("3. Generate and update ABI in abi/plinko.ts and abi/plinko.json");
+  console.log("4. Update frontend to use dropMultipleBalls(count, riskLevel)");
+  console.log("5. Verify contract:");
+  console.log(`   npx hardhat verify --network ${hre.network.name} ${addr} "${MORBIUS_TOKEN}" "${WPLS_TOKEN}" "${PULSEX_ROUTER}" "${DEPLOYER_RECIPIENT}" "${MIN_WAGER}" "${MAX_WAGER}"`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

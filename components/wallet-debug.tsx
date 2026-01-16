@@ -2,6 +2,7 @@ import { useWalletDetection } from '@/hooks/use-wallet-detection'
 import { useNetworkValidation } from '@/hooks/use-network-validation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import Image from 'next/image'
 
 export function WalletDebug() {
   const {
@@ -60,7 +61,18 @@ export function WalletDebug() {
         </span></div>
 
         <div>Network: <span className={isOnPulseChain ? 'text-green-400' : 'text-red-400'}>
-          {isOnPulseChain ? 'PulseChain ✅' : `Chain ${currentChainId} ❌`}
+          {isOnPulseChain ? (
+            <span className="inline-flex items-center gap-1">
+              <Image
+                src="/Pulse Branding/Logo/ball1.png"
+                alt="PulseChain"
+                width={14}
+                height={14}
+                className="flex-shrink-0"
+              />
+              PulseChain ✅
+            </span>
+          ) : `Chain ${currentChainId} ❌`}
         </span></div>
 
         <div>Connector: <span className="font-mono text-xs">
@@ -96,7 +108,17 @@ export function WalletDebug() {
             size="sm"
             className="text-xs"
           >
-            🔄 Switch to PulseChain
+            <span className="inline-flex items-center gap-1">
+              🔄 Switch to
+              <Image
+                src="/Pulse Branding/Logo/ball1.png"
+                alt="PulseChain"
+                width={12}
+                height={12}
+                className="flex-shrink-0"
+              />
+              PulseChain
+            </span>
           </Button>
         )}
       </div>

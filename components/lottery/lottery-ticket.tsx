@@ -53,7 +53,7 @@ export function LotteryTicket({
   index = 0,
   roundHistory = [],
   transactionHash,
-  ticketPrice = BigInt(100_000_000_000_000_000_000), // 100 Morbius
+  ticketPrice = BigInt(100_000_000_000_000_000_000), // 100 MORBIUS
 }: LotteryTicketProps) {
   const [isRevealed, setIsRevealed] = useState(false)
   const [isFlipped, setIsFlipped] = useState(false)
@@ -93,7 +93,7 @@ export function LotteryTicket({
   const shortId = ticketIdStr.length > 6 ? ticketIdStr.slice(-6) : ticketIdStr.padStart(6, '0')
   const secondaryId = (BigInt(ticketId) * BigInt(7919)).toString().slice(-7)
 
-  const formatMorbius = (amount: bigint) =>
+  const formatMORBIUS = (amount: bigint) =>
     parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 4,
@@ -110,7 +110,7 @@ export function LotteryTicket({
   const isNegative = pl < 0
 
   const ticketBackground = {
-    backgroundImage: "url('/morbius/c718c298-363d-45d3-82bd-e51837b459cb.png')",
+    backgroundImage: "url('/MORBIUS/c718c298-363d-45d3-82bd-e51837b459cb.png')",
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   }
@@ -145,7 +145,7 @@ export function LotteryTicket({
           className="text-[8px] sm:text-[10px] font-bold text-black writing-vertical-rl transform rotate-180"
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
         >
-          morbius.io
+          MORBIUS.io
         </div>
       </div>
 
@@ -163,13 +163,13 @@ export function LotteryTicket({
                     isPositive ? "text-green-700" : isNegative ? "text-red-700" : "text-black"
                   )}
                 >
-                  {pl.toFixed(4)} Morbius
+                  {pl.toFixed(4)} MORBIUS
                 </div>
               </div>
               <div className="w-full border-b border-black/30 my-4" />
             </>
           )}
-          {/* Morbius Lottery Logo */}
+          {/* MORBIUS Lottery Logo */}
           <div className="mb-2">
             <h1 className="text-2xl font-black text-black tracking-tight">
               MORBIUS LOTTERY
@@ -220,8 +220,8 @@ export function LotteryTicket({
         {/* Cost Details */}
         <div className="flex justify-between items-center text-xs font-bold text-black mb-2">
           <span>{rounds} ROUND{rounds > 1 ? 'S' : ''}</span>
-          <span>{isFreeTicket ? 'FREE' : `${formatMorbius(ticketPrice)} MORBIUS/ROUND`}</span>
-          <span>{isFreeTicket ? '0.0000' : formatMorbius(totalCost)} MORBIUS</span>
+          <span>{isFreeTicket ? 'FREE' : `${formatMORBIUS(ticketPrice)} MORBIUS/ROUND`}</span>
+          <span>{isFreeTicket ? '0.0000' : formatMORBIUS(totalCost)} MORBIUS</span>
         </div>
 
         {/* Bottom Section - Totals and Info */}
@@ -229,7 +229,7 @@ export function LotteryTicket({
           {/* Total Cost */}
           <div className="flex justify-between font-bold text-sm">
             <span>TOTAL</span>
-            <span>{isFreeTicket ? '0.0000' : formatMorbius(totalCost)} MORBIUS</span>
+            <span>{isFreeTicket ? '0.0000' : formatMORBIUS(totalCost)} MORBIUS</span>
           </div>
 
           {/* Round Numbers */}
@@ -272,7 +272,7 @@ export function LotteryTicket({
           className="text-[8px] font-semibold text-black writing-vertical-rl"
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
         >
-          morbius.io
+          MORBIUS.io
         </div>
       </div>
 
@@ -285,7 +285,7 @@ export function LotteryTicket({
       {/* Status overlay for expired tickets */}
       {!isActive && (
         <div className="absolute inset-0 bg-amber-50/80 flex items-center justify-center">
-          <div className="transform -rotate-12 bg-black text-white px-8 py-2 font-black text-xl tracking-wider">
+          <div className="transform -rotate-12 bg-gradient-to-br from-slate-950 to-slate-900 text-white px-8 py-2 font-black text-xl tracking-wider">
             EXPIRED
           </div>
         </div>
@@ -336,7 +336,7 @@ export function LotteryTicket({
                     "text-right font-mono font-bold",
                     round.payout > 0 ? "text-green-600" : "text-black"
                   )}>
-                    {formatMorbius(round.payout)}
+                    {formatMORBIUS(round.payout)}
                   </div>
                   <div className="text-right font-mono text-[9px] font-semibold">
                     {round.winningNumbers.length > 0 ? (
@@ -388,7 +388,7 @@ export function LotteryTicket({
             <div className="border-t-2 border-black pt-3 mt-3">
               <div className="text-center">
                 <p className="text-xs font-bold text-black mb-1">CURRENT WIN</p>
-                <p className="text-xl font-black text-green-600">{formatMorbius(currentWin)} MORBIUS</p>
+                <p className="text-xl font-black text-green-600">{formatMORBIUS(currentWin)} MORBIUS</p>
               </div>
             </div>
           )}

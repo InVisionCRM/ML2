@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import Image from 'next/image'
+import { Card } from '@/components/ui/card'
+import { RippleButton } from '@/components/ui/ripple-button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import {
   LOTTERY_ADDRESS,
   TICKET_PRICE,
@@ -26,29 +29,19 @@ import {
   useReadContract,
   useSwitchChain,
   useWaitForTransactionReceipt,
-  useWriteContract,
 } from 'wagmi'
 import { useWalletDetection } from '@/hooks/use-wallet-detection'
 import { useNetworkValidation } from '@/hooks/use-network-validation'
 import { useNativeBalance } from '@/hooks/use-native-balance'
+import { useTokenApproval } from '@/hooks/use-token-approval'
+import { usePlsQuote } from '@/hooks/use-pls-quote'
 import { formatUnits, formatEther } from 'viem'
 import { toast } from 'sonner'
 import { LoaderOne } from '@/components/ui/loader'
 import { cn } from '@/lib/utils'
 import { Trash2, Edit2, Plus, Minus, ChevronDown } from 'lucide-react'
-
-const ROUTER_ABI = [
-  {
-    name: 'getAmountsIn',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'amountOut', type: 'uint256' },
-      { name: 'path', type: 'address[]' },
-    ],
-    outputs: [{ name: 'amounts', type: 'uint256[]' }],
-  },
-] as const
+import { useAuth } from '@/hooks/use-auth'
+import { SignaturePrompt } from '@/components/auth/SignaturePrompt'
 
 interface TicketPurchaseBuilderProps {
   initialRounds?: number
@@ -76,16 +69,124 @@ export function TicketPurchaseBuilder({
   } = useWalletDetection()
   const { isOnPulseChain, switchToPulseChain } = useNetworkValidation()
 
+  const [tickets, setTickets] = useState<number[][]>([])
+  const [roundsByTicket, setRoundsByTicket] = useState<number[]>([])
   const [workingTicket, setWorkingTicket] = useState<number[]>([])
   const [workingRounds, setWorkingRounds] = useState(1)
-  const [isGridExpanded, setIsGridExpanded] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'morbius' | 'pls'>('morbius')
-  const [optimisticAllowance, setOptimisticAllowance] = useState<bigint | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'MORBIUS' | 'PLS'>('MORBIUS')
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [uiState, setUiState] = useState<'idle' | 'approving' | 'buying' | 'success' | 'error'>('idle')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successTxHash, setSuccessTxHash] = useState<string>('')
   const [successRoundsCount, setSuccessRoundsCount] = useState(0)
+  const [showSignaturePrompt, setShowSignaturePrompt] = useState(false)
+
+  // Authentication hook
+  const { signMessageAsync } = useAuth()
+
+  // Handle signature confirmation for high-value transactions
+  const handleSignatureConfirm = async (): Promise<boolean> => {
+    try {
+      const totalCost = paymentMethod === 'PLS' ? plsValueWei : morbiusCostWei
+      const amount = paymentMethod === 'PLS'
+        ? `${formatEther(totalCost)} PLS`
+        : `${formatUnits(totalCost, TOKEN_DECIMALS)} MORBIUS`
+
+      const transactionMessage = `Confirm Lottery Purchase\n\nAmount: ${amount}\nTickets: ${ticketCount}\nRounds: ${roundsByTicket[0] || 1}\n\nThis action cannot be undone.`
+
+      await signMessageAsync({ message: transactionMessage })
+
+      // If signature succeeds, proceed with purchase
+      await executePurchaseAfterSignature()
+      return true
+    } catch (error) {
+      console.error('Signature failed:', error)
+      setErrorMessage('Transaction cancelled')
+      setUiState('error')
+      return false
+    }
+  }
+
+  // Execute purchase after signature confirmation
+  const executePurchaseAfterSignature = async () => {
+    try {
+      if (isInternetMoney) {
+        console.log('🌐 Preparing transaction for Internet Money wallet...')
+      }
+
+      if (paymentMethod === 'PLS') {
+        const valueWei = plsValueWei
+        if (valueWei === BigInt(0)) {
+          throw new Error('PLS amount is zero')
+        }
+
+        const boundedRounds = roundsByTicket.map((r) => Math.max(1, Math.min(100, r || 1)))
+        const highest = boundedRounds.length ? Math.max(...boundedRounds) : 1
+        console.log('💰 Buying with PLS:', { tickets, boundedRounds, highest, valueWei: valueWei.toString() })
+
+        if (highest > 1) {
+          // Multi-round purchase with PLS
+          const offsets = Array.from({ length: highest }, (_, i) => i)
+          const groups = offsets.map((offset) =>
+            tickets.filter((_, idx) => boundedRounds[idx] > offset)
+          )
+          console.error('🚨 MULTI-ROUND PLS PURCHASE:', {
+            totalTickets: tickets.length,
+            rounds: highest,
+            groups: groups.map(g => g.length),
+            offsets,
+            plsValue: valueWei.toString(),
+            plsValueEther: (Number(valueWei) / 1e18).toFixed(4),
+          })
+          buyTicketsWithPLSForRounds(groups, offsets, valueWei)
+        } else {
+          // Single round purchase with PLS
+          console.log('🎫 Buying for current round with PLS:', tickets)
+          buyTicketsWithPLS(tickets, valueWei)
+        }
+      } else {
+        const boundedRounds = roundsByTicket.map((r) => Math.max(1, Math.min(100, r || 1)))
+        const highest = boundedRounds.length ? Math.max(...boundedRounds) : 1
+        console.log('🎫 Buying with MORBIUS:', { tickets, boundedRounds, highest })
+
+        if (highest > 1) {
+          const offsets = Array.from({ length: highest }, (_, i) => i)
+          const groups = offsets.map((offset) =>
+            tickets.filter((_, idx) => boundedRounds[idx] > offset)
+          )
+          console.log('📅 Buying for multiple rounds:', { groups, offsets })
+          buyTicketsForRounds(groups, offsets)
+        } else {
+          console.log('🎫 Buying for current round:', tickets)
+          buyTickets(tickets)
+        }
+      }
+    } catch (err) {
+      console.error('❌ Purchase error:', err)
+      let message = err instanceof Error ? err.message : 'Purchase failed'
+
+      // Special handling for Internet Money wallet errors
+      if (isInternetMoney && err instanceof Error) {
+        if (err.message.includes('gas') || err.message.includes('estimation')) {
+          console.log('🌐 Gas estimation failed for Internet Money - clearing cache')
+          message = 'Connection issue detected. Please try again.'
+          clearWalletCache()
+
+          // Suggest retry after cache clear
+          setTimeout(() => {
+            toast.info('Connection refreshed. You can try purchasing again.')
+          }, 2000)
+        } else if (err.message.includes('network') || err.message.includes('chain')) {
+          message = 'Please ensure Internet Money is connected to PulseChain network.'
+        }
+      }
+
+      setErrorMessage(message)
+      setUiState('error')
+      onErrorRef.current?.(err instanceof Error ? err : new Error(message))
+    }
+  }
 
   const onSuccessRef = useRef<typeof onSuccess>(onSuccess)
   const onErrorRef = useRef<typeof onError>(onError)
@@ -99,25 +200,10 @@ export function TicketPurchaseBuilder({
 
   // Notify parent on state change
   useEffect(() => {
-    // Pass single ticket as array and current working rounds
-    const ticketComplete = workingTicket.length === NUMBERS_PER_TICKET
-    const ticketArray = ticketComplete ? [workingTicket] : []
-    onStateChangeRef.current?.(ticketArray, workingRounds)
-  }, [workingTicket, workingRounds])
+    onStateChangeRef.current?.(tickets, roundsByTicket[0] ?? initialRounds)
+  }, [tickets, roundsByTicket, initialRounds])
 
-  const { data: ticketPriceMorbiusData } = useReadContract({
-    address: LOTTERY_ADDRESS as `0x${string}`,
-    abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'ticketPriceMorbius',
-  })
-
-  const { data: ticketPricePlsData } = useReadContract({
-    address: LOTTERY_ADDRESS as `0x${string}`,
-    abi: LOTTERY_6OF55_V2_ABI,
-    functionName: 'ticketPricePls',
-  })
-
-  const { data: morbiusBalance, isLoading: isLoadingBalance, error: balanceError } = useReadContract({
+  const { data: MORBIUSBalance, isLoading: isLoadingBalance, error: balanceError } = useReadContract({
     address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
@@ -128,7 +214,7 @@ export function TicketPurchaseBuilder({
   // Debug balance fetching
   console.log('💰 Balance fetch:', {
     address: address?.slice(0, 6) + '...',
-    balance: morbiusBalance?.toString() ?? 'undefined',
+    balance: MORBIUSBalance?.toString() ?? 'undefined',
     error: balanceError?.message,
     isLoading: isLoadingBalance,
     tokenAddress: MORBIUS_TOKEN_ADDRESS
@@ -141,48 +227,63 @@ export function TicketPurchaseBuilder({
   useEffect(() => {
     console.log('💰 Balance fetch:', {
       address,
-      morbiusBalance: morbiusBalance?.toString(),
-      formatted: morbiusBalance ? formatUnits(morbiusBalance, TOKEN_DECIMALS) : 'N/A',
+      MORBIUSBalance: MORBIUSBalance?.toString(),
+      formatted: MORBIUSBalance ? formatUnits(MORBIUSBalance, TOKEN_DECIMALS) : 'N/A',
       isLoadingBalance,
       balanceError: balanceError?.message,
       tokenAddress: MORBIUS_TOKEN_ADDRESS
     })
-  }, [morbiusBalance, address, isLoadingBalance, balanceError])
+  }, [MORBIUSBalance, address, isLoadingBalance, balanceError])
 
-  const { data: morbiusAllowance, refetch: refetchMorbiusAllowance, error: allowanceError, isLoading: isLoadingAllowance } = useReadContract({
-    address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, LOTTERY_ADDRESS as `0x${string}`] : undefined,
-    query: { enabled: !!address, refetchInterval: 500, staleTime: 0 }, // Faster refresh for allowance changes
+  // Calculate costs first (needed for hooks)
+  const ticketCount = tickets.length
+  const totalEntries = useMemo(
+    () => roundsByTicket.reduce((acc, r) => acc + Math.max(1, Math.min(100, r || 1)), 0),
+    [roundsByTicket]
+  )
+  const maxRounds = useMemo(() => (roundsByTicket.length ? Math.max(...roundsByTicket) : 1), [roundsByTicket])
+
+  const { data: ticketPriceMORBIUSData } = useReadContract({
+    address: LOTTERY_ADDRESS as `0x${string}`,
+    abi: LOTTERY_6OF55_V2_ABI,
+    functionName: 'ticketPriceMORBIUS',
   })
+  const pricePerTicket = (ticketPriceMORBIUSData as bigint | undefined) ?? TICKET_PRICE
+  const MORBIUSCost = pricePerTicket * BigInt(totalEntries || 0)
 
-  // Debug allowance fetching
-  console.log('🔍 Allowance fetch:', {
-    address: address?.slice(0, 6) + '...',
-    allowance: morbiusAllowance?.toString() ?? 'undefined',
-    error: allowanceError?.message,
-    isLoading: isLoadingAllowance,
-    tokenAddress: MORBIUS_TOKEN_ADDRESS,
-    spenderAddress: LOTTERY_ADDRESS
-  })
-
+  // Token approval hook
   const {
-    writeContract: approve,
-    data: approveHash,
-    isPending: isApprovePending,
-    error: approveError,
-  } = useWriteContract()
+    allowance: MORBIUSAllowance,
+    needsApproval,
+    isLoadingAllowance,
+    approve,
+    isApproving,
+    isApprovalSuccess,
+    approvalError,
+  } = useTokenApproval({
+    tokenAddress: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
+    spenderAddress: LOTTERY_ADDRESS as `0x${string}`,
+    requiredAmount: MORBIUSCost,
+    userAddress: address,
+    enabled: paymentMethod === 'MORBIUS',
+  })
 
-  const { isLoading: isApproveLoading, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
-    hash: approveHash,
+  // PLS quote hook
+  const {
+    plsValue: plsValueWei,
+    isLoading: isLoadingPlsQuote,
+    error: plsQuoteError,
+    usingFallback: isUsingFallbackPrice,
+  } = usePlsQuote({
+    morbiusCost: MORBIUSCost,
+    enabled: paymentMethod === 'PLS',
   })
 
   const {
     buyTickets,
-    data: buyPsshHash,
-    isPending: isBuyPsshPending,
-    error: buyPsshError,
+    data: buyMORBIUSHash,
+    isPending: isBuyMORBIUSPending,
+    error: buyMORBIUSError,
   } = useBuyTickets()
 
   const {
@@ -206,126 +307,63 @@ export function TicketPurchaseBuilder({
     error: buyPlsMultiError,
   } = useBuyTicketsWithPLSForRounds()
 
-  const isTicketComplete = workingTicket.length === NUMBERS_PER_TICKET
-  const ticketCount = isTicketComplete ? 1 : 0
-  const totalEntries = isTicketComplete ? workingRounds : 0
-  const maxRounds = workingRounds
-
-  const buyHash = paymentMethod === 'pls'
-    ? (workingRounds > 1 ? buyPlsMultiHash : buyPlsHash)
-    : (workingRounds > 1 ? buyMultiHash : buyPsshHash)
+  const buyHash = paymentMethod === 'PLS'
+    ? (roundsByTicket.some((r) => r > 1) ? buyPlsMultiHash : buyPlsHash)
+    : (roundsByTicket.some((r) => r > 1) ? buyMultiHash : buyMORBIUSHash)
   const { isLoading: isBuyLoading, isSuccess: isBuySuccess } = useWaitForTransactionReceipt({
     hash: buyHash,
   })
-  const pricePerTicket = (ticketPriceMorbiusData as bigint | undefined) ?? TICKET_PRICE
-  const morbiusCost = pricePerTicket * BigInt(totalEntries || 0)
 
-  // Dynamic PLS pricing: base cost + 50% tax + 20% buffer
-  const { data: plsBaseQuote, error: plsQuoteError, isLoading: isLoadingPlsQuote } = useReadContract({
-    address: PULSEX_V1_ROUTER_ADDRESS,
-    abi: ROUTER_ABI,
-    functionName: 'getAmountsIn',
-    args:
-      paymentMethod === 'pls' && totalEntries > 0
-        ? [morbiusCost, [WPLS_TOKEN_ADDRESS, MORBIUS_TOKEN_ADDRESS]]
-        : undefined,
-    query: {
-      enabled: paymentMethod === 'pls' && totalEntries > 0,
-      refetchInterval: 10000,
-      retry: 3,
-      retryDelay: 1000,
-    },
-  })
-
-  const plsValueWei = useMemo(() => {
-    if (!plsBaseQuote || !Array.isArray(plsBaseQuote)) {
-      console.log('❌ PLS quote not available:', {
-        plsBaseQuote,
-        error: plsQuoteError?.message,
-        isLoading: isLoadingPlsQuote,
-        paymentMethod,
-        totalEntries,
-      })
-      return BigInt(0)
-    }
-
-    const basePlsCost = plsBaseQuote[0] ?? BigInt(0)
-    console.log('💰 PLS base cost for', totalEntries, 'entries:', basePlsCost.toString(), 'wei')
-
-    if (basePlsCost === BigInt(0)) return BigInt(0)
-
-    // Apply 50% tax (making PLS payments 50% more expensive)
-    const taxedAmount = (basePlsCost * BigInt(15000)) / BigInt(10000)
-    console.log('💰 PLS after 50% tax:', taxedAmount.toString(), 'wei')
-
-    // Add 20% buffer for slippage and DEX fees
-    const totalPlsRequired = (taxedAmount * BigInt(12000)) / BigInt(10000)
-    console.log('💰 PLS final cost:', totalPlsRequired.toString(), 'wei')
-
-    return totalPlsRequired
-  }, [plsBaseQuote, totalEntries, plsQuoteError, isLoadingPlsQuote, paymentMethod])
-  const currentAllowance = optimisticAllowance ?? morbiusAllowance ?? BigInt(0)
-  // Only consider approval needed if we have loaded allowance data and it's insufficient
-  const needsApproval = morbiusAllowance !== undefined && !isLoadingAllowance && currentAllowance < morbiusCost
-
-  // Force approval check for debugging
-  console.log('🔐 Allowance check:', {
-    address: address?.slice(0, 6) + '...',
-    contractAddress: LOTTERY_ADDRESS,
-    allowance: morbiusAllowance?.toString() ?? 'undefined',
-    currentAllowance: currentAllowance.toString(),
-    morbiusCost: morbiusCost.toString(),
-    needsApproval,
-    isLoadingAllowance
-  })
-  const hasEnoughBalance = paymentMethod === 'pls'
+  // Balance checks
+  const hasEnoughBalance = paymentMethod === 'PLS'
     ? (nativePlsBalance !== undefined && nativePlsBalance >= plsValueWei)
-    : (morbiusBalance !== undefined && morbiusBalance >= morbiusCost)
-  const isProcessing = isApprovePending || isApproveLoading || isBuyPsshPending || isBuyMultiPending || isBuyPlsPending || isBuyPlsMultiPending
+    : (MORBIUSBalance !== undefined && MORBIUSBalance >= MORBIUSCost)
+  const isProcessing = isApproving || isBuyMORBIUSPending || isBuyMultiPending || isBuyPlsPending || isBuyPlsMultiPending
 
   const canBuy =
-    paymentMethod === 'morbius'
-      ? isTicketComplete && hasEnoughBalance && !needsApproval
-      : isTicketComplete && hasEnoughBalance
-  const isApproveLoadingState = uiState === 'approving' || isApprovePending || isApproveLoading
-  const isBuyLoadingState = uiState === 'buying' || isBuyLoading || isBuyPsshPending || isBuyMultiPending || isBuyPlsPending
+    paymentMethod === 'MORBIUS'
+      ? ticketCount > 0 && hasEnoughBalance && !needsApproval
+      : ticketCount > 0 && hasEnoughBalance
+  const isApproveLoadingState = uiState === 'approving' || isApproving
+  const isBuyLoadingState = uiState === 'buying' || isBuyLoading || isBuyMORBIUSPending || isBuyMultiPending || isBuyPlsPending
 
   // Debug purchase conditions
   console.log('🛒 Purchase conditions:', {
     paymentMethod,
     ticketCount,
     totalEntries,
-    morbiusCost: morbiusCost.toString(),
+    MORBIUSCost: MORBIUSCost.toString(),
     plsValueWei: plsValueWei.toString(),
     plsValueDisplay: formatEther ? Number(formatEther(plsValueWei)).toFixed(4) : 'N/A',
-    morbiusAllowance: morbiusAllowance?.toString() ?? 'undefined',
-    optimisticAllowance: optimisticAllowance?.toString() ?? 'undefined',
-    currentAllowance: currentAllowance.toString(),
+    MORBIUSAllowance: MORBIUSAllowance?.toString() ?? 'undefined',
     needsApproval,
     hasEnoughBalance,
-    morbiusBalance: morbiusBalance?.toString() ?? 'undefined',
+    MORBIUSBalance: MORBIUSBalance?.toString() ?? 'undefined',
     nativePlsBalance: nativePlsBalance?.toString() ?? 'undefined',
     canBuy,
     isProcessing,
     address: address?.slice(0, 6) + '...',
-    whichButton: (paymentMethod === 'morbius' && needsApproval && hasEnoughBalance) ? 'APPROVE' : 'BUY'
+    whichButton: (paymentMethod === 'MORBIUS' && needsApproval && hasEnoughBalance) ? 'APPROVE' : 'BUY',
+    isUsingFallbackPrice,
   })
 
+  // Handle approval success
   useEffect(() => {
-    if (isApproveSuccess) {
-      console.log('✅ Approval transaction successful - refreshing allowance')
-      // Clear optimistic allowance and force refresh
-      setOptimisticAllowance(null)
-      refetchMorbiusAllowance()
+    if (isApprovalSuccess) {
+      console.log('✅ Approval transaction successful')
       setUiState('idle')
     }
-  }, [isApproveSuccess, refetchMorbiusAllowance])
+  }, [isApprovalSuccess])
 
+  // Handle approval error
   useEffect(() => {
-    if (approveError) {
-      console.error('❌ Approval failed:', approveError)
+    if (approvalError) {
+      console.error('❌ Approval failed:', approvalError)
+      setUiState('error')
+      setErrorMessage(approvalError.message.includes('rejected') ? 'Approval rejected' : 'Approval failed')
+      onErrorRef.current?.(approvalError)
     }
-  }, [approveError])
+  }, [approvalError])
 
   const hasHandledBuySuccess = useRef(false)
   useEffect(() => {
@@ -340,7 +378,8 @@ export function TicketPurchaseBuilder({
         setShowSuccessModal(true)
       }
 
-      // Reset for next purchase
+      setTickets([])
+      setRoundsByTicket([])
       setWorkingTicket([])
       setWorkingRounds(1)
       onSuccessRef.current?.()
@@ -351,15 +390,7 @@ export function TicketPurchaseBuilder({
   }, [isBuySuccess, buyHash, maxRounds])
 
   useEffect(() => {
-    if (approveError) {
-      setUiState('error')
-      setErrorMessage(approveError.message.includes('rejected') ? 'Approval rejected' : 'Approval failed')
-      onErrorRef.current?.(approveError)
-    }
-  }, [approveError])
-
-  useEffect(() => {
-    const err = maxRounds > 1 ? buyMultiError : buyPsshError
+    const err = maxRounds > 1 ? buyMultiError : buyMORBIUSError
     if (err) {
       setUiState('error')
       setErrorMessage(
@@ -371,7 +402,7 @@ export function TicketPurchaseBuilder({
       )
       onErrorRef.current?.(err)
     }
-  }, [buyMultiError, buyPsshError, maxRounds])
+  }, [buyMultiError, buyMORBIUSError, maxRounds])
 
   useEffect(() => {
     if (buyPlsError) {
@@ -381,14 +412,6 @@ export function TicketPurchaseBuilder({
     }
   }, [buyPlsError])
 
-  useEffect(() => {
-    if (buyPlsMultiError) {
-      setUiState('error')
-      setErrorMessage(buyPlsMultiError.message.includes('rejected') ? 'Purchase rejected' : 'Purchase failed')
-      onErrorRef.current?.(buyPlsMultiError)
-    }
-  }, [buyPlsMultiError])
-
   const handleApprove = async () => {
     if (!address) return
     setUiState('approving')
@@ -396,32 +419,19 @@ export function TicketPurchaseBuilder({
     if (chainId !== pulsechain.id && switchChainAsync) {
       await switchChainAsync({ chainId: pulsechain.id })
     }
-    // Approve a large amount to avoid needing approval again
-    const approvalAmount = BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935') // uint256.max
 
-    console.log('✅ Approving Morbius:', {
-      spender: LOTTERY_ADDRESS,
-      amount: approvalAmount.toString(),
-      currentAllowance: currentAllowance.toString()
-    })
-
-    approve({
-      address: MORBIUS_TOKEN_ADDRESS as `0x${string}`,
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [LOTTERY_ADDRESS as `0x${string}`, approvalAmount],
-      chainId: pulsechain.id,
-    })
+    console.log('✅ Approving MORBIUS for lottery contract')
+    approve()
   }
 
   const handleBuy = async () => {
     console.log('🛒 handleBuy called with:', {
       address,
-      isTicketComplete,
+      ticketCount,
       paymentMethod,
       hasEnoughBalance,
-      workingTicket,
-      workingRounds
+      tickets,
+      roundsByTicket
     })
 
     if (!address) {
@@ -429,17 +439,17 @@ export function TicketPurchaseBuilder({
       setUiState('error')
       return
     }
-    if (!isTicketComplete) {
-      setErrorMessage('Select 6 numbers')
+    if (ticketCount < 1) {
+      setErrorMessage('Add a ticket')
       setUiState('error')
       return
     }
-    if (paymentMethod === 'morbius' && !hasEnoughBalance) {
-      setErrorMessage('Morbius balance too low')
+    if (paymentMethod === 'MORBIUS' && !hasEnoughBalance) {
+      setErrorMessage('Balance too low')
       setUiState('error')
       return
     }
-    if (paymentMethod === 'pls' && plsValueWei === BigInt(0)) {
+    if (paymentMethod === 'PLS' && plsValueWei === BigInt(0)) {
       const errorDetail = plsQuoteError
         ? `PLS price quote failed: ${plsQuoteError.message.slice(0, 100)}`
         : 'Unable to fetch PLS price quote. Please try MORBIUS payment or refresh.'
@@ -466,68 +476,17 @@ export function TicketPurchaseBuilder({
       }
     }
 
-    try {
-      if (isInternetMoney) {
-        console.log('🌐 Preparing transaction for Internet Money wallet...')
-      }
+    // Check if signature verification is needed for high-value transactions
+    const totalCost = paymentMethod === 'PLS' ? plsValueWei : morbiusCostWei
+    const isHighValue = Number(totalCost) > 100 * 10**18 // > 100 MORBIUS or equivalent PLS
 
-      if (paymentMethod === 'pls') {
-        const boundedRounds = Math.max(1, Math.min(100, workingRounds))
-        const valueWei = plsValueWei
-
-        if (valueWei === BigInt(0)) {
-          throw new Error('PLS amount is zero')
-        }
-
-        if (boundedRounds > 1) {
-          // Multi-round PLS purchase
-          const offsets = Array.from({ length: boundedRounds }, (_, i) => i)
-          const groups = offsets.map(() => [workingTicket])
-          console.log('💰 Buying with PLS (multiple rounds):', { workingTicket, boundedRounds, groups, offsets, valueWei: valueWei.toString() })
-          buyTicketsWithPLSForRounds(groups, offsets, valueWei)
-        } else {
-          // Single round PLS purchase
-          console.log('💰 Buying with PLS (single round):', { workingTicket, valueWei: valueWei.toString() })
-          buyTicketsWithPLS([workingTicket], valueWei)
-        }
-      } else {
-        const boundedRounds = Math.max(1, Math.min(100, workingRounds))
-        console.log('🎫 Buying with MORBIUS:', { workingTicket, boundedRounds })
-
-        if (boundedRounds > 1) {
-          const offsets = Array.from({ length: boundedRounds }, (_, i) => i)
-          const groups = offsets.map(() => [workingTicket])
-          console.log('📅 Buying for multiple rounds:', { groups, offsets })
-          buyTicketsForRounds(groups, offsets)
-        } else {
-          console.log('🎫 Buying for current round:', workingTicket)
-          buyTickets([workingTicket])
-        }
-      }
-    } catch (err) {
-      console.error('❌ Purchase error:', err)
-      let message = err instanceof Error ? err.message : 'Purchase failed'
-
-      // Special handling for Internet Money wallet errors
-      if (isInternetMoney && err instanceof Error) {
-        if (err.message.includes('gas') || err.message.includes('estimation')) {
-          console.log('🌐 Gas estimation failed for Internet Money - clearing cache')
-          message = 'Connection issue detected. Please try again.'
-          clearWalletCache()
-
-          // Suggest retry after cache clear
-          setTimeout(() => {
-            toast.info('Connection refreshed. You can try purchasing again.')
-          }, 2000)
-        } else if (err.message.includes('network') || err.message.includes('chain')) {
-          message = 'Please ensure Internet Money is connected to PulseChain network.'
-        }
-      }
-
-      setUiState('error')
-      setErrorMessage(message)
-      onErrorRef.current?.(err as Error)
+    if (isHighValue) {
+      setShowSignaturePrompt(true)
+      return // Wait for signature confirmation
     }
+
+    // If we reach here, either it's not a high-value transaction or signature was already confirmed
+    await executePurchaseAfterSignature()
   }
 
   const formatToken = (amount: bigint) =>
@@ -555,30 +514,79 @@ export function TicketPurchaseBuilder({
     setWorkingTicket(nums.sort((a, b) => a - b))
   }
 
+  const handleAddToCart = () => {
+    if (workingTicket.length !== NUMBERS_PER_TICKET) {
+      toast.error(`Select ${NUMBERS_PER_TICKET} numbers`)
+      return
+    }
+    if (tickets.length >= 10) {
+      toast.error('Maximum 10 tickets')
+      return
+    }
+
+    if (editingIndex !== null) {
+      // Update existing ticket
+      setTickets((prev) => {
+        const next = [...prev]
+        next[editingIndex] = workingTicket
+        return next
+      })
+      setRoundsByTicket((prev) => {
+        const next = [...prev]
+        next[editingIndex] = workingRounds
+        return next
+      })
+      toast.success('Ticket updated')
+      setEditingIndex(null)
+    } else {
+      // Add new ticket
+      setTickets((prev) => [...prev, workingTicket])
+      setRoundsByTicket((prev) => [...prev, workingRounds])
+      toast.success('Ticket added')
+    }
+
+    setWorkingTicket([])
+    setWorkingRounds(1)
+  }
+
+  const handleEditTicket = (index: number) => {
+    setWorkingTicket(tickets[index])
+    setWorkingRounds(roundsByTicket[index] || 1)
+    setEditingIndex(index)
+    toast.info('Editing ticket')
+  }
+
+  const handleRemoveTicket = (index: number) => {
+    setTickets((prev) => prev.filter((_, i) => i !== index))
+    setRoundsByTicket((prev) => prev.filter((_, i) => i !== index))
+    if (editingIndex === index) {
+      setEditingIndex(null)
+      setWorkingTicket([])
+      setWorkingRounds(1)
+    }
+    toast.success('Ticket removed')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null)
+    setWorkingTicket([])
+    setWorkingRounds(1)
+  }
+
+  const canAddToCart = workingTicket.length === NUMBERS_PER_TICKET
 
   return (
-    <div className="relative overflow-visible w-full max-w-full">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-slate-950 to-slate-900/70 border-white/10 shadow-2xl p-0 w-full max-w-full">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.08),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.08),transparent_30%)]" />
 
-      <h2 className="text-sm font-bold text-white text-center top-[-14] relative z-10">GET TICKETS</h2>
+      <div className="relative flex flex-col lg:flex-row gap-4 p-4 min-h-0 overflow-x-hidden w-full">
+        {/* LEFT PANEL - Builder */}
+        <div className="flex-1 lg:flex-[3] space-y-4 min-w-0 w-full overflow-x-hidden">
+          <h2 className="text-xl font-bold text-white">GET TICKETS</h2>
 
-      <div className="relative p-4 w-full space-y-4">
-
-        {/* Number Grid - Collapsible */}
-        <div className="w-full">
-          <Button
-            variant="outline"
-            onClick={() => setIsGridExpanded(!isGridExpanded)}
-            className="w-full border-white/20 text-white hover:bg-white/5 mb-2"
-          >
-            <span className="flex items-center justify-center w-full gap-2">
-              <span className="text-xl">Select Numbers</span>
-              <ChevronDown className={cn("w-8 h-8 transition-transform", isGridExpanded ? "rotate-180" : "")} />
-            </span>
-          </Button>
-
-          {isGridExpanded && (
-            <div className="grid grid-cols-6 xs:grid-cols-7 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-11 gap-1.5 mb-3 w-full animate-in slide-in-from-top-2 duration-200">
+          {/* Number Grid */}
+          <div className="w-full overflow-x-hidden">
+            <div className="grid grid-cols-6 xs:grid-cols-7 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-11 gap-1.5 mb-3 w-full">
               {Array.from({ length: MAX_NUMBER }, (_, i) => i + MIN_NUMBER).map((num) => {
                 const selected = workingTicket.includes(num)
                 return (
@@ -587,10 +595,10 @@ export function TicketPurchaseBuilder({
                     onClick={() => toggleNumber(num)}
                     disabled={!selected && workingTicket.length >= NUMBERS_PER_TICKET}
                     className={cn(
-                      'h-8 rounded border text-xs font-semibold transition-all',
+                      'h-8 rounded border text-xs font-semibold transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(147,51,234,0.3)]',
                       selected
                         ? 'bg-white text-black border-white scale-105'
-                        : 'bg-black/40 border-white/20 text-white hover:border-white/40 hover:bg-white/5'
+                        : 'bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/20 text-white hover:border-white/40 hover:bg-white/5'
                     )}
                   >
                     {num}
@@ -598,115 +606,241 @@ export function TicketPurchaseBuilder({
                 )
               })}
             </div>
-          )}
 
-          {/* Selected Numbers Display */}
-          <div className="bg-white/5 rounded-full p-2 mb-2">
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left column: Selected Numbers (3 wide) */}
-              <div className="flex flex-col">
-                <div className="grid grid-cols-3 gap-4 min-h-[100px] items-start">
-                  {workingTicket.length > 0 ? (
-                    workingTicket.map((n) => (
-                      <span
-                        key={n}
-                        className="min-h-12 min-w-12 rounded-full px-2 flex items-center justify-center bg-white text-black font-bold"
-                      >
-                        {n}
-                      </span>
-                    ))
-                  ) : (
-                    <div className="col-span-3 text-center">
-                      <span className="text-white text-sm">Select {NUMBERS_PER_TICKET} numbers</span>
-                    </div>
-                  )}
-                </div>
+            {/* Selected Numbers Display */}
+            <div className="bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg p-2 mb-2">
+              <div className="flex flex-wrap gap-1.5 min-h-[32px] items-center mb-2">
+                {workingTicket.length > 0 ? (
+                  workingTicket.map((n) => (
+                    <span
+                      key={n}
+                      className="h-7 min-w-7 px-2 flex items-center justify-center rounded-full bg-white text-black font-bold text-sm"
+                    >
+                      {n}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-white/50 text-sm">Select {NUMBERS_PER_TICKET} numbers</span>
+                )}
+                <span className="ml-auto text-white/60 text-xs">
+                  {workingTicket.length}/{NUMBERS_PER_TICKET}
+                </span>
               </div>
 
-              {/* Right column: Buttons */}
-              <div className="flex flex-col gap-4">
-                <Button
-                  size="default"
+              {/* Quick Actions - Inline */}
+              <div className="flex gap-2">
+                <RippleButton
+                  size="sm"
                   variant="outline"
-                  className="border-2 border-orange-500 bg-black hover:bg-gray-900 text-white hover:text-orange-400 px-6 py-3 text-lg font-semibold rounded-lg h-20 flex-1"
+                  className="border-white/30 text-white text-xs px-2 h-7"
                   onClick={handleQuickPick}
                 >
                   Quick Pick
-                </Button>
-                <Button
+                </RippleButton>
+                <RippleButton
                   size="sm"
                   variant="outline"
-                  className="border-white/30 text-white text-sm px-4 py-2 h-12 flex-1"
+                  className="border-white/30 text-white text-xs px-2 h-7"
                   onClick={() => setWorkingTicket([])}
                   disabled={workingTicket.length === 0}
                 >
                   Clear
-                </Button>
+                </RippleButton>
               </div>
             </div>
           </div>
+
+          {/* Rounds Selector */}
+          {/* <div className="space-y-2">
+            <label className="text-white/70 text-sm">Rounds for this ticket</label>
+            <div className="flex items-center gap-2">
+              <RippleButton
+                size="sm"
+                variant="outline"
+                className="border-white/30 text-white h-8 w-8 p-0"
+                onClick={() => setWorkingRounds(Math.max(1, workingRounds - 1))}
+                disabled={workingRounds <= 1}
+              >
+                <Minus className="w-3 h-3" />
+              </RippleButton>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={workingRounds}
+                onChange={(e) => setWorkingRounds(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                className="w-16 h-8 rounded border border-white/20 bg-gradient-to-br from-slate-950 to-slate-900/40 text-white text-center font-semibold text-sm"
+                title="Number of rounds for this ticket"
+              />
+              <RippleButton
+                size="sm"
+                variant="outline"
+                className="border-white/30 text-white h-8 w-8 p-0"
+                onClick={() => setWorkingRounds(Math.min(100, workingRounds + 1))}
+                disabled={workingRounds >= 100}
+              >
+                <Plus className="w-3 h-3" />
+              </RippleButton>
+              <div className="flex gap-1 ml-auto">
+                {[5, 10, 25, 50].map((v) => (
+                  <RippleButton
+                    key={v}
+                    size="sm"
+                    variant="outline"
+                    className="border-white/30 text-white text-xs px-2 h-7"
+                    onClick={() => setWorkingRounds(v)}
+                  >
+                    {v}
+                  </RippleButton>
+                ))}
+              </div>
+            </div>
+          </div> */}
+
+          {/* Add to Cart Button */}
+          <div className="flex gap-2">
+            {editingIndex !== null && (
+              <RippleButton
+                variant="outline"
+                className="border-white/30 text-white"
+                onClick={handleCancelEdit}
+              >
+                Cancel
+              </RippleButton>
+            )}
+            <RippleButton
+              className={cn(
+                'flex-1 h-12 font-semibold',
+                canAddToCart
+                  ? 'bg-green-500 text-white hover:bg-green-600'
+                  : 'bg-white/10 text-white/50 cursor-not-allowed'
+              )}
+              disabled={!canAddToCart}
+              onClick={handleAddToCart}
+            >
+              {editingIndex !== null ? 'Update Ticket' : '+ Add to Cart'}
+            </RippleButton>
+          </div>
+
+          {/* Scroll Down Arrow - Mobile Only */}
+          {ticketCount > 0 && (
+            <div className="flex justify-center py-4 lg:hidden">
+              <div className="flex flex-col items-center gap-2 animate-bounce">
+                <span className="text-white/70 text-xs font-medium">View Cart</span>
+                <ChevronDown className="w-6 h-6 text-white/80" />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Rounds Selector - Only show when ticket is complete */}
-        {isTicketComplete && (
-          <div className="space-y-3">
-            <label className="text-white font-bold text-lg text-center block">Rounds To Play</label>
-            <div className="grid grid-cols-5 gap-3">
-              {[1, 5, 10, 25, 50].map((rounds) => (
-                <Button
-                  key={rounds}
-                  size="default"
-                  variant={workingRounds === rounds ? "default" : "outline"}
-                  className={workingRounds === rounds ? "bg-green-600 text-white h-12 text-lg font-semibold" : "border-white/30 text-white h-12 text-lg hover:bg-white/10"}
-                  onClick={() => setWorkingRounds(rounds)}
-                >
-                  {rounds}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* RIGHT PANEL - Cart */}
+        <div className="lg:flex-[2] lg:max-w-sm bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-lg p-4 flex flex-col min-w-0 w-full overflow-x-hidden">
+          <h2 className="text-lg font-bold text-white mb-3">CONFIRM</h2>
 
-        {/* Payment Method - Only show when ticket is complete */}
-        {isTicketComplete && (
-          <div className="p-3 bg-white/5 rounded-lg">
-            <div className="text-lg text-white mb-3 font-bold text-center">Payment Method</div>
-            <div className="grid grid-cols-2 gap-5">
-              <Button
-                variant={paymentMethod === 'morbius' ? 'default' : 'outline'}
+          {/* Payment Method Selection - Text Labels */}
+          <div className="mb-4 p-3 bg-white/5 rounded-lg">
+            <div className="text-xs text-white/70 mb-2 font-medium text-center">Pay In...</div>
+            <div className="flex items-center justify-center gap-4">
+              <span
                 className={cn(
-                  'h-24 text-2xl font-bold rounded-sm transition-all duration-300',
-                  paymentMethod === 'morbius'
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border-purple-500'
-                    : 'border-white text-white hover:text-white hover:bg-white/10'
+                  'cursor-pointer transition-all duration-300 px-2 py-1 rounded text-xl',
+                  paymentMethod === 'MORBIUS'
+                    ? 'mitr-semibold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent'
+                    : 'mitr-regular text-white/70 hover:text-white'
                 )}
-                onClick={() => setPaymentMethod('morbius')}
+                onClick={() => setPaymentMethod('MORBIUS')}
               >
                 MORBIUS
-              </Button>
-              <Button
-                variant={paymentMethod === 'pls' ? 'default' : 'outline'}
+              </span>
+              <span className="text-white/50 text-xl">/</span>
+              <span
                 className={cn(
-                  'h-24 text-2xl font-bold rounded-sm transition-all duration-300',
-                  paymentMethod === 'pls'
-                    ? 'bg-gradient-to-t from-blue-900 to-pink-600 text-white border-pink-400'
-                    : 'border-white text-white/70 hover:text-white hover:bg-white/10'
+                  'cursor-pointer transition-all duration-300 px-2 py-1 rounded text-xl inline-flex items-center gap-1',
+                  paymentMethod === 'PLS'
+                    ? 'mitr-semibold bg-gradient-to-r from-pink-400 via-red-400 to-purple-500 bg-clip-text text-transparent'
+                    : 'mitr-regular text-white/70 hover:text-white'
                 )}
-                onClick={() => setPaymentMethod('pls')}
+                onClick={() => setPaymentMethod('PLS')}
               >
+                <Image
+                  src="/Pulse Branding/Logo/ball1.png"
+                  alt="PulseChain"
+                  width={16}
+                  height={16}
+                  className="flex-shrink-0"
+                />
                 PLS
-              </Button>
+              </span>
             </div>
           </div>
-        )}
 
-        {/* Cost & Balance - Only show when ticket is complete */}
-        {isTicketComplete && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-lg">
-              <span className="text-white">Cost</span>
+          {/* Cart Items */}
+          <div className="flex-1 space-y-2 mb-4 overflow-y-auto max-h-[300px]">
+            {tickets.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <p className="text-sm">No tickets yet</p>
+                <p className="text-xs mt-2">Add tickets to get started</p>
+              </div>
+            ) : (
+              tickets.map((ticket, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    'p-2 rounded border transition-all',
+                    editingIndex === idx
+                      ? 'border-green-500/50 bg-green-500/10'
+                      : 'border-white/10 bg-white/5'
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white/60 text-xs font-semibold">Ticket #{idx + 1}</span>
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => handleEditTicket(idx)}
+                        className="p-1 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveTicket(idx)}
+                        className="p-1 hover:bg-white/10 rounded text-white/60 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {ticket.map((num) => (
+                      <span
+                        key={num}
+                        className="h-5 min-w-5 px-1 flex items-center justify-center rounded bg-white/10 text-white text-xs font-semibold"
+                      >
+                        {num}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-white/60 text-xs">
+                    {roundsByTicket[idx] || 1} round{(roundsByTicket[idx] || 1) > 1 ? 's' : ''}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Cart Summary */}
+          <div className="space-y-2 border-t border-white/10 pt-3">
+            <div className="flex justify-between text-xs">
+              <span className="text-white/70">Tickets</span>
+              <span className="text-white font-semibold">{ticketCount}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-white/70">Total Entries</span>
+              <span className="text-white font-semibold">{totalEntries}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-white/70">Cost</span>
               <span className="text-white font-semibold">
-                {paymentMethod === 'pls' ? (
+                {paymentMethod === 'PLS' ? (
                   isLoadingPlsQuote ? (
                     'Loading...'
                   ) : plsQuoteError ? (
@@ -717,19 +851,20 @@ export function TicketPurchaseBuilder({
                     `${Number(formatEther(plsValueWei)).toFixed(4)} PLS`
                   )
                 ) : (
-                  `${formatToken(morbiusCost)} MORBIUS`
+                  `${formatToken(MORBIUSCost)} MORBIUS`
                 )}
               </span>
             </div>
-            <div className="flex justify-between text-lg">
-              <span className="text-white">Balance</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-white/70">Balance</span>
               <span
                 className={cn(
                   'font-semibold',
                   hasEnoughBalance ? 'text-emerald-400' : 'text-amber-400'
                 )}
+                title={`Raw: ${paymentMethod === 'PLS' ? nativePlsBalance?.toString() : MORBIUSBalance?.toString() || 'undefined'} | Address: ${address || 'not connected'}`}
               >
-                {paymentMethod === 'pls' ? (
+                {paymentMethod === 'PLS' ? (
                   isLoadingPlsBalance ? (
                     'Loading...'
                   ) : nativePlsBalance !== undefined ? (
@@ -740,64 +875,82 @@ export function TicketPurchaseBuilder({
                 ) : (
                   isLoadingBalance ? (
                     'Loading...'
-                  ) : morbiusBalance !== undefined ? (
-                    `${formatToken(morbiusBalance)} MORBIUS`
+                  ) : MORBIUSBalance !== undefined ? (
+                    `${formatToken(MORBIUSBalance)} MORBIUS`
                   ) : (
                     `— ${address ? '(fetching...)' : '(connect wallet)'}`
                   )
                 )}
               </span>
             </div>
+
+            {/* Error/Success Messages */}
+            {uiState === 'error' && errorMessage && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            {uiState === 'success' && (
+              <Alert className="border-emerald-400/40 bg-emerald-500/10">
+                <AlertDescription className="text-emerald-200 text-sm">Success! Good luck!</AlertDescription>
+              </Alert>
+            )}
+            {/* PLS Quote Error Warning */}
+            {paymentMethod === 'PLS' && plsQuoteError && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">
+                  Unable to fetch PLS price quote. Try using MORBIUS or refreshing the page.
+                </AlertDescription>
+              </Alert>
+            )}
+            {paymentMethod === 'PLS' && isLoadingPlsQuote && ticketCount > 0 && (
+              <Alert className="border-blue-400/40 bg-blue-500/10">
+                <AlertDescription className="text-blue-200 text-sm">Loading PLS price...</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Buy/Approve Button */}
+            {paymentMethod === 'MORBIUS' && needsApproval ? (
+              <RippleButton
+                className={cn(
+                  'w-full h-12 font-semibold',
+                  isProcessing ? 'text-white/40 [-webkit-text-stroke:0.1px_black] font-bold' : 'bg-green-600 text-white hover:bg-green-600'
+                )}
+                disabled={isProcessing || ticketCount === 0}
+                onClick={handleApprove}
+              >
+                {isApproveLoadingState ? (
+                  <span className="flex items-center gap-2">
+                    <LoaderOne />
+                    Approving...
+                  </span>
+                ) : (
+                  <AnimatedShinyText className="text-white/40 [-webkit-text-stroke:0.1px_black] font-bold">Approve</AnimatedShinyText>
+                )}
+              </RippleButton>
+            ) : (
+              <RippleButton
+                className={cn(
+                  'w-full h-12 font-semibold',
+                  isProcessing || !canBuy ? 'text-white/40 [-webkit-text-stroke:0.1px_black] font-bold ' : 'bg-green-500 text-white hover:bg-green-600'
+                )}
+                disabled={!canBuy || isProcessing}
+                onClick={handleBuy}
+              >
+                {isBuyLoadingState ? (
+                  <span className="flex items-center gap-2">
+                    <LoaderOne />
+                    Processing...
+                  </span>
+                ) : (
+                  <AnimatedShinyText className="text-white/40 [-webkit-text-stroke:0.1px_black] font-bold">
+                    {paymentMethod === 'PLS' ? 'Buy with PLS' : 'Buy Now'}
+                  </AnimatedShinyText>
+                )}
+              </RippleButton>
+            )}
           </div>
-        )}
-
-        {/* Error/Success Messages */}
-        {uiState === 'error' && errorMessage && (
-          <Alert variant="destructive">
-            <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Buy/Approve Button - Only show when ticket is complete */}
-        {isTicketComplete && (
-          paymentMethod === 'morbius' && needsApproval ? (
-            <Button
-              className={cn(
-                'w-full h-12 font-semibold',
-                isProcessing ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
-              )}
-              disabled={isProcessing}
-              onClick={handleApprove}
-            >
-              {isApproveLoadingState ? (
-                <span className="flex items-center gap-2">
-                  <LoaderOne />
-                  Approving...
-                </span>
-              ) : (
-                  'Approve Morbius'
-              )}
-            </Button>
-          ) : (
-            <Button
-              className={cn(
-                'w-full h-12 font-semibold',
-                isProcessing || !canBuy ? 'bg-white/20 text-white' : 'bg-green-500 text-white hover:bg-green-600'
-              )}
-              disabled={!canBuy || isProcessing}
-              onClick={handleBuy}
-            >
-              {isBuyLoadingState ? (
-                <span className="flex items-center gap-2">
-                  <LoaderOne />
-                  Processing...
-                </span>
-              ) : (
-                paymentMethod === 'pls' ? 'Buy with PLS' : 'Buy with Morbius'
-              )}
-            </Button>
-          )
-        )}
+        </div>
       </div>
 
       {/* Success Modal */}
@@ -808,7 +961,7 @@ export function TicketPurchaseBuilder({
               Purchase Successful!
             </DialogTitle>
             <DialogDescription className="text-white/80 text-center pt-2">
-              Your lottery ticket has been purchased
+              Your lottery tickets have been purchased
             </DialogDescription>
           </DialogHeader>
 
@@ -823,7 +976,7 @@ export function TicketPurchaseBuilder({
 
             {/* Transaction Hash */}
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="text-md text-white mb-2">Transaction Hash</div>
+              <div className="text-sm text-white/60 mb-2">Transaction Hash</div>
               <div className="font-mono text-xs text-white/80 break-all">
                 {successTxHash}
               </div>
@@ -831,27 +984,43 @@ export function TicketPurchaseBuilder({
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
-              <Button
+              <RippleButton
                 variant="outline"
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500"
                 onClick={() => {
-                  window.open(`https://scan.pulsechain.box/tx/${successTxHash}`, '_blank')
+                  window.open(`https://scan.pulsechain.com/tx/${successTxHash}`, '_blank')
                 }}
               >
                 View Txn
-              </Button>
-              <Button
+              </RippleButton>
+              <RippleButton
                 variant="outline"
                 className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20"
                 onClick={() => setShowSuccessModal(false)}
               >
                 OK
-              </Button>
+              </RippleButton>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
+
+    {/* Signature Prompt for High-Value Transactions */}
+    <SignaturePrompt
+      open={showSignaturePrompt}
+      onOpenChange={setShowSignaturePrompt}
+      onConfirm={handleSignatureConfirm}
+      onCancel={() => {
+        setShowSignaturePrompt(false)
+        setUiState('idle')
+      }}
+      isSigning={false}
+      title="Confirm Large Purchase"
+      description="This transaction exceeds our security threshold. Please sign to confirm your purchase."
+      action="Confirm Purchase"
+      amount={`${paymentMethod === 'PLS' ? formatEther(plsValueWei) + ' PLS' : formatUnits(morbiusCostWei, TOKEN_DECIMALS) + ' MORBIUS'}`}
+      risk="high"
+    />
   )
 }
-

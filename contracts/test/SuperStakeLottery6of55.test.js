@@ -4,7 +4,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("SuperStakeLottery6of55", function () {
   let lottery;
-  let psshToken;
+  let MORBIUSToken;
   let hexToken;
   let owner;
   let player1;
@@ -12,7 +12,7 @@ describe("SuperStakeLottery6of55", function () {
   let player3;
   let addrs;
 
-  const TICKET_PRICE = ethers.parseUnits("1", 9); // 1 pSSH
+  const TICKET_PRICE = ethers.parseUnits("1", 9); // 1 MORBIUS
   const ROUND_DURATION = 600; // 10 minutes for testing
 
   beforeEach(async function () {
@@ -20,31 +20,31 @@ describe("SuperStakeLottery6of55", function () {
 
     // Deploy mock ERC20 tokens
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    psshToken = await MockERC20.deploy("SuperStake", "pSSH", 9);
+    MORBIUSToken = await MockERC20.deploy("SuperStake", "MORBIUS", 9);
     hexToken = await MockERC20.deploy("HEX", "HEX", 8);
 
     // Deploy lottery
     const Lottery = await ethers.getContractFactory("SuperStakeLottery6of55");
-    lottery = await Lottery.deploy(await psshToken.getAddress(), ROUND_DURATION);
+    lottery = await Lottery.deploy(await MORBIUSToken.getAddress(), ROUND_DURATION);
 
     // Set block delay to 0 for testing (skip randomness delay)
     await lottery.updateBlockDelay(0);
 
     // Mint tokens to players
     const mintAmount = ethers.parseUnits("10000", 9);
-    await psshToken.mint(player1.address, mintAmount);
-    await psshToken.mint(player2.address, mintAmount);
-    await psshToken.mint(player3.address, mintAmount);
+    await MORBIUSToken.mint(player1.address, mintAmount);
+    await MORBIUSToken.mint(player2.address, mintAmount);
+    await MORBIUSToken.mint(player3.address, mintAmount);
 
     // Approve lottery
-    await psshToken.connect(player1).approve(await lottery.getAddress(), ethers.MaxUint256);
-    await psshToken.connect(player2).approve(await lottery.getAddress(), ethers.MaxUint256);
-    await psshToken.connect(player3).approve(await lottery.getAddress(), ethers.MaxUint256);
+    await MORBIUSToken.connect(player1).approve(await lottery.getAddress(), ethers.MaxUint256);
+    await MORBIUSToken.connect(player2).approve(await lottery.getAddress(), ethers.MaxUint256);
+    await MORBIUSToken.connect(player3).approve(await lottery.getAddress(), ethers.MaxUint256);
   });
 
   describe("Deployment", function () {
-    it("Should set the correct pSSH token", async function () {
-      expect(await lottery.pSSH_TOKEN()).to.equal(await psshToken.getAddress());
+    it("Should set the correct MORBIUS token", async function () {
+      expect(await lottery.MORBIUS_TOKEN()).to.equal(await MORBIUSToken.getAddress());
     });
 
     it("Should set the correct round duration", async function () {
@@ -92,18 +92,18 @@ describe("SuperStakeLottery6of55", function () {
   });
 
   describe("Ticket Purchase", function () {
-    it("Should charge correct pSSH amount", async function () {
-      const initialBalance = await psshToken.balanceOf(player1.address);
+    it("Should charge correct MORBIUS amount", async function () {
+      const initialBalance = await MORBIUSToken.balanceOf(player1.address);
       const tickets = [[1, 2, 3, 4, 5, 6]];
 
       await lottery.connect(player1).buyTickets(tickets);
 
-      const finalBalance = await psshToken.balanceOf(player1.address);
+      const finalBalance = await MORBIUSToken.balanceOf(player1.address);
       expect(initialBalance - finalBalance).to.equal(TICKET_PRICE);
     });
 
     it("Should charge correct amount for multiple tickets", async function () {
-      const initialBalance = await psshToken.balanceOf(player1.address);
+      const initialBalance = await MORBIUSToken.balanceOf(player1.address);
       const tickets = [
         [1, 2, 3, 4, 5, 6],
         [7, 8, 9, 10, 11, 12],
@@ -112,7 +112,7 @@ describe("SuperStakeLottery6of55", function () {
 
       await lottery.connect(player1).buyTickets(tickets);
 
-      const finalBalance = await psshToken.balanceOf(player1.address);
+      const finalBalance = await MORBIUSToken.balanceOf(player1.address);
       expect(initialBalance - finalBalance).to.equal(TICKET_PRICE * 3n);
     });
 
@@ -194,15 +194,15 @@ describe("SuperStakeLottery6of55", function () {
 
       if (creditsBefore > 0) {
         // Buy tickets in round 2
-        const initialBalance = await psshToken.balanceOf(player1.address);
+        const initialBalance = await MORBIUSToken.balanceOf(player1.address);
         await lottery.connect(player1).buyTickets([[7, 8, 9, 10, 11, 12]]);
-        const finalBalance = await psshToken.balanceOf(player1.address);
+        const finalBalance = await MORBIUSToken.balanceOf(player1.address);
 
         // Should have used free ticket
         const creditsAfter = await lottery.getFreeTicketCredits(player1.address);
         expect(creditsAfter).to.equal(creditsBefore - 1n);
 
-        // Should have paid 0 pSSH (all free)
+        // Should have paid 0 MORBIUS (all free)
         expect(initialBalance - finalBalance).to.equal(0n);
       }
     });
@@ -295,13 +295,13 @@ describe("SuperStakeLottery6of55", function () {
 
     it("Should send 25% to stake address", async function () {
       const STAKE_ADDRESS = "0xdC48205df8aF83c97de572241bB92DB45402Aa0E";
-      const initialStakeBalance = await psshToken.balanceOf(STAKE_ADDRESS);
+      const initialStakeBalance = await MORBIUSToken.balanceOf(STAKE_ADDRESS);
 
       await lottery.connect(player1).buyTickets([[1, 2, 3, 4, 5, 6]]);
       await time.increase(ROUND_DURATION + 10);
       await lottery.finalizeRound();
 
-      const finalStakeBalance = await psshToken.balanceOf(STAKE_ADDRESS);
+      const finalStakeBalance = await MORBIUSToken.balanceOf(STAKE_ADDRESS);
       const sent = finalStakeBalance - initialStakeBalance;
       const expected = (TICKET_PRICE * 25n) / 100n;
 
@@ -368,9 +368,9 @@ describe("SuperStakeLottery6of55", function () {
       const claimable = await lottery.getClaimableWinnings(1, player1.address);
 
       if (claimable > 0) {
-        const initialBalance = await psshToken.balanceOf(player1.address);
+        const initialBalance = await MORBIUSToken.balanceOf(player1.address);
         await lottery.connect(player1).claimWinnings(1);
-        const finalBalance = await psshToken.balanceOf(player1.address);
+        const finalBalance = await MORBIUSToken.balanceOf(player1.address);
 
         expect(finalBalance - initialBalance).to.equal(claimable);
       }

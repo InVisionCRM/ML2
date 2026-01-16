@@ -39,7 +39,7 @@ export function useAllPlayerTickets() {
 
         // Fetch TicketsPurchased events for single-round purchases
         const singleRoundEvent = parseAbiItem(
-          'event TicketsPurchased(address indexed player, uint256 indexed roundId, uint256 ticketCount, uint256 freeTicketsUsed, uint256 morbiusSpent)'
+          'event TicketsPurchased(address indexed player, uint256 indexed roundId, uint256 ticketCount, uint256 freeTicketsUsed, uint256 MORBIUSSpent)'
         )
         const singleRoundLogs = await publicClient.getLogs({
           address: LOTTERY_ADDRESS as `0x${string}`,
@@ -51,7 +51,7 @@ export function useAllPlayerTickets() {
 
         // Fetch TicketsPurchasedForRounds events for multi-round purchases
         const multiRoundEvent = parseAbiItem(
-          'event TicketsPurchasedForRounds(address indexed player, uint256[] roundIds, uint256[] ticketCounts, uint256 morbiusSpent)'
+          'event TicketsPurchasedForRounds(address indexed player, uint256[] roundIds, uint256[] ticketCounts, uint256 MORBIUSSpent)'
         )
         const multiRoundLogs = await publicClient.getLogs({
           address: LOTTERY_ADDRESS as `0x${string}`,
@@ -152,7 +152,7 @@ export function useAllPlayerTickets() {
             // Fetch purchase events for this round to get timestamps
             const fromBlock = LOTTERY_DEPLOY_BLOCK ? BigInt(LOTTERY_DEPLOY_BLOCK) : BigInt(0)
             const singleRoundEvent = parseAbiItem(
-              'event TicketsPurchased(address indexed player, uint256 indexed roundId, uint256 ticketCount, uint256 freeTicketsUsed, uint256 morbiusSpent)'
+              'event TicketsPurchased(address indexed player, uint256 indexed roundId, uint256 ticketCount, uint256 freeTicketsUsed, uint256 MORBIUSSpent)'
             )
             const purchaseLogs = await publicClient.getLogs({
               address: LOTTERY_ADDRESS as `0x${string}`,

@@ -27,7 +27,6 @@ interface KenoTicketProps {
     multiplier: boolean
     bullsEye: boolean
     plus3: boolean
-    progressive?: boolean
   }
   isActive: boolean
   currentWin: string
@@ -40,6 +39,8 @@ interface KenoTicketProps {
   progressiveCostWei?: bigint
   paytableRow?: number[]
   bullsEyeRow?: number[]
+  drawnNumbers?: number[]
+  bullsEyeNumber?: number
 }
 
 // Keno payout tables
@@ -77,6 +78,8 @@ export function KenoTicket({
   progressiveCostWei = BigInt(0),
   paytableRow,
   bullsEyeRow,
+  drawnNumbers = [],
+  bullsEyeNumber,
 }: KenoTicketProps) {
   const [isRevealed, setIsRevealed] = useState(false)
   const [isFlipped, setIsFlipped] = useState(false)
@@ -121,8 +124,7 @@ export function KenoTicket({
   const addonCostPerDraw =
     (addons.multiplier ? Number(multiplierCostWei ?? 0) / 1e18 : 0) +
     (addons.bullsEye ? Number(bullsEyeCostWei ?? 0) / 1e18 : 0) +
-    (addons.plus3 ? Number(wager) : 0) +
-    (addons.progressive ? Number(progressiveCostWei ?? 0) / 1e18 : 0)
+    (addons.plus3 ? Number(wager) : 0)
 
   // Get add-on labels
   const getAddonLabels = () => {
@@ -146,7 +148,7 @@ export function KenoTicket({
   const payoutTable = PAYTABLE[spotSize] || {}
   const payoutEntries = Object.entries(payoutTable).sort((a, b) => Number(b[0]) - Number(a[0]))
   const ticketBackground = {
-    backgroundImage: "url('/morbius/c718c298-363d-45d3-82bd-e51837b459cb.png')",
+    backgroundImage: "url('/MORBIUS/c718c298-363d-45d3-82bd-e51837b459cb.png')",
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   }
@@ -199,7 +201,7 @@ export function KenoTicket({
                     isPositive ? "text-green-700" : isNegative ? "text-red-700" : "text-black"
                   )}
                 >
-                  {pl.toFixed(4)} WPLS
+                  {pl.toFixed(0)} Morbius
                 </div>
               </div>
               <div className="w-full border-b border-black/30 my-4" />
@@ -236,9 +238,29 @@ export function KenoTicket({
                 {spotSize}-SPOT
               </div>
               <div className="text-sm font-bold text-black font-mono flex flex-wrap gap-1">
-                {numbers.map((num, idx) => (
-                  <span key={idx}>{num.toString().padStart(2, '0')}</span>
-                ))}
+                {numbers.map((num, idx) => {
+                  const isHit = drawnNumbers.includes(num)
+                  const isBullsEye = bullsEyeNumber === num
+                  return (
+                    <span
+                      key={idx}
+                      className={cn(
+                        'relative inline-flex items-center justify-center w-8 h-8 rounded-full border text-[18px] font-bold transition-all',
+                        isHit
+                          ? 'border-2 border-green-400/90 bg-white/50 text-purple-600'
+                          : 'border-red-400 border-1 bg-transparent text-purple-500'
+                      )}
+                    > 
+                      {num.toString().padStart(2, '0')}
+                      {isBullsEye && (
+                        <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_3px_rgba(59,130,246,0.8)]" />
+                      )}
+                      {isHit && (
+                        <span className="absolute inset-0 rounded-full bg-emerald-400/25 animate-pulse" />
+                      )}
+                    </span>
+                  )
+                })}
               </div>
             </div>
             <span className="text-[10px] font-bold text-black">EP</span>
@@ -254,29 +276,12 @@ export function KenoTicket({
           )}
         </div>
 
-        {/* Dashed separator */}
-        <div className="border-t border-dashed border-black my-2" />
-
-        {/* PulseProgressive Section */}
-        <div className="py-6 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-xl font-black text-black mb-1">
-              PulseProgressive
-            </div>
-            <div className="text-[10px] font-bold text-black">
-              JACKPOT
-            </div>
-          </div>
-        </div>
-
-        {/* Dashed separator */}
-        <div className="border-t border-dashed border-black my-2" />
 
         {/* Cost Details - Reduced font size */}
         <div className="flex justify-between items-center text-xs font-bold text-black mb-2">
           <span>{draws} DRAWS</span>
-          <span>{Number(wager).toFixed(4)} WPLS/DRAW</span>
-          <span>{totalCost.toFixed(4)} WPLS</span>
+          <span>{Number(wager).toFixed(0)} Morbius/DRAW</span>
+          <span>{totalCost.toFixed(0)} Morbius</span>
         </div>
 
         {/* Bottom Section - Totals and Info */}
@@ -284,7 +289,7 @@ export function KenoTicket({
           {/* Total Cost */}
           <div className="flex justify-between font-bold text-sm">
             <span>TOTAL</span>
-            <span>{totalCost.toFixed(4)} WPLS</span>
+            <span>{totalCost.toFixed(0)} Morbius</span>
           </div>
 
           {/* Draw Numbers */}
@@ -341,7 +346,7 @@ export function KenoTicket({
       {/* Status overlay for expired tickets */}
       {!isActive && (
         <div className="absolute inset-0 bg-amber-50/80 flex items-center justify-center">
-          <div className="transform -rotate-12 bg-black text-white px-8 py-2 font-black text-xl tracking-wider">
+          <div className="transform -rotate-12 bg-gradient-to-br from-slate-950 to-slate-900 text-white px-8 py-2 font-black text-xl tracking-wider">
             EXPIRED
           </div>
         </div>
@@ -371,7 +376,7 @@ export function KenoTicket({
               <div className="grid grid-cols-4 gap-1 text-[10px] font-bold text-black border-b-2 border-black pb-1">
                 <div>ROUND</div>
                 <div>HITS</div>
-                <div className="text-right">P/L (WPLS)</div>
+                <div className="text-right">P/L (Morbius)</div>
                 <div className="text-right">NUMBERS</div>
               </div>
               {roundHistory.map((round) => (
@@ -389,7 +394,7 @@ export function KenoTicket({
                     "text-right font-mono",
                     (round.roundPL ?? 0) > 0 ? "text-green-700" : (round.roundPL ?? 0) < 0 ? "text-red-700" : "text-black"
                   )}>
-                    {(round.roundPL ?? 0).toFixed(4)}
+                    {(round.roundPL ?? 0).toFixed(0)}
                   </div>
                   <div className="text-right font-mono text-[9px]">
                     {round.matchedNumbers.length > 0 ? (
@@ -411,7 +416,7 @@ export function KenoTicket({
                       ? "text-red-700"
                       : "text-black"
                 )}>
-                  {roundHistory.reduce((acc, r) => acc + (r.roundPL ?? 0), 0).toFixed(4)}
+                  {roundHistory.reduce((acc, r) => acc + (r.roundPL ?? 0), 0).toFixed(0)}
                 </div>
                 <div />
               </div>
@@ -458,7 +463,7 @@ export function KenoTicket({
           <div className="border-t-2 border-black pt-3 mt-3">
             <h3 className="text-sm font-black text-black mb-1">ADD-ON COST</h3>
             <p className="text-[10px] font-mono text-black">
-              {addonCostPerDraw.toFixed(4)} WPLS per draw
+              {addonCostPerDraw.toFixed(0)} Morbius per draw
             </p>
           </div>
 
@@ -467,7 +472,7 @@ export function KenoTicket({
             <div className="border-t-2 border-black pt-3 mt-3">
               <div className="text-center">
                 <p className="text-xs font-bold text-black mb-1">CURRENT WIN</p>
-                <p className="text-xl font-black text-black">{currentWinNum.toFixed(4)} WPLS</p>
+                <p className="text-xl font-black text-black">{currentWinNum.toFixed(0)} Morbius</p>
               </div>
             </div>
           )}

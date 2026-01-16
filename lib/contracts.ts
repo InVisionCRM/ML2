@@ -4,8 +4,8 @@ export const WPLS_TOKEN_ADDRESS = '0xA1077a294dDE1B09bB078844df40758a5D0f9a27' a
 export const HEX_TOKEN_ADDRESS = '0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39' as const
 export const SUPERSTAKE_STAKE_ADDRESS = '0xdC48205df8aF83c97de572241bB92DB45402Aa0E' as const
 export const TOKEN_DECIMALS = 18 as const
-export const WPLS_PSSH_PAIR = '0x81acd0AA872675678A25fbB154992A2baD4F6CEF' as const
-// Morbius/WPLS PulseX V1 pair (CORRECT - 141M WPLS liquidity)
+export const WPLS_MORBIUS_PAIR = '0x81acd0AA872675678A25fbB154992A2baD4F6CEF' as const
+// MORBIUS/WPLS PulseX V1 pair (CORRECT - 141M WPLS liquidity)
 export const MORBIUS_WPLS_V1_PAIR = '0x81acd0aa872675678a25fbb154992a2bad4f6cef' as const
 // PulseX V1 router (CORRECT - was using factory address before)
 export const PULSEX_V1_ROUTER_ADDRESS = '0x98bf93ebf5c380C0e6Ae8e192A7e2AE08edAcc02' as const
@@ -14,18 +14,20 @@ export const WPLS_TO_MORBIUS_BUFFER_BPS = 11000 as const // 10% buffer
 // OLD Lottery contract (simple version)
 export const LOTTERY_ADDRESS_OLD = '0x25056D6159F6C7a7812d1B65aca2Ca14E3E0F4c3' as const
 
-// NEW Lottery contract (6-of-55 version V2) - Fixed prizes, MegaMorbius progressive jackpot
-// TODO: Update with new deployed contract address after deployment
+// Lottery contract (6-of-55 version V2) - Original deployment
 export const LOTTERY_ADDRESS = '0xD66b4489fbfF99A8d62f969203899840F2ec69c5' as const
+//old keno addresses: 0x3e0e64F76Fb985f8CDbcC0169ff9e1E5cB7fE52c, 0x4c18d2FBd745aef4CB6443e66Aa832C9F859a2e5
+// Keno contract (CryptoKeno - refactored version without add-ons)
+export const KENO_ADDRESS = '0x734A1460b4131F8cFE4950894Be89d1a852c957A' as const
 
-// Keno contract
-export const KENO_ADDRESS = '0xb04913A3085993153DaEE58704760BeB67c58705' as const
+// Plinko contract (15-bucket casino-style game with RISK LEVELS + VARIABLE WAGERS)
+// V5.1: Testing version - reserve check disabled for testing
+export const PLINKO_ADDRESS = '0x212cb1Ea69F59E1F48e9C344053696c4adEbb845' as const
 
 // Contract deployment info
-// TODO: Update with actual deployment block number
-export const LOTTERY_DEPLOY_BLOCK = 25284508 // Update with actual block number
-export const KENO_DEPLOY_BLOCK = 25242508
-// Placeholder - update when deployed
+export const LOTTERY_DEPLOY_BLOCK = 25329129
+export const KENO_DEPLOY_BLOCK = 25341670 // Deployed Dec 21, 2025
+export const PLINKO_DEPLOY_BLOCK = 25453189 // Deployed Jan 5, 2026 - V5 with VARIABLE WAGERS
 
 // Lottery constants
 export const TICKET_PRICE = BigInt(100_000_000_000_000_000_000) // 100 tokens (18 decimals)

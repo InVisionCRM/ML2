@@ -70,7 +70,7 @@ This will:
 
 **Using Hardhat:**
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto/contracts
+cd /Users/kyle/MORBlotto/MORBIUS_lotto/contracts
 npx hardhat run scripts/start-next-round.js --network pulsechain
 ```
 
@@ -121,7 +121,7 @@ The issue is simply that **rounds are scheduled for the future**.
 
 Run this to check contract state anytime:
 ```bash
-cd /Users/kyle/MORBlotto/morbius_lotto
+cd /Users/kyle/MORBlotto/MORBIUS_lotto
 node scripts/check-keno-contract.js
 ```
 
@@ -133,13 +133,13 @@ This shows:
 
 ## Files Created/Modified
 
-1. **`/morbius_lotto/app/keno/page.tsx`**
+1. **`/MORBIUS_lotto/app/keno/page.tsx`**
    - Added data validation
    - Added console logging
    - Added warning banner
    - Timer now handles future rounds gracefully
 
-2. **`/morbius_lotto/scripts/check-keno-contract.js`** (NEW)
+2. **`/MORBIUS_lotto/scripts/check-keno-contract.js`** (NEW)
    - Script to inspect contract state
    - Shows round timing analysis
    - Easy debugging tool

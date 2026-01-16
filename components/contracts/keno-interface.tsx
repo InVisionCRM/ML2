@@ -26,7 +26,7 @@ export function KenoContractInterface({ address }: KenoContractInterfaceProps) {
 
   return (
     <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10">
+      <TabsList className="grid w-full grid-cols-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10">
         <TabsTrigger value="player-actions" className="data-[state=active]:bg-purple-600">
           Player Actions
         </TabsTrigger>
@@ -57,7 +57,6 @@ export function KenoContractInterface({ address }: KenoContractInterfaceProps) {
         <CurrentRoundStats />
         <PlayerStatsSection address={address} />
         <GlobalKenoStats />
-        <ProgressiveStats />
         <ContractConstants />
         <TokenInfoSection />
         <TicketLookupSection />
@@ -143,7 +142,7 @@ function AdvancedAdminSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Advanced Admin Functions (Owner Only)
@@ -172,13 +171,13 @@ function AdvancedAdminSection({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setFeeBps(e.target.value)}
               placeholder="Fee (basis points, 100=1%)"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Input
               value={feeRecipient}
               onChange={(e) => setFeeRecipient(e.target.value)}
               placeholder="Recipient address"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
           </div>
           <Button
@@ -195,16 +194,16 @@ function AdvancedAdminSection({ address }: { address?: `0x${string}` }) {
           <Input
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount (Morbius)"
+            placeholder="Amount (MORBIUS)"
             type="number"
             step="0.001"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
           <Input
             value={toAddress}
             onChange={(e) => setToAddress(e.target.value)}
             placeholder="Destination address"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
           <Button
             onClick={handleWithdraw}
@@ -309,7 +308,7 @@ function RandomnessManagement({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Randomness Management (Owner Only)
@@ -338,13 +337,13 @@ function RandomnessManagement({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setRoundId(e.target.value)}
             placeholder="Round ID"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
           <Input
             value={commitment}
             onChange={(e) => setCommitment(e.target.value)}
             placeholder="Commitment hash (0x...)"
-            className="bg-black/40 border-white/10 font-mono text-xs"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10 font-mono text-xs"
           />
           <Button
             onClick={handleCommit}
@@ -361,7 +360,7 @@ function RandomnessManagement({ address }: { address?: `0x${string}` }) {
             value={seed}
             onChange={(e) => setSeed(e.target.value)}
             placeholder="Seed value (0x...)"
-            className="bg-black/40 border-white/10 font-mono text-xs"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10 font-mono text-xs"
           />
           <Button
             onClick={handleReveal}
@@ -378,7 +377,7 @@ function RandomnessManagement({ address }: { address?: `0x${string}` }) {
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
             placeholder="Provider address (0x...)"
-            className="bg-black/40 border-white/10 font-mono text-xs"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10 font-mono text-xs"
           />
           <Button
             onClick={handleSetProvider}
@@ -458,7 +457,7 @@ function OwnershipManagement({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-red-500/20">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-red-500/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-red-400">
           ⚠️ Ownership Management (DANGEROUS)
@@ -494,7 +493,7 @@ function OwnershipManagement({ address }: { address?: `0x${string}` }) {
             value={newOwner}
             onChange={(e) => setNewOwner(e.target.value)}
             placeholder="New owner address (0x...)"
-            className="bg-black/40 border-red-500/20 font-mono text-xs"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-red-500/20 font-mono text-xs"
           />
           <Button
             onClick={handleTransfer}
@@ -542,11 +541,7 @@ function ContractConstants() {
     functionName: 'DRAWN',
   })
 
-  const { data: plus3Drawn } = useReadContract({
-    address: KENO_ADDRESS as `0x${string}`,
-    abi: KENO_ABI,
-    functionName: 'PLUS3_DRAWN',
-  })
+  // PLUS3_DRAWN removed in refactored contract
 
   const { data: minSpot } = useReadContract({
     address: KENO_ADDRESS as `0x${string}`,
@@ -573,7 +568,7 @@ function ContractConstants() {
   })
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Contract Constants
@@ -601,10 +596,6 @@ function ContractConstants() {
           <div>
             <p className="text-xs text-white/50">Numbers Drawn</p>
             <p className="text-xl font-bold">{drawn?.toString() || '0'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-white/50">Plus 3 Numbers</p>
-            <p className="text-xl font-bold">{plus3Drawn?.toString() || '0'}</p>
           </div>
           <div>
             <p className="text-xs text-white/50">Min Spot Size</p>
@@ -666,36 +657,36 @@ function TokenInfoSection() {
   })
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle>Contract Configuration</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+          <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
             <p className="text-xs text-white/50">Token Address</p>
             <p className="text-sm font-mono break-all">{tokenAddress as string}</p>
           </div>
-          <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+          <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
             <p className="text-xs text-white/50">Fee Recipient</p>
             <p className="text-sm font-mono break-all">{feeRecipient as string}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
               <p className="text-xs text-white/50">Protocol Fee</p>
               <p className="text-lg font-bold">{(Number(feeBps || 0) / 100).toFixed(2)}%</p>
             </div>
-            <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
               <p className="text-xs text-white/50">Contract Status</p>
               <p className={`text-lg font-bold ${isPaused ? 'text-red-500' : 'text-green-500'}`}>
                 {isPaused ? 'PAUSED' : 'ACTIVE'}
               </p>
             </div>
-            <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
               <p className="text-xs text-white/50">Round Duration</p>
               <p className="text-lg font-bold">{Number(roundDuration || 0)}s</p>
             </div>
-            <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
               <p className="text-xs text-white/50">Max Wager</p>
               <p className="text-lg font-bold">{formatUnits(maxWager && typeof maxWager === 'bigint' ? maxWager : BigInt(0), TOKEN_DECIMALS)}</p>
             </div>
@@ -719,7 +710,7 @@ function TicketLookupSection() {
   const ticketData = ticket as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Ticket Lookup
@@ -741,13 +732,13 @@ function TicketLookupSection() {
             onChange={(e) => setTicketId(e.target.value)}
             placeholder="Enter ticket ID"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
         {ticketData && (
           <div className="space-y-3">
-            <div className="p-3 bg-black/40 border border-white/10 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
               <p className="text-xs text-white/50">Player</p>
               <p className="text-sm font-mono break-all">{ticketData.player}</p>
             </div>
@@ -793,7 +784,7 @@ function RoundDetailsSection() {
   const roundData = round as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Round Details Lookup
@@ -815,7 +806,7 @@ function RoundDetailsSection() {
             onChange={(e) => setRoundId(e.target.value)}
             placeholder="Enter round ID"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -829,20 +820,12 @@ function RoundDetailsSection() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-white/50">Bulls-Eye Number</p>
-                <p className="text-lg font-bold">{roundData.bullsEyeNumber?.toString()}</p>
-              </div>
-              <div>
                 <p className="text-xs text-white/50">Total Base Wager</p>
                 <p className="text-lg font-bold">{formatUnits(roundData.totalBaseWager || BigInt(0), TOKEN_DECIMALS)}</p>
               </div>
               <div>
                 <p className="text-xs text-white/50">Pool Balance</p>
                 <p className="text-lg font-bold">{formatUnits(roundData.poolBalance || BigInt(0), TOKEN_DECIMALS)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Multiplier Outcome</p>
-                <p className="text-lg font-bold">{roundData.drawnMultiplier?.toString()}x</p>
               </div>
             </div>
           </div>
@@ -864,7 +847,7 @@ function ClaimedStatusCheck({ address }: { address?: `0x${string}` }) {
   })
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Check Claim Status
@@ -887,7 +870,7 @@ function ClaimedStatusCheck({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setRoundId(e.target.value)}
               placeholder="Round ID"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
           </div>
           <div>
@@ -897,13 +880,13 @@ function ClaimedStatusCheck({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setTicketId(e.target.value)}
               placeholder="Ticket ID"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
           </div>
         </div>
 
         {roundId && ticketId && (
-          <div className="p-4 bg-black/40 border border-white/10 rounded-lg text-center">
+          <div className="p-4 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg text-center">
             <p className="text-xs text-white/50 mb-2">Claim Status</p>
             <p className={`text-2xl font-bold ${isClaimed ? 'text-green-500' : 'text-yellow-500'}`}>
               {isClaimed ? '✓ CLAIMED' : '○ NOT CLAIMED'}
@@ -923,10 +906,6 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
   const [spotSize, setSpotSize] = useState('10')
   const [draws, setDraws] = useState('1')
   const [wagerPerDraw, setWagerPerDraw] = useState('0.001')
-  const [multiplier, setMultiplier] = useState(false)
-  const [bullsEye, setBullsEye] = useState(false)
-  const [plus3, setPlus3] = useState(false)
-  const [progressive, setProgressive] = useState(false)
   const [approvalAmount, setApprovalAmount] = useState('10')
 
   const { writeContract, data: hash, isPending } = useWriteContract()
@@ -967,18 +946,12 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
       const parsedDraws = parseInt(draws)
       const wager = parseUnits(wagerPerDraw, TOKEN_DECIMALS)
 
-      // Build addons bitmask
-      let addons = 0
-      if (multiplier) addons |= 1 << 0 // ADDON_MULTIPLIER
-      if (bullsEye) addons |= 1 << 1 // ADDON_BULLSEYE
-      if (plus3) addons |= 1 << 2 // ADDON_PLUS3
-      if (progressive) addons |= 1 << 3 // ADDON_PROGRESSIVE
-
+      // New signature: buyTicket(roundId, numbers[], spotSize, draws, wagerPerDraw)
       writeContract({
         address: KENO_ADDRESS as `0x${string}`,
         abi: KENO_ABI,
         functionName: 'buyTicket',
-        args: [parsedRoundId, parsedNumbers, parsedSpotSize, parsedDraws, addons, wager],
+        args: [parsedRoundId, parsedNumbers, parsedSpotSize, parsedDraws, wager],
       })
     } catch (error: any) {
       toast.error(error.message || 'Failed to buy ticket')
@@ -986,7 +959,7 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Buy Keno Ticket
@@ -1005,26 +978,26 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
                 </p>
                 <p className="text-xs text-white/70">
                   Pick 1-10 numbers from 1-80. The contract draws 20 numbers.
-                  Match numbers to win based on paytable. Add-ons increase cost but boost potential prizes.
+                  Match numbers to win based on paytable.
                 </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </CardTitle>
         <CardDescription className="text-white/60">
-          Pick your numbers and add-ons for multi-draw Keno tickets
+          Pick your numbers for multi-draw Keno tickets
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="keno-approve">Approval Amount (Morbius)</Label>
+          <Label htmlFor="keno-approve">Approval Amount (MORBIUS)</Label>
           <div className="flex gap-2 mt-2">
             <Input
               id="keno-approve"
               value={approvalAmount}
               onChange={(e) => setApprovalAmount(e.target.value)}
               placeholder="10"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleApprove}
@@ -1059,7 +1032,7 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setRoundId(e.target.value)}
             placeholder="1"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1071,7 +1044,7 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setNumbers(e.target.value)}
             placeholder="[1,2,3,4,5,6,7,8,9,10]"
             rows={3}
-            className="w-full mt-2 p-3 bg-black/40 border border-white/10 rounded-md text-white font-mono text-sm"
+            className="w-full mt-2 p-3 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-md text-white font-mono text-sm"
           />
         </div>
 
@@ -1086,7 +1059,7 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
               type="number"
               min="1"
               max="10"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
           </div>
 
@@ -1099,13 +1072,13 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
               placeholder="1"
               type="number"
               min="1"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="wager">Wager Per Draw (Morbius)</Label>
+          <Label htmlFor="wager">Wager Per Draw (MORBIUS)</Label>
           <Input
             id="wager"
             value={wagerPerDraw}
@@ -1113,54 +1086,8 @@ function BuyTicketSection({ address }: { address?: `0x${string}` }) {
             placeholder="0.001"
             type="number"
             step="0.001"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
-        </div>
-
-        <div className="space-y-3">
-          <Label>Add-Ons (optional)</Label>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="multiplier"
-                checked={multiplier}
-                onCheckedChange={(checked) => setMultiplier(checked as boolean)}
-              />
-              <label htmlFor="multiplier" className="text-sm cursor-pointer">
-                Multiplier (1x-10x random multiplier on winnings)
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="bullseye"
-                checked={bullsEye}
-                onCheckedChange={(checked) => setBullsEye(checked as boolean)}
-              />
-              <label htmlFor="bullseye" className="text-sm cursor-pointer">
-                Bulls-Eye (3x payout if special number hit)
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="plus3"
-                checked={plus3}
-                onCheckedChange={(checked) => setPlus3(checked as boolean)}
-              />
-              <label htmlFor="plus3" className="text-sm cursor-pointer">
-                Plus 3 (Draw 3 extra numbers for more chances)
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="progressive"
-                checked={progressive}
-                onCheckedChange={(checked) => setProgressive(checked as boolean)}
-              />
-              <label htmlFor="progressive" className="text-sm cursor-pointer">
-                Progressive Jackpot (9/10 spots wins share of jackpot)
-              </label>
-            </div>
-          </div>
         </div>
 
         <Button
@@ -1221,7 +1148,7 @@ function ClaimPrizeSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Claim Prize
@@ -1255,7 +1182,7 @@ function ClaimPrizeSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setRoundId(e.target.value)}
             placeholder="1"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1267,7 +1194,7 @@ function ClaimPrizeSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setTicketId(e.target.value)}
             placeholder="123"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1328,7 +1255,7 @@ function AutoClaimSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Auto-Claim Settings
@@ -1352,7 +1279,7 @@ function AutoClaimSection({ address }: { address?: `0x${string}` }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg">
           <span className="text-sm">Auto-Claim Status</span>
           <span className={`text-sm font-bold ${currentStatus ? 'text-green-500' : 'text-red-500'}`}>
             {currentStatus ? 'ENABLED' : 'DISABLED'}
@@ -1410,7 +1337,7 @@ function RoundManagementSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Round Management (Owner Only)
@@ -1490,7 +1417,7 @@ function PaytableConfigSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Paytable Configuration (Owner Only)
@@ -1527,7 +1454,7 @@ function PaytableConfigSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setSpotSize(e.target.value)}
             placeholder="10"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1539,7 +1466,7 @@ function PaytableConfigSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setHits(e.target.value)}
             placeholder="10"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1551,7 +1478,7 @@ function PaytableConfigSection({ address }: { address?: `0x${string}` }) {
             onChange={(e) => setMultiplier(e.target.value)}
             placeholder="100000"
             type="number"
-            className="bg-black/40 border-white/10"
+            className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
           />
         </div>
 
@@ -1629,7 +1556,7 @@ function ContractConfigSection({ address }: { address?: `0x${string}` }) {
   }
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Contract Configuration (Owner Only)
@@ -1661,7 +1588,7 @@ function ContractConfigSection({ address }: { address?: `0x${string}` }) {
               onChange={(e) => setRoundDuration(e.target.value)}
               placeholder="180"
               type="number"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleUpdateDuration}
@@ -1674,7 +1601,7 @@ function ContractConfigSection({ address }: { address?: `0x${string}` }) {
         </div>
 
         <div className="space-y-3">
-          <Label>Max Wager Per Draw (Morbius)</Label>
+          <Label>Max Wager Per Draw (MORBIUS)</Label>
           <div className="flex gap-2">
             <Input
               value={maxWager}
@@ -1682,7 +1609,7 @@ function ContractConfigSection({ address }: { address?: `0x${string}` }) {
               placeholder="0.001"
               type="number"
               step="0.001"
-              className="bg-black/40 border-white/10"
+              className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10"
             />
             <Button
               onClick={handleUpdateMaxWager}
@@ -1717,7 +1644,7 @@ function CurrentRoundStats() {
   })
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Current Round Information
@@ -1771,7 +1698,7 @@ function PlayerStatsSection({ address }: { address?: `0x${string}` }) {
   const stats = data as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Your Keno Statistics
@@ -1852,7 +1779,7 @@ function GlobalKenoStats() {
   const stats = data as any
 
   return (
-    <Card className="bg-black/40 border-white/10">
+    <Card className="bg-gradient-to-br from-slate-950 to-slate-900/40 border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Global Keno Statistics
@@ -1911,90 +1838,6 @@ function GlobalKenoStats() {
   )
 }
 
-function ProgressiveStats() {
-  const { data, isLoading, refetch } = useReadContract({
-    address: KENO_ADDRESS as `0x${string}`,
-    abi: KENO_ABI,
-    functionName: 'getProgressiveStats',
-  })
-
-  const stats = data as any
-
-  return (
-    <Card className="bg-black/40 border-white/10">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          Progressive Jackpot Stats
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <HelpCircle className="h-4 w-4 text-white/50" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-sm">
-                <p className="font-semibold mb-2">Pulse Progressive Jackpot information</p>
-                <p className="text-xs text-white/70">
-                  Current pool, base seed, cost, total collected/paid, win count, and last win round.
-                  Win condition: 9+ hits on 9/10-spot game with progressive add-on.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <Button
-            onClick={() => refetch()}
-            size="sm"
-            variant="outline"
-            className="ml-auto"
-          >
-            Refresh
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-          </div>
-        ) : stats ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg">
-              <p className="text-sm text-white/70 mb-1">Current Jackpot Pool</p>
-              <p className="text-3xl font-bold text-purple-400">{formatUnits(stats[0] || BigInt(0), TOKEN_DECIMALS)} Morbius</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-white/50">Base Seed</p>
-                <p className="text-lg font-bold">{formatUnits(stats[1] || BigInt(0), TOKEN_DECIMALS)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Cost Per Draw</p>
-                <p className="text-lg font-bold">{formatUnits(stats[2] || BigInt(0), TOKEN_DECIMALS)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Total Collected</p>
-                <p className="text-lg font-bold">{formatUnits(stats[3] || BigInt(0), TOKEN_DECIMALS)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Total Paid</p>
-                <p className="text-lg font-bold">{formatUnits(stats[4] || BigInt(0), TOKEN_DECIMALS)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Win Count</p>
-                <p className="text-lg font-bold">{stats[5]?.toString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Last Win Round</p>
-                <p className="text-lg font-bold">{stats[6]?.toString()}</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-center text-white/50">No data available</p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
 
 
 

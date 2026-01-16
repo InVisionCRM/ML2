@@ -15,8 +15,8 @@ const geistMono = {
 };
 
 export const metadata: Metadata = {
-  title: "Morbius Lotto",
-  description: "Morbius 6-of-55 Lottery",
+  title: "MORBIUS Lotto",
+  description: "MORBIUS 6-of-55 Lottery",
 };
 
 export default function RootLayout({
@@ -27,7 +27,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Fonts removed to avoid build issues - using system fonts */}
+        {/* Google Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Prosto+One&display=swap" rel="stylesheet" />
+        {/* Font Awesome for PLINKO icons */}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

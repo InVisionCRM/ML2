@@ -28,7 +28,7 @@ We’ll reproduce this structure on a blockchain:
 
 * **Game:** 20-of-80 Keno, numbers 1–80, 20 unique numbers drawn each round.
 * **Spots:** Players choose **1–10 numbers** to play (configurable up to 15 or 20 if desired).
-* **Token:** Any ERC-20 (e.g. your pSSH token).
+* **Token:** Any ERC-20 (e.g. your MORBIUS token).
 * **Draw cadence:** Every **X seconds** (e.g. 3–4 minutes like Club Keno, or 5–10 minutes if you want fewer rounds).
 * **On-chain paytable:** Payouts defined per (spot size, hits), giving a **fixed RTP / house edge**.
 * Optional **add-ons (all on-chain):**
@@ -434,12 +434,12 @@ If this is plugged into an existing token ecosystem (e.g. SuperStake / HEX):
 
 * Protocol fee can be used to:
 
-  * buy and lock pSSH,
+  * buy and lock MORBIUS,
   * feed HEX stakes,
   * or pay yield to stakers.
 * Progressive pools and special jackpots can optionally pay partly in:
 
-  * The main token (e.g. pSSH),
+  * The main token (e.g. MORBIUS),
   * A secondary asset (e.g. HEX earned by protocol-owned stakes),
   * Or a combination.
 

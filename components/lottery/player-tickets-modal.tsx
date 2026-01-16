@@ -151,7 +151,7 @@ export function PlayerTicketsModal({ roundId, playerTickets = [] }: PlayerTicket
     setIsProcessing(false)
   }, [playerTickets, roundId, multiRoundPurchases])
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -178,8 +178,8 @@ export function PlayerTicketsModal({ roundId, playerTickets = [] }: PlayerTicket
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-black/60 w-10 h-10 p-0" title="Your Tickets">
-          <Receipt className="w-5 h-5" />
+        <Button variant="outline" className="text-white bg-slate-900 border-white/10 hover:bg-gradient-to-br from-slate-950 to-slate-900/60 w-full h-10 p-0 text-xs sm:text-sm" title="Your Tickets">
+          Tickets
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-slate-900/95 border-white/20 text-white max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] overflow-x-hidden">
@@ -240,7 +240,7 @@ export function PlayerTicketsModal({ roundId, playerTickets = [] }: PlayerTicket
                     size="sm"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="text-white bg-slate-900 border-white/10 hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="text-white bg-slate-900 border-white/10 hover:bg-gradient-to-br from-slate-950 to-slate-900/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
@@ -260,7 +260,7 @@ export function PlayerTicketsModal({ roundId, playerTickets = [] }: PlayerTicket
                     size="sm"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="text-white bg-slate-900 border-white/10 hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="text-white bg-slate-900 border-white/10 hover:bg-gradient-to-br from-slate-950 to-slate-900/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -273,10 +273,10 @@ export function PlayerTicketsModal({ roundId, playerTickets = [] }: PlayerTicket
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-semibold">Total Cost:</span>
                   <span className="font-bold text-base">
-                    {formatPssh(
+                    {formatMORBIUS(
                       BigInt(enrichedTickets.filter(t => !t.isFreeTicket).length) * TICKET_PRICE
                     )}{' '}
-                    <span className="text-white/60 text-xs">Morbius</span>
+                    <span className="text-white/60 text-xs">MORBIUS</span>
                   </span>
                 </div>
                 <div className="text-[11px] text-white/60 mt-1 text-right">

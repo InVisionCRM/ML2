@@ -196,7 +196,7 @@ The `reduce` function groups identical tickets:
 - [x] Same numbers group together
 - [x] Dev server builds successfully
 - [ ] Tested in browser with wallet
-- [ ] Tested purchase with pSSH
+- [ ] Tested purchase with MORBIUS
 - [ ] Tested purchase with WPLS
 
 ## Additional Notes

@@ -5,12 +5,12 @@
 - **Game type:** 6-of-55 lottery on PulseChain.  
 - **Ticket:** Pick **6 unique numbers from 1 to 55**. Order does not matter.  
 - **Rounds:** Time-based (testing: 10 minutes; mainnet: 24 hours).  
-- **Token:** pSSH (SuperStake token).  
-- **Per-round split of pSSH pot (`roundPot`):**
+- **Token:** MORBIUS (SuperStake token).  
+- **Per-round split of MORBIUS pot (`roundPot`):**
   - **55%** → paid out to winners across 6 prize brackets.
   - **25%** → sent directly to the existing **SuperStake stake address** (growing the core HEX stake).
-  - **20%** → added to a **pSSH MegaMillions bank**.
-- **MegaMillions:** Every **55th round**, the accumulated pSSH Mega bank is dropped into that round’s top prize brackets.
+  - **20%** → added to a **MORBIUS MegaMillions bank**.
+- **MegaMillions:** Every **55th round**, the accumulated MORBIUS Mega bank is dropped into that round’s top prize brackets.
 - **HEX overlay jackpot:**
   - All HEX that the contract accumulates over time builds up in a **HEX bank**.
   - Whenever someone hits **Bracket 6** (matches all 6 numbers),  
@@ -65,7 +65,7 @@ When round `N` is OPEN:
    - Checks each ticket:
      - 6 numbers, all in [1, 55].
      - All 6 numbers are unique.
-   - Charges `tickets.length * ticketPrice` in pSSH.
+   - Charges `tickets.length * ticketPrice` in MORBIUS.
    - Records each ticket in storage, associated with:
      - `roundId = N`
      - `buyer = msg.sender`
@@ -84,8 +84,8 @@ When round `N` is OPEN:
     2. **Draw winning numbers**:
        - Use the seed to sample 6 distinct numbers between 1 and 55.
     3. **Compute prize brackets** and allocate the 55% pool.
-    4. **Send the 25% share** of `roundPot_N` to the SuperStake stake address in pSSH.
-    5. **Add 20%** of `roundPot_N` to the **pSSH MegaMillions bank**.
+    4. **Send the 25% share** of `roundPot_N` to the SuperStake stake address in MORBIUS.
+    5. **Add 20%** of `roundPot_N` to the **MORBIUS MegaMillions bank**.
     6. **Update free-ticket credits** for losing players.
 
   - Then it opens **round N+1** and processes the new `buyTickets` call as the first purchase in that round.
@@ -97,7 +97,7 @@ From the user’s perspective:
 
 ## 3. Prize Structure (Immediate Winners — 55% of roundPot)
 
-For every round, let `roundPot` be the total pSSH collected from ticket sales.
+For every round, let `roundPot` be the total MORBIUS collected from ticket sales.
 
 - **55% of `roundPot`** is designated as the **immediate winners pool**.
 - This 55% is split into 6 bracket pools based on `m = number of matches`.
@@ -132,7 +132,7 @@ These sum to 55%:
 
 For each bracket `k ∈ {1..6}`:
 
-- Let `pool_k` be the pSSH allocated to that bracket.
+- Let `pool_k` be the MORBIUS allocated to that bracket.
 - Let `winnerCount_k` be the number of tickets whose highest match-count bracket is `k`.
 
 If `winnerCount_k > 0`:
@@ -143,51 +143,51 @@ If `winnerCount_k == 0`:
 
 - `pool_k` is considered **leftover**:
   - For brackets 1–4, leftovers naturally roll forward to fatten future winners pools or may be added to a separate bonus pool.
-  - For brackets 5–6, leftovers contribute to **free ticket funding** and the **pSSH MegaMillions bank** (see Section 4.3 and 5.2).
+  - For brackets 5–6, leftovers contribute to **free ticket funding** and the **MORBIUS MegaMillions bank** (see Section 4.3 and 5.2).
 
 ---
 
-## 4. Token Flows: pSSH
+## 4. Token Flows: MORBIUS
 
-### 4.1 Per-round pSSH split
+### 4.1 Per-round MORBIUS split
 
-Every round’s `roundPot` in pSSH is split as:
+Every round’s `roundPot` in MORBIUS is split as:
 
 - **55%** → Immediate winners (Section 3).
-- **25%** → Sent directly to the fixed **SuperStake stake address** in pSSH.
-- **20%** → Added to the **pSSH MegaMillions bank**.
+- **25%** → Sent directly to the fixed **SuperStake stake address** in MORBIUS.
+- **20%** → Added to the **MORBIUS MegaMillions bank**.
 
 Formally:
 
 - `winnersPool = 0.55 * roundPot`
 - `superStakeAllocation = 0.25 * roundPot`
-- `megaPsshBank += 0.20 * roundPot`
+- `megaMORBIUSBank += 0.20 * roundPot`
 
 ### 4.2 SuperStake stake address
 
 - The lottery contract is not responsible for managing HEX staking itself.
-- It simply forwards the **25% pSSH allocation** each round to the pre-existing **SuperStake stake address**, which is already set up to earn HEX based on SuperStake mechanics.
+- It simply forwards the **25% MORBIUS allocation** each round to the pre-existing **SuperStake stake address**, which is already set up to earn HEX based on SuperStake mechanics.
 
 ### 4.3 Leftover from high brackets (5 & 6)
 
-If after paying bracket 5 or 6 winners there is still unallocated pSSH in `pool_5` or `pool_6`:
+If after paying bracket 5 or 6 winners there is still unallocated MORBIUS in `pool_5` or `pool_6`:
 
 - Let `leftoverHigh = leftoverFromBracket5 + leftoverFromBracket6`.
 
 This `leftoverHigh` is split as:
 
 - **X%** → **Free Ticket Reserve** (funds free tickets for losing players).  
-- **(100 − X)%** → **pSSH MegaMillions bank**.
+- **(100 − X)%** → **MORBIUS MegaMillions bank**.
 
 A reasonable starting point:
 
 - **40%** → Free Ticket Reserve
-- **60%** → MegaMillions pSSH bank
+- **60%** → MegaMillions MORBIUS bank
 
 So:
 
 - `freeTicketReserve += 0.40 * leftoverHigh`
-- `megaPsshBank += 0.60 * leftoverHigh`
+- `megaMORBIUSBank += 0.60 * leftoverHigh`
 
 ---
 
@@ -214,7 +214,7 @@ For each round `N`:
 When round `N+1` is OPEN and a wallet with a free ticket credit calls `buyTickets`:
 
 - The contract:
-  - Grants them **1 extra ticket** at **0 pSSH cost**.
+  - Grants them **1 extra ticket** at **0 MORBIUS cost**.
   - That free ticket uses the same 6-of-55 format; they pick the numbers in the UI.
   - The cost of that free ticket is internally funded from `freeTicketReserve`.
   - After use, their **free ticket credit is reset**.
@@ -230,11 +230,11 @@ When round `N+1` is OPEN and a wallet with a free ticket credit calls `buyTicket
 
 ---
 
-## 6. pSSH MegaMillions (Every 55th Round)
+## 6. MORBIUS MegaMillions (Every 55th Round)
 
 ### 6.1 MegaMillions bank
 
-- The **pSSH MegaMillions bank (`megaPsshBank`)** grows from:
+- The **MORBIUS MegaMillions bank (`megaMORBIUSBank`)** grows from:
   - 20% of every round’s `roundPot`.
   - A share of leftover high-tier pools (brackets 5 & 6) as defined above.
 
@@ -247,12 +247,12 @@ When round `N+1` is OPEN and a wallet with a free ticket credit calls `buyTicket
 
 On a MegaMillions round `R`:
 
-1. The contract takes the **current `megaPsshBank`**.
+1. The contract takes the **current `megaMORBIUSBank`**.
 2. It deposits most of it into that round’s high brackets, for example:
    - **80% → bracket 6 pool** for round `R`.
    - **20% → bracket 5 pool** for round `R`.
-3. After allocation, `megaPsshBank` is reset to 0:
-   - `megaPsshBank = 0`
+3. After allocation, `megaMORBIUSBank` is reset to 0:
+   - `megaMORBIUSBank = 0`
 
 Effect:
 
@@ -265,7 +265,7 @@ Effect:
 
 ### 7.1 HEX accumulation
 
-- Because the lottery contract and/or its associated pSSH balances participate in SuperStake mechanics, the contract address will gradually **receive HEX**.
+- Because the lottery contract and/or its associated MORBIUS balances participate in SuperStake mechanics, the contract address will gradually **receive HEX**.
 - All HEX held directly by the lottery contract is treated as the **HEX bank**:
   - `hexBank = total HEX balance of the lottery contract`.
 
@@ -348,7 +348,7 @@ When a user plays SuperStake Lottery, they get:
 3. **Deep protocol alignment**:
    - 25% of every pot and 30% of all HEX overlay events grow the core SuperStake HEX stake.
 4. **Two types of massive jackpots**:
-   - **pSSH MegaMillions** (every 55th round from the Mega bank),
+   - **MORBIUS MegaMillions** (every 55th round from the Mega bank),
    - **HEX overlay jackpot** (detonates whenever someone finally hits 6/6).
 
 All of this runs on-chain, is fully auditable, and is powered by SuperStake’s existing HEX-based yield engine.

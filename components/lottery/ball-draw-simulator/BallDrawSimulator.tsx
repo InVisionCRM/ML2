@@ -34,7 +34,7 @@ interface BallDrawSimulatorProps {
   onDrawStart?: () => void // Notify when draw begins
   onDrawEnd?: () => void // Notify when draw ends
   isBackground?: boolean // Background-only mode (no controls/receipt)
-  isMegaMorbius?: boolean // Whether this is a MegaMorbius round
+  isMegaMORBIUS?: boolean // Whether this is a MegaMORBIUS round
   timeRemaining?: number // Time remaining in seconds for idle animation
 }
 
@@ -50,7 +50,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
   onDrawStart,
   onDrawEnd,
   isBackground = false,
-  isMegaMorbius = false,
+  isMegaMORBIUS = false,
   timeRemaining = 0,
 }) => {
   const [currentState, setCurrentState] = useState<DrawState>(DrawState.IDLE)
@@ -79,7 +79,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
   }, [])
 
 
-  const formatPssh = (amount: bigint) => {
+  const formatMORBIUS = (amount: bigint) => {
     return parseFloat(formatUnits(amount, 9)).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -226,13 +226,13 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
       {/* Round Number - Top Center */}
       {!isBackground && roundId !== undefined && (
         <div className="absolute inset-x-0 z-20 top-3 z-30 text-center pointer-events-none">
-          <div className={`inline-block px-3 py-1 rounded-full ${isMegaMorbius ? 'bg-gradient-to-r from-yellow-500/20 via-pink-500/20 to-purple-500/20 border-2 border-yellow-400/40 shadow-[0_0_20px_rgba(251,191,36,0.4)]' : 'bg-black/40 border border-white/10'} shadow-lg`}>
-            {isMegaMorbius && (
+          <div className={`inline-block px-3 py-1 rounded-full ${isMegaMORBIUS ? 'bg-gradient-to-r from-yellow-500/20 via-pink-500/20 to-purple-500/20 border-2 border-yellow-400/40 shadow-[0_0_20px_rgba(251,191,36,0.4)]' : 'bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10'} shadow-lg`}>
+            {isMegaMORBIUS && (
               <span className="text-xs font-bold bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400 bg-clip-text text-transparent mr-1.5 tracking-wider">
                 ⭐ MEGA
               </span>
             )}
-            <span className={`text-lg font-bold ${isMegaMorbius ? 'bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400' : 'bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400'} bg-clip-text text-transparent`}>
+            <span className={`text-lg font-bold ${isMegaMORBIUS ? 'bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400' : 'bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400'} bg-clip-text text-transparent`}>
               Round #{roundId}
             </span>
           </div>
@@ -245,7 +245,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowReceipt(!showReceipt)}
-            className="flex items-center gap-2 px-3 pr-4 py-1.5 bg-slate-900 border border-white/10 rounded-lg hover:bg-black/60 transition-colors text-xs"
+            className="flex items-center gap-2 px-3 pr-4 py-1.5 bg-slate-900 border border-white/10 rounded-lg hover:bg-gradient-to-br from-slate-950 to-slate-900/60 transition-colors text-xs"
           >
             <Receipt className="w-4 h-4" />
             <span>View Receipt</span>
@@ -288,7 +288,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
                             return (
                               <div
                                 key={idx}
-                                className="p-2.5 bg-black/40 border border-white/10 rounded-lg"
+                                className="p-2.5 bg-gradient-to-br from-slate-950 to-slate-900/40 border border-white/10 rounded-lg"
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -305,7 +305,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
                                     )}
                                   </div>
                                   <div className="text-xs font-semibold">
-                                    {formatPssh(cost)} <span className="text-white/60 text-[10px]">pSSH</span>
+                                    {formatMORBIUS(cost)} <span className="text-white/60 text-[10px]">MORBIUS</span>
                                   </div>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
@@ -326,10 +326,10 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
                           <div className="flex justify-center items-center text-sm">
                             <span className="font-semibold">Total:</span>
                             <span className="font-bold text-base">
-                              {formatPssh(
+                              {formatMORBIUS(
                                 BigInt(playerTickets.filter(t => !t.isFreeTicket).length) * TICKET_PRICE
                               )}{' '}
-                              <span className="text-white/60 text-xs">Morbius</span>
+                              <span className="text-white/60 text-xs">MORBIUS</span>
                             </span>
                           </div>
                           <div className="text-[11px] text-white/60 mt-1 text-center">
@@ -383,7 +383,7 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
               >
               <div className="absolute inset-0 animate-[spin_30s_linear_infinite] pointer-events-none">
                 <span
-                  className="absolute inset-0 bg-[url('/morbius/MorbiusLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-50"
+                  className="absolute inset-0 bg-[url('/MORBIUS/MORBIUSLogo%20(3).png')] bg-center bg-no-repeat bg-[length:180px_180px] opacity-50"
                 />
               </div>
               <PhysicsMachine
@@ -400,8 +400,8 @@ const BallDrawSimulator: React.FC<BallDrawSimulatorProps> = ({
               {/* Reflection Overlay */}
               <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none sphere-overlay z-10"></div>
 
-              {/* MegaMorbius Orbital Particles */}
-              {isMegaMorbius && (
+              {/* MegaMORBIUS Orbital Particles */}
+              {isMegaMORBIUS && (
                 <>
                   {[...Array(8)].map((_, i) => (
                     <div
