@@ -363,8 +363,9 @@ export default function LotteryPage() {
       >
         <Header nextDrawEndTime={endTime} fallbackRemaining={timeRemaining} />
         <main className="container mx-auto px-4 py-6">
-          <Skeleton className="h-[400px] sm:h-[600px] md:h-[800px] w-full"         />
-      </main>
+          <Skeleton className="h-[400px] sm:h-[600px] md:h-[800px] w-full" />
+        </main>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6">

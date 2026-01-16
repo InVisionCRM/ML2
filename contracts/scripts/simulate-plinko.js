@@ -17,7 +17,7 @@ const PEG_RADIUS = 6;
 const BALL_RADIUS = 15;
 
 const PHYSICS = {
-    GRAVITY: 1.4,
+    GRAVITY: 1.6,
     ENGINE_ITERATIONS: 10,
     SUB_STEPS: 4,
     BALL_DENSITY: 0.9,
@@ -27,9 +27,9 @@ const PHYSICS = {
     PEG_RESTITUTION: 0.5,
     PEG_FRICTION: 0,
     FIXED_TIME_STEP: 16.666,
-    SPAWN_RANGE_X: 10,             // TUNED: Wider start
+    SPAWN_RANGE_X: 5,             // TUNED: Wider start
     INITIAL_V_X_VARIANCE: 0.05,    // TUNED: More horizontal kick
-    INITIAL_V_Y: 3,
+    INITIAL_V_Y: 1,
 };
 
 export const MULTIPLIERS = {

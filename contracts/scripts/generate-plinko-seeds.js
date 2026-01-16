@@ -28,7 +28,7 @@ const CollisionLabel = {
 };
 
 // Configuration
-const SEEDS_PER_BUCKET = 50; // How many seeds to find for each bucket
+const SEEDS_PER_BUCKET = 10; // How many seeds to find for each bucket
 const MAX_SEED_ATTEMPTS = 500000; // Max attempts before giving up on a bucket
 const OUTPUT_FILE = path.join(__dirname, '../../public/seedDatabase.json');
 
@@ -189,6 +189,19 @@ function loadProgress() {
     try {
       const data = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
       console.log('📂 Loaded existing progress from', OUTPUT_FILE);
+
+      // Ensure the database has the correct structure
+      if (!data.GREEN) {
+        data.GREEN = {};
+      }
+
+      // Initialize bucket arrays if they don't exist
+      for (let bucket = 0; bucket < 17; bucket++) {
+        if (!data.GREEN[bucket]) {
+          data.GREEN[bucket] = [];
+        }
+      }
+
       return data;
     } catch (err) {
       console.warn('⚠️  Could not load existing file, starting fresh:', err.message);
@@ -218,6 +231,8 @@ async function generateSeedDatabase() {
   console.log('⚠️  This will take several hours. Progress is saved incrementally.\n');
 
   const database = loadProgress();
+  console.log('Database structure after loading:', JSON.stringify(database, null, 2));
+
   const riskLevels = ['GREEN'];
 
   let totalFound = 0;

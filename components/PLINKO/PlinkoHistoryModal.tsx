@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
   Table,
   TableBody,
   TableCell,
@@ -58,6 +64,7 @@ export function PlinkoHistoryModal({
     minMultiplier: '',
     maxMultiplier: '',
   })
+  const [copiedTxHash, setCopiedTxHash] = useState<string | null>(null)
 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters, [key]: value }
@@ -81,6 +88,16 @@ export function PlinkoHistoryModal({
     return new Date(timestamp).toLocaleString()
   }
 
+  const copyToClipboard = async (text: string, txHash: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedTxHash(txHash)
+      setTimeout(() => setCopiedTxHash(null), 2000) // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy: ', err)
+    }
+  }
+
   const FormatCurrency = ({ amount }: { amount: number }) => {
     const wholeNumber = Math.round(amount)
     return (
@@ -88,7 +105,7 @@ export function PlinkoHistoryModal({
         <img
           src="/morbius/MorbiusLogo (3).png"
           alt="Morbius"
-          className="w-4 h-4 object-contain"
+          className="w-6 h-6 object-contain"
         />
         <span>{wholeNumber.toLocaleString()}</span>
       </div>
@@ -97,7 +114,11 @@ export function PlinkoHistoryModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[90vw] max-h-[80vh] overflow-y-auto bg-slate-950/95 border-cyan-500/30 text-white">
+      <DialogContent className="w-full max-w-[90vw] max-h-[80vh] overflow-y-auto text-white" style={{
+        background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+        boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+        border: '1px inset rgba(60, 60, 60, 0.5)',
+      }}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-black text-center text-cyan-400">
             PLINKO HISTORY
@@ -113,7 +134,7 @@ export function PlinkoHistoryModal({
 
         {/* Stats Dashboard */}
         {stats && (
-          <div className="grid grid-cols-2 gap-3 my-4">
+          <div className="grid grid-cols-2 gap-3 my-4 mx-4">
             <StatCard
               label="Total Drops"
               value={stats.totalDrops.toString()}
@@ -147,7 +168,12 @@ export function PlinkoHistoryModal({
                 type="date"
                 value={filters.dateFrom}
                 onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -156,7 +182,12 @@ export function PlinkoHistoryModal({
                 type="date"
                 value={filters.dateTo}
                 onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
 
@@ -169,7 +200,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.00"
                 value={filters.minBet}
                 onChange={(e) => handleFilterChange('minBet', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -180,7 +216,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.00"
                 value={filters.maxBet}
                 onChange={(e) => handleFilterChange('maxBet', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
 
@@ -193,7 +234,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.00"
                 value={filters.minWin}
                 onChange={(e) => handleFilterChange('minWin', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -204,7 +250,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.00"
                 value={filters.maxWin}
                 onChange={(e) => handleFilterChange('maxWin', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
 
@@ -217,7 +268,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.0"
                 value={filters.minMultiplier}
                 onChange={(e) => handleFilterChange('minMultiplier', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -228,7 +284,12 @@ export function PlinkoHistoryModal({
                 placeholder="0.0"
                 value={filters.maxMultiplier}
                 onChange={(e) => handleFilterChange('maxMultiplier', e.target.value)}
-                className="bg-slate-800/50 border-cyan-500/30 text-white placeholder:text-white/40"
+                className="text-white placeholder:text-white/40"
+                style={{
+                  background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                  boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                  border: '1px inset rgba(60, 60, 60, 0.5)',
+                }}
               />
             </div>
           </div>
@@ -241,66 +302,153 @@ export function PlinkoHistoryModal({
               No drops yet. Start playing to build your history!
             </div>
           ) : (
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow className="flex justify-between w-full">
-                  <TableHead className="text-cyan-400 flex-1 text-center">Time</TableHead>
-                  <TableHead className="text-cyan-400 flex-1 text-center">Wager</TableHead>
-                  <TableHead className="text-cyan-400 flex-1 text-center">Multi</TableHead>
-                  <TableHead className="text-cyan-400 flex-1 text-center">Win Amount</TableHead>
-                  <TableHead className="text-cyan-400 flex-1 text-center">Risk</TableHead>
-                  <TableHead className="text-cyan-400 flex-1 text-center">Tx Hash</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drops.map((drop) => (
-                  <TableRow
-                    key={drop.id}
-                    className="flex justify-between w-full hover:bg-white/5 transition-colors"
+            <Accordion type="multiple" className="w-full">
+              {/* Group drops by transaction hash */}
+              {Object.entries(
+                drops.reduce((groups: { [key: string]: PlinkoDrop[] }, drop) => {
+                  const txHash = drop.transactionHash || 'no-tx'
+                  if (!groups[txHash]) groups[txHash] = []
+                  groups[txHash].push(drop)
+                  return groups
+                }, {})
+              ).map(([txHash, txDrops]) => {
+                // Calculate transaction summary
+                const totalWager = txDrops.reduce((sum, drop) => sum + drop.wager, 0)
+                const totalWin = txDrops.reduce((sum, drop) => sum + drop.winAmount, 0)
+                const netProfit = totalWin - totalWager
+                const profitPercentage = totalWager > 0 ? (netProfit / totalWager) * 100 : 0
+                const avgMultiplier = txDrops.reduce((sum, drop) => sum + drop.multiplier, 0) / txDrops.length
+                const riskLevels = [...new Set(txDrops.map(drop => drop.riskLevel))]
+                const firstDrop = txDrops[0]
+                const lastDrop = txDrops[txDrops.length - 1]
+
+                return (
+                  <AccordionItem
+                    key={txHash}
+                    value={txHash}
+                    className="border-b border-white/10 last:border-b-0"
                   >
-                    <TableCell className="flex-1 text-xs text-white/80 text-center">
-                      {formatDate(drop.timestamp)}
-                    </TableCell>
-                    <TableCell className="flex-1 text-white font-medium text-center">
-                      <FormatCurrency amount={drop.wager} />
-                    </TableCell>
-                    <TableCell className="flex-1 text-yellow-400 font-bold text-center">
-                      {drop.multiplier}x
-                    </TableCell>
-                    <TableCell className="flex-1 text-white font-medium text-center">
-                      <FormatCurrency amount={drop.winAmount} />
-                    </TableCell>
-                    <TableCell className="flex-1 flex items-center justify-center">
-                      <div
-                        className={`w-5 h-5 rounded-full inline-block ${
-                          drop.riskLevel === 'GREEN'
-                            ? 'bg-gradient-to-br from-lime-400 to-lime-600'
-                            : drop.riskLevel === 'YELLOW'
-                            ? 'bg-gradient-to-br from-blue-400 to-blue-600'
-                            : 'bg-gradient-to-br from-red-400 to-red-600'
-                        } shadow-lg`}
-                        title={drop.riskLevel}
-                      />
-                    </TableCell>
-                    <TableCell className="flex-1 text-xs text-cyan-400 text-center">
-                      {drop.transactionHash ? (
-                        <a
-                          href={`https://scan.pulsechain.com/tx/${drop.transactionHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-cyan-300 underline transition-colors"
-                          title="View on PulseChain Explorer"
-                        >
-                          {drop.transactionHash.slice(0, 6)}...{drop.transactionHash.slice(-4)}
-                        </a>
-                      ) : (
-                        <span className="text-white/40">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    <AccordionTrigger className="px-4 py-4 transition-colors" style={{
+                      background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+                      boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+                      border: '1px inset rgba(60, 60, 60, 0.5)',
+                    }}>
+                      <div className="grid grid-cols-12 gap-4 items-center w-full text-md">
+                        {/* Date */}
+                        <div className="col-span-2 text-white/80">
+                          {formatDate(txHash === 'no-tx' ? firstDrop.timestamp : firstDrop.timestamp)}
+                        </div>
+
+                        {/* Wager → Win */}
+                        <div className="col-span-4 flex items-center justify-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <FormatCurrency amount={totalWager} />
+                          </div>
+                          <span className="text-white/40">→</span>
+                          <div className="flex items-center gap-2">
+                            {netProfit >= 0 ? (
+                              <span className="text-green-400 font-semibold"><FormatCurrency amount={totalWin} /></span>
+                            ) : (
+                              <span className="text-red-400 font-semibold"><FormatCurrency amount={totalWin} /></span>
+                            )}
+                            <span className={`text-md font-medium ${
+                              profitPercentage >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              ({profitPercentage >= 0 ? '+' : ''}{profitPercentage.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Transaction Hash & Copy */}
+                        <div className="col-span-4 flex items-center justify-center">
+                          {txHash !== 'no-tx' ? (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`https://scan.pulsechain.com/tx/${txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-cyan-400 hover:text-cyan-300 underline transition-colors text-md"
+                                title="View on PulseChain Explorer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {txHash.slice(0, 6)}...{txHash.slice(-4)}
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  copyToClipboard(txHash, txHash)
+                                }}
+                                className="text-cyan-400 hover:text-cyan-300 transition-colors p-1 hover:bg-white/10 rounded"
+                                title="Copy transaction hash"
+                              >
+                                <i className={`fas ${copiedTxHash === txHash ? 'fa-check' : 'fa-copy'} text-md`}></i>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-white/40 text-md">-</span>
+                          )}
+                        </div>
+
+                        {/* Drop Count */}
+                        <div className="col-span-2 flex justify-end">
+                          <span className="text-white/60 bg-slate-700/50 px-2 py-1 rounded text-md">
+                            {txDrops.length} drop{txDrops.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-3">
+                      <div className="border-t border-white/10 pt-3">
+                        <Table className="w-full">
+                          <TableHeader>
+                            <TableRow className="flex justify-between w-full border-b border-white/10">
+                              <TableHead className="text-white flex-1 text-center text-sm">Time</TableHead>
+                              <TableHead className="text-white flex-1 text-center text-sm">Wager</TableHead>
+                              <TableHead className="text-white flex-1 text-center text-sm">Multi</TableHead>
+                              <TableHead className="text-white flex-1 text-center text-sm">Win Amount</TableHead>
+                              <TableHead className="text-white flex-1 text-center text-sm">Risk</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {txDrops.map((drop) => (
+                              <TableRow
+                                key={drop.id}
+                                className="flex justify-between w-full hover:bg-white/5 transition-colors"
+                              >
+                                <TableCell className="flex-1 text-xs text-white/60 text-center">
+                                  {formatDate(drop.timestamp)}
+                                </TableCell>
+                                <TableCell className="flex-1 text-white font-medium text-center text-sm">
+                                  <FormatCurrency amount={drop.wager} />
+                                </TableCell>
+                                <TableCell className="flex-1 text-yellow-400 font-bold text-center text-sm">
+                                  {drop.multiplier}x
+                                </TableCell>
+                                <TableCell className="flex-1 text-white font-medium text-center text-sm">
+                                  <FormatCurrency amount={drop.winAmount} />
+                                </TableCell>
+                                <TableCell className="flex-1 flex items-center justify-center">
+                                  <div
+                                    className={`w-4 h-4 rounded-full inline-block ${
+                                      drop.riskLevel === 'GREEN'
+                                        ? 'bg-gradient-to-br from-lime-400 to-lime-600'
+                                        : drop.riskLevel === 'YELLOW'
+                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600'
+                                        : 'bg-gradient-to-br from-red-400 to-red-600'
+                                    } shadow-md`}
+                                    title={drop.riskLevel}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
           )}
         </div>
 
@@ -350,22 +498,22 @@ function StatCard({
   value: React.ReactNode
   color: 'cyan' | 'green' | 'red' | 'yellow' | 'purple'
 }) {
-  const colorClasses = {
-    cyan: 'from-cyan-600 to-cyan-700 border-cyan-500/30',
-    green: 'from-green-600 to-green-700 border-green-500/30',
-    red: 'from-red-600 to-red-700 border-red-500/30',
-    yellow: 'from-yellow-600 to-yellow-700 border-yellow-500/30',
-    purple: 'from-purple-600 to-purple-700 border-purple-500/30',
-  }
 
   return (
     <div
-      className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]} border text-center`}
+      className="p-3 rounded-lg text-center"
+      style={{
+        background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
+        boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
+        border: '1px inset rgba(60, 60, 60, 0.5)',
+      }}
     >
-      <div className="text-xs text-white/80 uppercase tracking-wide mb-1">
+      <div className="text-md font-bold text-purple-200/80 uppercase tracking-wide mb-1">
         {label}
       </div>
-      <div className="text-xl font-black text-white">{value}</div>
+      <div className="text-xl font-black text-purple-200/90">
+        {value}
+      </div>
     </div>
   )
 }

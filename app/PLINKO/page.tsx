@@ -10,6 +10,7 @@ import ExtendedHistoryModal from '@/components/PLINKO/ExtendedHistoryModal';
 import CustomAmountModal from '@/components/PLINKO/CustomAmountModal';
 import { PlinkoHistoryModal } from '@/components/PLINKO/PlinkoHistoryModal';
 import { CustomApprovalModal } from '@/components/PLINKO/CustomApprovalModal';
+import SlotMachine from '@/components/PLINKO/SlotMachine';
 import { usePlinkoHistory } from '@/hooks/use-plinko-history';
 import { usePlayerInfo, useWagerLimits, usePlinkoWrite, useWatchBallDropped } from '@/hooks/use-plinko-contract';
 import { PLINKO_ADDRESS, MORBIUS_TOKEN_ADDRESS } from '@/lib/contracts';
@@ -242,6 +243,7 @@ const Home: React.FC = () => {
     useNativePLS: boolean;
   } | null>(null);
   const [isConfirmingTransaction, setIsConfirmingTransaction] = useState(false); // Track transaction confirmation
+  const [confirmationStage, setConfirmationStage] = useState<'broadcast' | 'mempool' | 'mined' | null>(null); // Track confirmation stage for slot machine
 
   // Multiplier table modal state
   const [showMultiplierTable, setShowMultiplierTable] = useState(false);
@@ -634,6 +636,7 @@ const Home: React.FC = () => {
       // Wait for the transaction to be confirmed with polling
       console.log('Waiting for buy-and-drop transaction confirmation...', txHash);
       setIsConfirmingTransaction(true);
+      setConfirmationStage('broadcast');
       const receipt = await pollForReceipt(txHash, {
         maxAttempts: 30, // 30 attempts
         intervalMs: 4000, // 4 seconds between attempts
@@ -641,9 +644,18 @@ const Home: React.FC = () => {
           if (attempt % 5 === 0) { // Log every 5 attempts
             console.log(`Still waiting for confirmation... (${attempt}/30)`);
           }
+          // Update confirmation stage based on progress
+          if (attempt <= 10) {
+            setConfirmationStage('broadcast');
+          } else if (attempt <= 20) {
+            setConfirmationStage('mempool');
+          } else {
+            setConfirmationStage('mined');
+          }
         }
       });
       setIsConfirmingTransaction(false);
+      setConfirmationStage(null);
 
       // Check if transaction actually succeeded
       if (!receipt) {
@@ -820,15 +832,25 @@ const Home: React.FC = () => {
 
       // Wait for transaction confirmation with polling
       console.log('Waiting for multi-ball drop confirmation...', txHash);
+      setConfirmationStage('broadcast');
       const dropReceipt = await pollForReceipt(txHash, {
         maxAttempts: 20, // Shorter for multi-ball drops
         intervalMs: 3000,
         onAttempt: (attempt) => {
-          if (attempt % 5 === 0) {
+          if (attempt % 3 === 0) { // Update more frequently for shorter wait
             console.log(`Still waiting for multi-ball confirmation... (${attempt}/20)`);
+          }
+          // Update confirmation stage based on progress
+          if (attempt <= 7) {
+            setConfirmationStage('broadcast');
+          } else if (attempt <= 14) {
+            setConfirmationStage('mempool');
+          } else {
+            setConfirmationStage('mined');
           }
         }
       });
+      setConfirmationStage(null);
 
       // Check if transaction succeeded
       if (dropReceipt.status !== 1) {
@@ -1927,6 +1949,21 @@ const Home: React.FC = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Slot Machine Confirmation Modal */}
+      {isConfirmingTransaction && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="max-w-4xl w-full">
+            <SlotMachine
+              isSpinning={isConfirmingTransaction}
+              confirmationStage={confirmationStage}
+              onSpinComplete={() => {
+                // Optional: handle spin complete if needed
+              }}
+            />
           </div>
         </div>
       )}
