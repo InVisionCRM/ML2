@@ -352,34 +352,36 @@ export default function LotteryPage() {
 
   if (isLoadingRound) {
     return (
-      <div
-        className="min-h-screen text-slate-100"
-        style={{
-          backgroundImage: "linear-gradient(rgba(1, 3, 15, 0.74), rgba(2, 6, 23, 0.63)), url('/Morbius/Morbiusbg.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <Header nextDrawEndTime={endTime} fallbackRemaining={timeRemaining} />
-        <main className="container mx-auto px-4 py-6">
-          <Skeleton className="h-[400px] sm:h-[600px] md:h-[800px] w-full" />
-        </main>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-6">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex justify-center">
-            <ContractAddress
-              address={LOTTERY_ADDRESS}
-              label="Lottery Contract"
-            />
-          </div>
+      <>
+        <div
+          className="min-h-screen text-slate-100"
+          style={{
+            backgroundImage: "linear-gradient(rgba(1, 3, 15, 0.74), rgba(2, 6, 23, 0.63)), url('/Morbius/Morbiusbg.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
+          }}
+        >
+          <Header nextDrawEndTime={endTime} fallbackRemaining={timeRemaining} />
+          <main className="container mx-auto px-4 py-6">
+            <Skeleton className="h-[400px] sm:h-[600px] md:h-[800px] w-full" />
+          </main>
         </div>
-      </footer>
-    </div>
-  )
+
+        {/* Footer */}
+        <footer className="border-t border-white/10 py-6">
+          <div className="container mx-auto px-4 max-w-7xl">
+            <div className="flex justify-center">
+              <ContractAddress
+                address={LOTTERY_ADDRESS}
+                label="Lottery Contract"
+              />
+            </div>
+          </div>
+        </footer>
+      </>
+    )
+  }
 
   return (
     <div
