@@ -18,7 +18,7 @@ import {
 import { KENO_ABI } from '@/lib/keno-abi'
 import { usePlayerLifetime, usePlayerRoundHistory, useWatchTicketsPurchased } from '@/hooks/use-lottery-6of55'
 import { usePlinkoHistory } from '@/hooks/use-plinko-history'
-import { Footer } from '@/components/shared/footer'
+import Footer from '@/components/PLINKO/Footer'
 import { PlinkoHistoryModal } from '@/components/PLINKO/PlinkoHistoryModal'
 import { usePublicClient as useLotteryPublicClient } from 'wagmi'
 import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'

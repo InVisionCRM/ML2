@@ -5,7 +5,7 @@ async function main() {
   console.log('🔐 Approving MORBIUS for PLINKO Contract\n');
 
   const RPC_URL = 'https://rpc.pulsechain.com';
-  const PLINKO_ADDRESS = '0x95585d5bff78fBe90840e21C33C2192fE94BAbD0';
+  const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
   const MORBIUS_ADDRESS = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1';
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
 

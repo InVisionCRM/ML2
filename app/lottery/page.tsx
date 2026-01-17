@@ -43,7 +43,7 @@ import { TicketPurchaseBuilder } from '@/components/lottery/ticket-purchase-buil
 import { TicketPurchaseAccordion } from '@/components/lottery/ticket-purchase-accordion'
 import { AllTicketsAccordion } from '@/components/lottery/all-tickets-accordion'
 import { ContractAddress } from '@/components/ui/contract-address'
-import { Footer } from '@/components/shared/footer'
+import Footer from '@/components/PLINKO/Footer'
 
 type ContractTicket = {
   ticketId: bigint | number
@@ -407,7 +407,7 @@ export default function LotteryPage() {
           <div className="text-center mb-12 sm:mb-16 md:mb-20 lg:mb-32">
             {/* Animated Title */}
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-[0.2em] sm:tracking-[0.25em] md:tracking-[0.3em] lg:tracking-[0.4em] xl:tracking-[0.5em] font-light text-white/90 mb-4 sm:mb-6 md:mb-8 lg:mb-10 xl:mb-12 funnel-display-light">
-              {['L', 'O', 'T', 'T', 'E', 'R', 'Y'].map((letter, i) => (
+              {['M', 'E', 'G', 'A', 'M', 'O', 'R', 'B', 'I', 'U', 'S'].map((letter, i) => (
                 <span
                   key={i}
                   className="inline-block animate-[fadeInUp_0.6s_ease-out_forwards] opacity-0"

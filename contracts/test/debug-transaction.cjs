@@ -29,8 +29,8 @@ async function main() {
     console.log('');
 
     // Define addresses
-    const EXPECTED_PLINKO_ADDRESS = '0xdAebc91AE2F7dF86fbc96806f048AdbBBD4b44d0';
-    const ALTERNATE_PLINKO_ADDRESS = '0x95585d5bff78fBe90840e21C33C2192fE94BAbD0';
+    const EXPECTED_PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
+    const ALTERNATE_PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
 
     // Analyze logs
     console.log('Analyzing logs:');

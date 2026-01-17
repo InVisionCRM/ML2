@@ -160,7 +160,7 @@ export function useGlobalStats() {
 /**
  * Calculate expected payout for a specific bucket with wager amount - V5
  * @param wagerAmount Wager amount in wei
- * @param bucketIndex Bucket index (1-15)
+ * @param bucketIndex Bucket index (0-16, 0-indexed)
  * @param riskLevel Risk level (0=LOW, 1=MEDIUM, 2=HIGH)
  */
 export function useCalculatePayout(wagerAmount: bigint, bucketIndex: number, riskLevel: number) {
@@ -171,7 +171,7 @@ export function useCalculatePayout(wagerAmount: bigint, bucketIndex: number, ris
     functionName: 'calculatePayout',
     args: [wagerAmount, bucketIndex, riskLevel] as [bigint, number, number],
     query: {
-      enabled: isValidAddress && bucketIndex >= 1 && bucketIndex <= 15,
+      enabled: isValidAddress && bucketIndex >= 0 && bucketIndex <= 16,
     },
   })
 }

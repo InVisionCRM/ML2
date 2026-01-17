@@ -93,21 +93,28 @@ function findSeedForBucket(targetBucket, riskLevel, startAttempt = 0) {
     }
     Matter.World.add(testEngine.world, pegs);
 
-    // Create bucket sensors with fixed spacing
+    // Create bucket sensors with fixed spacing (MUST match simulate-plinko.js exactly)
     const bucketCount = 17;  // 17 buckets for 16-row board
     const bucketWidth = pegGapX;
-    const bucketsTotalWidth = bucketCount * bucketWidth;
-    const bucketsStartX = (BOARD_CONFIG.boardWidth - bucketsTotalWidth) / 2;
-    const bucketBaseY = 820; // Matches BUCKET_Y from constants.ts
     const tierHeight = 50; // Bucket height (matches frontend)
 
+    // Calculate bottomRowStartX the same way as simulate-plinko.js
+    let bottomRowStartX = 0;
+    for (let r = 0; r < CONSTANTS.ROWS; r++) {
+      const rowPegCount = r + 3;
+      const rowWidth = (rowPegCount - 1) * CONSTANTS.PEG_SPACING_X;
+      const startX = (CONSTANTS.WORLD_WIDTH - rowWidth) / 2;
+      if (r === CONSTANTS.ROWS - 1) bottomRowStartX = startX;
+    }
+
     for (let i = 0; i < bucketCount; i++) {
-      const x = bucketsStartX + i * bucketWidth + bucketWidth / 2;
-      const sensor = Matter.Bodies.rectangle(x, bucketBaseY + tierHeight / 2, bucketWidth, tierHeight, {
+      // Match simulate-plinko.js bucket positioning exactly
+      const x = bottomRowStartX + (i * CONSTANTS.PEG_SPACING_X) + (CONSTANTS.PEG_SPACING_X / 2);
+      const sensor = Matter.Bodies.rectangle(x, CONSTANTS.BUCKET_Y, bucketWidth - 6, tierHeight, {
         isStatic: true,
         isSensor: true,
         label: CollisionLabel.BUCKET,
-        plugin: { index: i, tier: riskLevel },
+        plugin: { index: i },
       });
       Matter.World.add(testEngine.world, sensor);
     }
@@ -127,7 +134,6 @@ function findSeedForBucket(targetBucket, riskLevel, startAttempt = 0) {
       frictionAir: CONSTANTS.PHYSICS.BALL_FRICTION_AIR,
       label: CollisionLabel.BALL,
       collisionFilter: { group: -1 }, // BALLS DO NOT HIT EACH OTHER
-      plugin: { risk: riskLevel },
     });
 
     Matter.Body.setVelocity(testBall, { x: initialVelX, y: CONSTANTS.PHYSICS.INITIAL_V_Y });
@@ -146,13 +152,9 @@ function findSeedForBucket(targetBucket, riskLevel, startAttempt = 0) {
         const bucket = bodyA.label === CollisionLabel.BUCKET ? bodyA :
                       (bodyB.label === CollisionLabel.BUCKET ? bodyB : null);
 
-        if (ball && bucket) {
-          const bucketRisk = bucket.plugin.tier;
-          const ballRisk = ball.plugin.risk;
-
-          if (bucketRisk === ballRisk) {
-            landedBucket = bucket.plugin.index;
-          }
+        // Match simulate-plinko.js - no risk level check needed
+        if (ball && bucket && landedBucket === null) {
+          landedBucket = bucket.plugin.index;
         }
       });
     });

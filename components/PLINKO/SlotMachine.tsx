@@ -1,372 +1,517 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { LoaderOne } from '@/components/ui/loader';
 
-// Casino symbols as colored components
+// Casino symbols with casino-themed icons
 const SYMBOLS = [
-  { id: 'seven', color: '#FFD700', shape: '7', bg: '#FFD700', textColor: '#000' },
-  { id: 'cherry', color: '#FF6B6B', shape: '●', bg: '#FF6B6B', textColor: '#FFF' },
-  { id: 'bell', color: '#4ECDC4', shape: '▲', bg: '#4ECDC4', textColor: '#000' },
-  { id: 'diamond', color: '#45B7D1', shape: '◆', bg: '#45B7D1', textColor: '#FFF' },
-  { id: 'bitcoin', color: '#F7931A', shape: '₿', bg: '#F7931A', textColor: '#FFF' },
-  { id: 'ethereum', color: '#627EEA', shape: 'Ξ', bg: '#627EEA', textColor: '#FFF' },
-  { id: 'star', color: '#FFA500', shape: '★', bg: '#FFA500', textColor: '#FFF' },
-  { id: 'target', color: '#FF1493', shape: '◎', bg: '#FF1493', textColor: '#FFF' },
-  { id: 'crown', color: '#FFD700', shape: '♔', bg: '#FFD700', textColor: '#000' },
-  { id: 'spade', color: '#000000', shape: '♠', bg: '#000000', textColor: '#FFF' },
+  { id: 'seven', emoji: '7️⃣', name: 'Seven', multiplier: 10 },
+  { id: 'morbius', image: '/morbius/MorbiusLogo (3).png', name: 'Morbius', multiplier: 8 },
+  { id: 'bell', emoji: '🔔', name: 'Bell', multiplier: 5 },
+  { id: 'pulse', image: '/Pulse Branding/Logo/ball.png', name: 'Pulse', multiplier: 6 },
+  { id: 'star', emoji: '⭐', name: 'Star', multiplier: 3 },
+  { id: 'bar', emoji: '🎰', name: 'Bar', multiplier: 4 },
 ];
 
+// Create extended reel strip
+const REEL_STRIP = [...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS];
+
 interface SlotMachineProps {
-  isSpinning: boolean;
-  onSpinComplete?: () => void;
+  isSpinning?: boolean;
+  onSpinComplete?: (result: { symbols: string[]; isWinner: boolean; multiplier: number }) => void;
   confirmationStage?: 'broadcast' | 'mempool' | 'mined' | null;
+  disabled?: boolean;
+  autoSpin?: boolean;
+  onClose?: () => void;
+}
+
+// Sound generator using Web Audio API
+class SlotSoundEngine {
+  private audioContext: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
+
+  init() {
+    if (this.audioContext) return;
+    try {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.connect(this.audioContext.destination);
+      this.masterGain.gain.value = 0.25;
+    } catch (e) {
+      console.warn('Web Audio API not supported');
+    }
+  }
+
+  private playTone(frequency: number, duration: number, type: OscillatorType = 'sine') {
+    if (!this.audioContext || !this.masterGain) return;
+
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+    gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+    oscillator.start(this.audioContext.currentTime);
+    oscillator.stop(this.audioContext.currentTime + duration);
+  }
+
+  spinStart() {
+    this.init();
+    if (!this.audioContext || !this.masterGain) return;
+
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(100, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.3);
+
+    gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+
+    oscillator.start();
+    oscillator.stop(this.audioContext.currentTime + 0.4);
+  }
+
+  tick() {
+    this.init();
+    this.playTone(600 + Math.random() * 200, 0.03, 'square');
+  }
+
+  reelStop(reelIndex: number) {
+    this.init();
+    const baseFreq = 180 - reelIndex * 25;
+    this.playTone(baseFreq, 0.12, 'square');
+  }
+
+  win() {
+    this.init();
+    const notes = [523, 659, 784, 1047, 1319];
+    notes.forEach((freq, i) => {
+      setTimeout(() => this.playTone(freq, 0.25, 'sine'), i * 100);
+    });
+  }
+
+  lose() {
+    this.init();
+    this.playTone(250, 0.3, 'triangle');
+    setTimeout(() => this.playTone(180, 0.4, 'triangle'), 150);
+  }
 }
 
 const SlotMachine: React.FC<SlotMachineProps> = ({
-  isSpinning,
+  isSpinning: externalSpinning,
   onSpinComplete,
-  confirmationStage
+  confirmationStage,
+  disabled = false,
+  autoSpin = false,
+  onClose,
 }) => {
-  const [reelPositions, setReelPositions] = useState([0, 0, 0]);
-  const [finalSymbols, setFinalSymbols] = useState<typeof SYMBOLS[0][]>([]);
-  const [isStopping, setIsStopping] = useState([false, false, false]);
-  const [isSpinningReels, setIsSpinningReels] = useState([true, true, true]);
-  const [hasResult, setHasResult] = useState(false);
-  const [isWinner, setIsWinner] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const spinningReelsRef = useRef([true, true, true]);
+  const SYMBOL_HEIGHT = 40;
+  const VISIBLE_SYMBOLS = 3;
+  const TOTAL_HEIGHT = REEL_STRIP.length * SYMBOL_HEIGHT;
 
-  // Initialize audio
+  // Reel positions (in pixels)
+  const [reelOffsets, setReelOffsets] = useState([0, 0, 0]);
+  const [isSpinningInternal, setIsSpinningInternal] = useState(false);
+  const [spinningReels, setSpinningReels] = useState([false, false, false]);
+  const [result, setResult] = useState<{ symbols: typeof SYMBOLS[number][]; isWinner: boolean; multiplier: number } | null>(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const soundEngine = useRef(new SlotSoundEngine());
+  const animationFrameRef = useRef<number | null>(null);
+  const velocitiesRef = useRef([0, 0, 0]);
+  const targetPositionsRef = useRef([0, 0, 0]);
+  const spinPhaseRef = useRef<('accelerating' | 'spinning' | 'decelerating' | 'stopped')[]>(['stopped', 'stopped', 'stopped']);
+  const lastTickRef = useRef([0, 0, 0]);
+  const hasTriggeredResultRef = useRef(false);
+
+  const isSpinning = externalSpinning ?? isSpinningInternal;
+
+  // Main animation loop
   useEffect(() => {
-    audioRef.current = new Audio();
+    let lastTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const deltaTime = Math.min((currentTime - lastTime) / 16.67, 3); // Normalize to ~60fps, cap at 3x
+      lastTime = currentTime;
+
+      setReelOffsets(prevOffsets => {
+        const newOffsets = [...prevOffsets];
+        let anySpinning = false;
+
+        for (let i = 0; i < 3; i++) {
+          const phase = spinPhaseRef.current[i];
+
+          if (phase === 'stopped') continue;
+          anySpinning = true;
+
+          if (phase === 'accelerating') {
+            velocitiesRef.current[i] = Math.min(velocitiesRef.current[i] + 2 * deltaTime, 40);
+            if (velocitiesRef.current[i] >= 40) {
+              spinPhaseRef.current[i] = 'spinning';
+            }
+          } else if (phase === 'decelerating') {
+            // Calculate distance to target
+            const target = targetPositionsRef.current[i];
+            const current = newOffsets[i] % TOTAL_HEIGHT;
+            let distance = target - current;
+            if (distance < 0) distance += TOTAL_HEIGHT;
+
+            // Slow down as we approach target
+            if (distance < SYMBOL_HEIGHT * 3) {
+              velocitiesRef.current[i] = Math.max(velocitiesRef.current[i] * 0.92, 3);
+            } else if (distance < SYMBOL_HEIGHT * 6) {
+              velocitiesRef.current[i] = Math.max(velocitiesRef.current[i] * 0.96, 8);
+            }
+
+            // Snap to target when close enough
+            if (distance < 5 && velocitiesRef.current[i] < 5) {
+              newOffsets[i] = target;
+              velocitiesRef.current[i] = 0;
+              spinPhaseRef.current[i] = 'stopped';
+              soundEngine.current.reelStop(i);
+              setSpinningReels(prev => {
+                const next = [...prev];
+                next[i] = false;
+                return next;
+              });
+              continue;
+            }
+          }
+
+          // Apply velocity
+          newOffsets[i] = (newOffsets[i] + velocitiesRef.current[i] * deltaTime) % TOTAL_HEIGHT;
+
+          // Tick sound
+          if (currentTime - lastTickRef.current[i] > 80 && velocitiesRef.current[i] > 15) {
+            soundEngine.current.tick();
+            lastTickRef.current[i] = currentTime;
+          }
+        }
+
+        // Check if all stopped
+        if (!anySpinning && !hasTriggeredResultRef.current && spinningReels.some(s => s === false) && isSpinningInternal) {
+          // Small delay before showing result
+          hasTriggeredResultRef.current = true;
+          setTimeout(() => {
+            checkResult(newOffsets);
+          }, 200);
+        }
+
+        return newOffsets;
+      });
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [spinningReels, isSpinningInternal]);
 
-  // Play sound effect
-  const playSound = (soundType: 'spin' | 'stop' | 'win' | 'lose') => {
-    if (!audioRef.current) return;
+  const checkResult = useCallback((offsets: number[]) => {
+    // Get symbols at center position
+    const finalSymbols = offsets.map(offset => {
+      const centerOffset = offset + SYMBOL_HEIGHT; // Account for visible area
+      const symbolIndex = Math.round(centerOffset / SYMBOL_HEIGHT) % SYMBOLS.length;
+      return SYMBOLS[symbolIndex];
+    });
 
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const allSame = finalSymbols[0].id === finalSymbols[1].id && finalSymbols[1].id === finalSymbols[2].id;
+    const twoSame = finalSymbols[0].id === finalSymbols[1].id ||
+                    finalSymbols[1].id === finalSymbols[2].id ||
+                    finalSymbols[0].id === finalSymbols[2].id;
 
-    if (soundType === 'spin') {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+    const isWinner = allSame;
+    const multiplier = allSame ? finalSymbols[0].multiplier : (twoSame ? 1.5 : 0);
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+    const newResult = { symbols: finalSymbols, isWinner, multiplier };
+    setResult(newResult);
+    setShowResult(true);
+    setIsSpinningInternal(false);
 
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
+    if (isWinner) {
+      soundEngine.current.win();
+    } else {
+      soundEngine.current.lose();
+    }
 
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    if (onSpinComplete) {
+      onSpinComplete({
+        symbols: finalSymbols.map(s => s.id),
+        isWinner,
+        multiplier,
+      });
+    }
+  }, [onSpinComplete]);
 
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.2);
-    } else if (soundType === 'stop') {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+  const handleSpin = useCallback(() => {
+    // Only check internal state - external spinning means we SHOULD spin
+    if (isSpinningInternal || spinningReels.some(s => s) || disabled) return;
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+    soundEngine.current.init();
+    soundEngine.current.spinStart();
 
-      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    setIsSpinningInternal(true);
+    setShowResult(false);
+    setResult(null);
+    hasTriggeredResultRef.current = false;
 
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.1);
-    } else if (soundType === 'win') {
-      // Epic win sound
-      for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
+    // Generate random final symbols
+    const finalSymbolIndices = [
+      Math.floor(Math.random() * SYMBOLS.length),
+      Math.floor(Math.random() * SYMBOLS.length),
+      Math.floor(Math.random() * SYMBOLS.length),
+    ];
 
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
+    // Calculate target positions (ensure at least 3 full rotations)
+    targetPositionsRef.current = finalSymbolIndices.map(idx => {
+      return (idx * SYMBOL_HEIGHT) % TOTAL_HEIGHT;
+    });
 
-          oscillator.frequency.setValueAtTime(500 + i * 100, audioContext.currentTime);
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    // Start all reels
+    velocitiesRef.current = [5, 5, 5];
+    spinPhaseRef.current = ['accelerating', 'accelerating', 'accelerating'];
+    setSpinningReels([true, true, true]);
 
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.3);
-        }, i * 80);
-      }
-    } else if (soundType === 'lose') {
-      // Sad lose sound
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+    // Stagger the deceleration
+    setTimeout(() => {
+      spinPhaseRef.current[0] = 'decelerating';
+    }, 1500);
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+    setTimeout(() => {
+      spinPhaseRef.current[1] = 'decelerating';
+    }, 2100);
 
-      oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.5);
+    setTimeout(() => {
+      spinPhaseRef.current[2] = 'decelerating';
+    }, 2700);
+  }, [isSpinningInternal, spinningReels, disabled]);
 
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+  // Auto-spin trigger
+  useEffect(() => {
+    if ((autoSpin || externalSpinning) && !isSpinningInternal && !spinningReels.some(s => s)) {
+      handleSpin();
+    }
+  }, [autoSpin, externalSpinning, isSpinningInternal, spinningReels, handleSpin]);
 
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.5);
+  const getStageIndicator = () => {
+    switch (confirmationStage) {
+      case 'broadcast': return { text: 'Broadcasting', color: 'text-cyan-400', pulse: true };
+      case 'mempool': return { text: 'In Mempool', color: 'text-purple-400', pulse: true };
+      case 'mined': return { text: 'Mining', color: 'text-green-400', pulse: true };
+      default: return { text: 'Ready', color: 'text-cyan-300/60', pulse: false };
     }
   };
 
-  // Reset state when spinning starts
-  useEffect(() => {
-    if (isSpinning) {
-      setIsStopping([false, false, false]);
-      setIsSpinningReels([true, true, true]);
-      spinningReelsRef.current = [true, true, true];
-      setFinalSymbols([]);
-      setHasResult(false);
-      setIsWinner(false);
-    }
-  }, [isSpinning]);
+  const stage = getStageIndicator();
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    spinningReelsRef.current = isSpinningReels;
-  }, [isSpinningReels]);
+  const getVisibleSymbols = (offset: number) => {
+    const symbols = [];
+    const startIndex = Math.floor(offset / SYMBOL_HEIGHT);
 
-  // Start spinning animation
-  useEffect(() => {
-    if (isSpinning) {
-      playSound('spin');
-
-      // Create multiple copies of symbols for seamless scrolling
-      const extendedSymbols = [...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS];
-      const intervals: NodeJS.Timeout[] = [];
-
-      // Start all reels spinning
-      for (let i = 0; i < 3; i++) {
-        const interval = setInterval(() => {
-          setReelPositions(prev => prev.map((pos, index) =>
-            index === i && spinningReelsRef.current[index] ? (pos + 1) % extendedSymbols.length : pos
-          ));
-        }, 60);
-        intervals.push(interval);
+    for (let i = -1; i <= VISIBLE_SYMBOLS; i++) {
+      const idx = (startIndex + i + REEL_STRIP.length) % REEL_STRIP.length;
+      const symbol = REEL_STRIP[idx];
+      if (symbol && (symbol.emoji || symbol.image)) {
+        symbols.push(symbol);
       }
-
-      // Stop reel 1
-      setTimeout(() => {
-        setIsSpinningReels(prev => [false, prev[1], prev[2]]);
-        clearInterval(intervals[0]);
-        setIsStopping([true, false, false]);
-        playSound('stop');
-        const finalPos1 = Math.floor(Math.random() * SYMBOLS.length) + SYMBOLS.length;
-        setReelPositions(prev => [finalPos1, prev[1], prev[2]]);
-        setFinalSymbols(prev => [extendedSymbols[finalPos1]]);
-      }, 1800);
-
-      // Stop reel 2
-      setTimeout(() => {
-        setIsSpinningReels(prev => [prev[0], false, prev[2]]);
-        clearInterval(intervals[1]);
-        setIsStopping([true, true, false]);
-        playSound('stop');
-        const finalPos2 = Math.floor(Math.random() * SYMBOLS.length) + SYMBOLS.length;
-        setReelPositions(prev => [prev[0], finalPos2, prev[2]]);
-        setFinalSymbols(prev => [prev[0], extendedSymbols[finalPos2]]);
-      }, 2800);
-
-      // Stop reel 3
-      setTimeout(() => {
-        setIsSpinningReels(prev => [prev[0], prev[1], false]);
-        clearInterval(intervals[2]);
-        setIsStopping([true, true, true]);
-        playSound('stop');
-        const finalPos3 = Math.floor(Math.random() * SYMBOLS.length) + SYMBOLS.length;
-        setReelPositions(prev => [prev[0], prev[1], finalPos3]);
-        setFinalSymbols(prev => [...prev.slice(0, 2), extendedSymbols[finalPos3]]);
-
-        // Check for win condition after all reels stopped
-        setTimeout(() => {
-          const isWin = finalSymbols.length >= 2 &&
-            finalSymbols[0].id === finalSymbols[1].id &&
-            finalSymbols[1].id === finalSymbols[2].id;
-
-          setIsWinner(isWin);
-          setHasResult(true);
-
-          if (isWin) {
-            playSound('win');
-          } else {
-            playSound('lose');
-          }
-
-          if (onSpinComplete) {
-            onSpinComplete();
-          }
-        }, 1000);
-      }, 3800);
-
-      return () => {
-        intervals.forEach(interval => clearInterval(interval));
-      };
     }
-  }, [isSpinning, onSpinComplete]);
-
-  const getStageColor = (stage: string | null) => {
-    switch (stage) {
-      case 'broadcast': return 'text-cyan-400';
-      case 'mempool': return 'text-purple-400';
-      case 'mined': return 'text-green-400';
-      default: return 'text-white/60';
-    }
-  };
-
-  const getStageText = (stage: string | null) => {
-    switch (stage) {
-      case 'broadcast': return '📡 Broadcasting';
-      case 'mempool': return '📦 In Mempool';
-      case 'mined': return '⛏️ Mining';
-      default: return '🎰 Processing';
-    }
+    return symbols;
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6 p-8 bg-black/90 rounded-2xl border border-white/10 backdrop-blur-sm max-w-2xl w-full">
-      {/* Header */}
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
-          Transaction Confirmation
-        </h3>
-        <p className={`text-lg font-medium ${getStageColor(confirmationStage)}`}>
-          {getStageText(confirmationStage)}
-        </p>
-      </div>
-
-      {/* Result Display */}
-      {hasResult && (
-        <div className={`text-center p-4 rounded-xl border-2 ${
-          isWinner
-            ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/50'
-            : 'bg-gradient-to-r from-gray-600/20 to-gray-700/20 border-gray-500/50'
-        }`}>
-          <div className={`text-3xl font-black mb-2 ${
-            isWinner ? 'text-yellow-400' : 'text-gray-400'
-          }`}>
-            {isWinner ? '🎉 JACKPOT! 🎉' : 'Better Luck Next Time'}
-          </div>
-          <div className={`text-sm ${isWinner ? 'text-yellow-300' : 'text-gray-300'}`}>
-            {isWinner ? 'Transaction confirmed with bonus luck!' : 'Transaction confirmed successfully'}
-          </div>
-        </div>
+    <div
+      className="flex flex-col items-center p-6 rounded-2xl max-w-lg w-full relative"
+      style={{
+        background: 'linear-gradient(145deg, rgb(16, 26, 35), rgb(25, 30, 38))',
+        boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.5)',
+        border: '1px solid rgba(6, 182, 212, 0.2)',
+      }}
+    >
+      {/* Close Button */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-full text-cyan-300/60 hover:text-cyan-300 hover:bg-cyan-400/10 transition-all"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       )}
 
-      {/* Massive Slot Machine */}
-      <div className="relative">
-        {/* Machine Frame */}
-        <div className="bg-gradient-to-b from-gray-800 via-gray-900 to-black p-8 rounded-2xl border-4 border-yellow-500/40 shadow-2xl">
-          {/* Top Display Panel */}
-          <div className="flex justify-center space-x-4 mb-6">
-            {[0, 1, 2].map(i => (
+      {/* Header */}
+      <div className="text-center mb-4">
+        <h3 className="text-sm font-black tracking-wider mb-2 text-white">
+          CONFIRMING TRANSACTION
+        </h3>
+        <div className="flex justify-center">
+          <LoaderOne />
+        </div>
+      </div>
+
+      {/* Slot Machine Frame */}
+      <div
+        className="relative rounded-xl p-1 mb-1"
+        style={{
+          background: 'linear-gradient(180deg, rgb(10, 18, 25), rgb(5, 10, 15))',
+          boxShadow: 'inset 0 4px 12px rgba(0, 0, 0, 0.9), inset 0 -2px 8px rgba(6, 182, 212, 0.1)',
+          border: '2px solid rgba(6, 182, 212, 0.3)',
+        }}
+      >
+        {/* Win Line Indicators */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse z-20" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse z-20" />
+
+        {/* Center Win Line */}
+        <div
+          className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, rgba(6, 182, 212, 0.8), rgba(6, 182, 212, 0.4), rgba(6, 182, 212, 0.8))',
+            boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)',
+          }}
+        />
+
+        {/* Reels Container */}
+        <div className="flex gap-1">
+          {[0, 1, 2].map((reelIndex) => {
+            const offset = reelOffsets[reelIndex];
+            const fractionalOffset = offset % SYMBOL_HEIGHT;
+            const visibleSymbols = getVisibleSymbols(offset);
+            const isReelSpinning = spinningReels[reelIndex];
+
+            return (
               <div
-                key={i}
-                className={`w-6 h-6 rounded-full border-2 ${
-                  isSpinning && !isStopping[i]
-                    ? 'bg-red-500 border-red-400 animate-pulse shadow-lg shadow-red-500/50'
-                    : isStopping[i]
-                    ? 'bg-green-500 border-green-400 shadow-lg shadow-green-500/50'
-                    : 'bg-gray-700 border-gray-600'
-                }`}
-              />
-            ))}
-          </div>
+                key={reelIndex}
+                className="relative overflow-hidden rounded-lg"
+                style={{
+                  width: '80px',
+                  height: `${SYMBOL_HEIGHT * VISIBLE_SYMBOLS}px`,
+                  background: 'linear-gradient(180deg, rgba(0,0,0,0.9), rgba(15,25,35,0.95), rgba(0,0,0,0.9))',
+                  boxShadow: 'inset 0 8px 20px rgba(0, 0, 0, 0.9), inset 0 -8px 20px rgba(0, 0, 0, 0.9)',
+                  border: '1px solid rgba(6, 182, 212, 0.15)',
+                }}
+              >
+                {/* Gradient overlays for depth */}
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.8) 100%)',
+                  }}
+                />
 
-          {/* Massive Reels Container */}
-          <div className="flex space-x-4 bg-black/70 p-6 rounded-xl border-2 border-white/10 shadow-inner">
-            {[0, 1, 2].map((reelIndex) => {
-              // Create extended symbol list for seamless scrolling
-              const extendedSymbols = [...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS];
-              const symbolHeight = 96; // Height of each symbol container
-
-              return (
-                <div key={reelIndex} className="relative">
-                  {/* Reel Frame - Much Larger */}
-                  <div className="w-32 h-48 bg-gray-900 rounded-lg border-4 border-gray-600 overflow-hidden relative shadow-2xl">
-                    {/* Spinning Symbols Strip */}
+                {/* Symbol strip */}
+                <div
+                  className="absolute left-0 right-0"
+                  style={{
+                    transform: `translateY(${-fractionalOffset}px)`,
+                  }}
+                >
+                  {visibleSymbols.map((symbol, idx) => (
                     <div
-                      className="absolute inset-0 transition-transform duration-700 ease-out"
+                      key={idx}
+                      className="flex items-center justify-center select-none"
                       style={{
-                        transform: `translateY(-${reelPositions[reelIndex] * symbolHeight}px)`,
+                        height: `${SYMBOL_HEIGHT}px`,
+                        filter: isReelSpinning && velocitiesRef.current[reelIndex] > 20 ? 'blur(2px)' : 'none',
+                        transition: 'filter 0.15s ease-out',
                       }}
                     >
-                      {extendedSymbols.map((symbol, symbolIndex) => (
-                        <div
-                          key={symbolIndex}
-                          className="w-32 h-24 flex items-center justify-center select-none"
-                        >
-                          <div
-                            className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl font-black shadow-lg border-2 border-white/20"
-                            style={{
-                              backgroundColor: symbol.bg,
-                              color: symbol.textColor,
-                              boxShadow: `0 4px 12px ${symbol.color}40, inset 0 2px 4px rgba(255,255,255,0.2)`
-                            }}
-                          >
-                            {symbol.shape}
-                          </div>
-                        </div>
-                      ))}
+                      {symbol?.image ? (
+                        <img
+                          src={symbol.image}
+                          alt={symbol.name}
+                          className="w-8 h-8 object-contain"
+                          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '24px', textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
+                          {symbol?.emoji || '🎰'}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Win Highlight - Massive */}
-                    {hasResult && isWinner && finalSymbols[reelIndex] && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/30 to-orange-400/30 rounded-lg animate-pulse border-4 border-yellow-400" />
-                    )}
-
-                    {/* Lose Highlight */}
-                    {hasResult && !isWinner && finalSymbols[reelIndex] && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-gray-500/20 to-gray-600/20 rounded-lg border-2 border-gray-500" />
-                    )}
-
-                    {/* Center line indicator */}
-                    <div className="absolute left-0 right-0 top-1/2 h-1 bg-white/30 transform -translate-y-1/2 pointer-events-none" />
-                  </div>
-
-                  {/* Reel Label */}
-                  <div className="text-center mt-3">
-                    <span className="text-sm text-white/60 font-bold uppercase tracking-wider">
-                      Reel {reelIndex + 1}
-                    </span>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Bottom Status Panel */}
-          <div className="mt-6 text-center">
-            <div className="bg-gray-800/70 rounded-xl px-6 py-4 border-2 border-white/10">
-              <p className="text-lg text-white/90 font-semibold">
-                {isSpinning
-                  ? '🎰 Processing transaction...'
-                  : hasResult
-                  ? `✅ ${isWinner ? 'Lucky confirmation!' : 'Transaction confirmed!'}`
-                  : '🎰 Ready to spin'}
-              </p>
-            </div>
-          </div>
+                {/* Win highlight */}
+                {showResult && result?.isWinner && (
+                  <div
+                    className="absolute inset-0 z-20 animate-pulse"
+                    style={{
+                      background: 'linear-gradient(180deg, transparent 25%, rgba(6, 182, 212, 0.4) 40%, rgba(6, 182, 212, 0.4) 60%, transparent 75%)',
+                      boxShadow: 'inset 0 0 30px rgba(6, 182, 212, 0.6)',
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Decorative Corner Elements */}
-        <div className="absolute -top-3 -left-3 w-8 h-8 bg-yellow-400 rounded-full animate-pulse shadow-lg shadow-yellow-400/50" />
-        <div className="absolute -top-3 -right-3 w-8 h-8 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50" />
-        <div className="absolute -bottom-3 -left-3 w-8 h-8 bg-purple-400 rounded-full animate-pulse shadow-lg shadow-purple-400/50" />
-        <div className="absolute -bottom-3 -right-3 w-8 h-8 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
-
-        {/* Side Decorations */}
-        <div className="absolute -left-6 top-1/2 transform -translate-y-1/2 w-4 h-20 bg-gradient-to-b from-cyan-400 to-purple-400 rounded-full opacity-60" />
-        <div className="absolute -right-6 top-1/2 transform -translate-y-1/2 w-4 h-20 bg-gradient-to-b from-purple-400 to-pink-400 rounded-full opacity-60" />
       </div>
+
+
+      {/* Spin Button */}
+      <button
+        onClick={handleSpin}
+        disabled={isSpinning || disabled || spinningReels.some(s => s)}
+        className="relative gap-2 w-65 h-10 rounded-xl font-black text-md uppercase tracking-wider transition-all duration-200 overflow-hidden"
+        style={{
+          background: (isSpinning || disabled || spinningReels.some(s => s))
+            ? 'linear-gradient(145deg, rgba(50, 50, 60, 0.5), rgba(30, 30, 40, 0.5))'
+            : 'linear-gradient(145deg, rgba(6, 182, 212, 0.35), rgba(8, 145, 178, 0.35))',
+          boxShadow: (isSpinning || disabled || spinningReels.some(s => s))
+            ? 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.02)'
+            : 'inset 2px 2px 4px rgba(0, 0, 0, 0.2), inset -2px -2px 4px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(6, 182, 212, 0.25)',
+          border: (isSpinning || disabled || spinningReels.some(s => s))
+            ? '1px solid rgba(100, 100, 120, 0.2)'
+            : '1px solid rgba(6, 182, 212, 0.5)',
+          color: (isSpinning || disabled || spinningReels.some(s => s)) ? 'rgba(150, 150, 160, 0.5)' : '#22d3ee',
+        }}
+      >
+        {/* Hover effect */}
+        {!(isSpinning || disabled || spinningReels.some(s => s)) && (
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            style={{
+              background: 'linear-gradient(145deg, rgba(6, 182, 212, 0.5), rgba(8, 145, 178, 0.5))',
+            }}
+          />
+        )}
+
+        <span className="relative z-10 flex items-center justify-center gap-3">
+          {spinningReels.some(s => s) ? (
+            <>
+              <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              SPINNING...
+            </>
+          ) : (
+            <>
+              <span className="text-2xl">🎰</span>
+              SPIN
+            </>
+          )}
+        </span>
+      </button>
+
     </div>
   );
 };

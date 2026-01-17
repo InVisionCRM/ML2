@@ -69,9 +69,9 @@ const PLINKO_CONSTANTS: PlinkoConstants = {
   PEG_RADIUS: 6,
   BALL_RADIUS: 15,
 
-  // Physics parameters (CRITICAL - must match exactly)
+  // Physics parameters (CRITICAL - must match exactly across all files)
   PHYSICS: {
-    GRAVITY: 1.4,
+    GRAVITY: 1.6,
     ENGINE_ITERATIONS: 10,
     SUB_STEPS: 4, // CRITICAL for determinism
     BALL_DENSITY: 0.9,
@@ -81,17 +81,17 @@ const PLINKO_CONSTANTS: PlinkoConstants = {
     PEG_RESTITUTION: 0.5,
     PEG_FRICTION: 0,
     FIXED_TIME_STEP: 16.666,
-    SPAWN_RANGE_X: 10,
+    SPAWN_RANGE_X: 5,
     INITIAL_V_X_VARIANCE: 0.05,
-    INITIAL_V_Y: 3,
+    INITIAL_V_Y: 1,
   },
 
   // Multipliers for each risk level (matches contract exactly)
   // Contract stores in basis points (100 = 1x), frontend uses decimals
   MULTIPLIERS: {
-    GREEN: [5.5, 2.5, 2, 1.3, 1.2, 1.1, 1, 0.8, 0.5, 0.8, 1, 1.1, 1.2, 1.3, 2, 2.5, 5.5],
-    YELLOW: [15, 5.5, 2.5, 2, 1.7, 1, 0.8, 0.5, 0.2, 0.5, 0.8, 1, 1.7, 2, 2.5, 5.5, 15],
-    RED: [35, 15, 5.5, 2.5, 1.7, 0.8, 0.4, 0.3, 0.2, 0.3, 0.4, 0.8, 1.7, 2.5, 5.5, 15, 35],
+    GREEN: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+    YELLOW: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110],
+    RED: [1000, 120, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 120, 1000],
   },
 
   // Risk level mappings

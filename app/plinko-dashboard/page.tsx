@@ -21,7 +21,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { useMorbiusBurned } from "@/hooks/use-morbius-burned";
 import { PixelImage } from "../../components/ui/pixel-image";
 import { DottedGlowBackground } from "../../components/ui/dotted-glow-background";
-import { Footer } from "@/components/shared/footer";
+import Footer from '@/components/PLINKO/Footer';
 import { HomeHeader } from "@/components/home/header";
 
 interface PlinkoBentoGridProps {
@@ -449,30 +449,6 @@ const items = [
       const event = new CustomEvent('showPlinkoHowToPlayModal');
       window.dispatchEvent(event);
     },
-  },
-  {
-    title: "Physics Simulator",
-    description: (
-      <span className="text-sm">
-        Test and tune physics parameters in real-time
-      </span>
-    ),
-    header: <SkeletonSimulator />,
-    className: "md:col-span-1",
-    icon: <IconSettings className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowSimulator }: any) => onShowSimulator?.(),
-  },
-  {
-    title: "Game Stats",
-    description: (
-      <span className="text-sm">
-        View comprehensive PLINKO statistics and analytics
-      </span>
-    ),
-    header: <SkeletonStats />,
-    className: "md:col-span-1",
-    icon: <IconChartBar className="h-4 w-4 text-neutral-500" />,
-    onClick: ({ onShowHistory }: any) => onShowHistory?.(),
   },
   {
     title: "Fairness Verifier",

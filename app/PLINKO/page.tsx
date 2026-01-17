@@ -11,6 +11,7 @@ import CustomAmountModal from '@/components/PLINKO/CustomAmountModal';
 import { PlinkoHistoryModal } from '@/components/PLINKO/PlinkoHistoryModal';
 import { CustomApprovalModal } from '@/components/PLINKO/CustomApprovalModal';
 import SlotMachine from '@/components/PLINKO/SlotMachine';
+import RealTimeBetChart, { RealTimeBetChartRef } from '@/components/PLINKO/RealTimeBetChart';
 import { usePlinkoHistory } from '@/hooks/use-plinko-history';
 import { usePlayerInfo, useWagerLimits, usePlinkoWrite, useWatchBallDropped } from '@/hooks/use-plinko-contract';
 import { PLINKO_ADDRESS, MORBIUS_TOKEN_ADDRESS } from '@/lib/contracts';
@@ -29,7 +30,7 @@ import {
 import { GameState, RiskLevel, ContractResult } from './types';
 import { MULTIPLIERS, RISK_NAMES, RISK_LEVEL, RISK_LEVEL_MAP } from './constants';
 import { formatEther, parseEther, decodeEventLog } from 'viem';
-import { Footer } from '@/components/shared/footer';
+import Footer from '@/components/PLINKO/Footer';
 
 // BallDropped event ABI for decoding
 const BALL_DROPPED_EVENT_ABI = {
@@ -206,6 +207,8 @@ const Home: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [winLossBadge, setWinLossBadge] = useState<{ amount: number; key: number } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  type DropSpeed = 'normal' | 'fast' | 'burst';
+  const [dropSpeed, setDropSpeed] = useState<DropSpeed>('normal'); // Drop speed mode - normal by default
   const [freePlayEnabled, setFreePlayEnabled] = useState(false); // Free Play toggle - disabled by default (contract mode)
   const [showIntro, setShowIntro] = useState(() => {
     // Check localStorage to see if intro was already shown
@@ -250,6 +253,9 @@ const Home: React.FC = () => {
 
   // Drop summary modal state
   const [showDropSummary, setShowDropSummary] = useState(false);
+
+  // Slot machine test modal state
+  const [showSlotMachineTest, setShowSlotMachineTest] = useState(false);
   const [dropSummaryData, setDropSummaryData] = useState<{
     txHash: string;
     totalWon: number;
@@ -330,8 +336,8 @@ const Home: React.FC = () => {
     const riskMap = ['GREEN', 'YELLOW', 'RED'] as RiskLevel[];
     const risk = riskMap[Number(riskLevel)] || 'YELLOW';
 
-    // Convert bucket from uint8 (1-15) to 0-indexed (0-14)
-    const bucketIndex = Number(bucket) - 1;
+    // Contract now returns 0-indexed buckets (0-16)
+    const bucketIndex = Number(bucket);
 
     // Convert multiplier from basis points to actual multiplier
     const actualMultiplier = Number(multiplier) / 100;
@@ -360,6 +366,8 @@ const Home: React.FC = () => {
   const currentWagerRef = useRef(1.00); // Track current wager for auto-play calculations
   const isAutoDropRef = useRef(false); // Track auto-drop status synchronously
   const autoPlaySettingsRef = useRef<AutoPlaySettings | null>(null); // Track settings synchronously
+  const chartRef = useRef<RealTimeBetChartRef>(null); // Ref for the real-time chart
+  const chartSessionStartTime = useRef(Date.now()); // Fixed session start time
 
   // Keep currentWagerRef in sync with wager state
   useEffect(() => {
@@ -384,6 +392,11 @@ const Home: React.FC = () => {
     const winAmount = actualWager * actualMultiplier;
     const badgeProfit = winAmount - actualWager;
     setWinLossBadge({ amount: badgeProfit, key: Date.now() });
+
+    // 3. Update real-time performance chart
+    if (chartRef.current) {
+      chartRef.current.addDataPoint(actualMultiplier, bucketIndex, contractData);
+    }
 
     // ... rest of your balance update logic ...
     console.log('=== SCORE EVENT ===');
@@ -705,7 +718,8 @@ const Home: React.FC = () => {
             const args = decoded.args as any;
 
             // Convert raw values (bigints/strings) to numbers
-            const bucketIndex = Number(args.bucket) - 1;
+            // Contract now returns 0-indexed buckets (0-16)
+            const bucketIndex = Number(args.bucket);
             const actualMultiplier = Number(args.multiplier) / 100;
             const payoutAmount = Number(formatEther(args.payout));
 
@@ -967,7 +981,7 @@ const Home: React.FC = () => {
 
       // If this was the last ball and we have summary data, the toast will appear automatically
       // No need to manually trigger modal - toast shows when dropSummaryData exists
-    }, 1000); // 1 second delay between ball drops
+    }, dropSpeed === 'burst' ? 100 : dropSpeed === 'fast' ? 500 : 1000); // Speed based on drop mode
 
   }, [animationQueue, isAnimating, freePlayEnabled, handleScore, dropSummaryData]);
 
@@ -989,7 +1003,7 @@ const Home: React.FC = () => {
           }
           return newCount;
         });
-      }, 1000); // Fixed 1 second interval
+      }, dropSpeed === 'burst' ? 100 : dropSpeed === 'fast' ? 500 : 1000); // Speed based on drop mode
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -1091,7 +1105,6 @@ const Home: React.FC = () => {
         onShowHistory={() => setShowPlinkoHistory(true)}
         onBuyBalls={!freePlayEnabled && contractBallBalance === 0 ? () => setShowBuyBallsModal(true) : undefined}
         ballCount={!freePlayEnabled ? contractBallBalance : undefined}
-        onDropBall={() => setLastDrop({ id: Date.now(), risk: 'GREEN' })}
       />
 
       {/* Free Play Badge */}
@@ -1121,8 +1134,8 @@ const Home: React.FC = () => {
 
       {/* RESPONSIVE LAYOUT - Mobile-first approach */}
       <div className="flex relative pt-16 px-2 gap-2 flex-col lg:flex-row lg:px-3 lg:gap-3 pb-[50px] min-h-[calc(100vh-4rem)]">
-        {/* LEFT COLUMN - BUY SECTION - Mobile-first responsive */}
-        <div className="order-2 lg:order-1 lg:flex lg:w-[280px] xl:w-[320px] 2xl:w-[360px] lg:flex-col lg:justify-center lg:p-1 lg:overflow-y-auto lg:relative lg:z-20">
+        {/* LEFT COLUMN - BUY SECTION + CHART - Mobile-first responsive */}
+        <div className="order-2 lg:order-1 lg:flex lg:w-[400px] xl:w-[400px] 2xl:w-[400px] lg:flex-col lg:justify-center lg:p-1 lg:overflow-y-auto lg:relative lg:z-20 lg:gap-4">
           {!freePlayEnabled && (
             <div
               className="relative rounded-2xl overflow-hidden"
@@ -1140,6 +1153,27 @@ const Home: React.FC = () => {
                 >
                   Risk Tables
                 </button>
+                {/* Drop Speed Toggle */}
+                <div className="absolute top-2 left-3 flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const modes: DropSpeed[] = ['normal', 'fast', 'burst'];
+                      const currentIndex = modes.indexOf(dropSpeed);
+                      const nextIndex = (currentIndex + 1) % modes.length;
+                      setDropSpeed(modes[nextIndex]);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      dropSpeed === 'normal'
+                        ? 'text-white bg-gray-600/80'
+                        : dropSpeed === 'fast'
+                        ? 'text-cyan-300 bg-cyan-500/20 border border-cyan-500/50'
+                        : 'text-yellow-300 bg-yellow-500/20 border border-yellow-500/50'
+                    }`}
+                    title={`Drop Speed: ${dropSpeed === 'normal' ? 'Normal' : dropSpeed === 'fast' ? 'Fast' : 'Burst'} - Click to cycle`}
+                  >
+                    {dropSpeed === 'normal' ? '🐌 Normal' : dropSpeed === 'fast' ? '⚡ Fast' : '💥 Burst'}
+                  </button>
+                </div>
 
 
                 {/* Grid Layout - Mobile-first responsive */}
@@ -1215,6 +1249,52 @@ const Home: React.FC = () => {
                     />
                   </div>
 
+                  {/* Wager Preset Buttons */}
+                  <div className="grid grid-cols-4 gap-0">
+                    {[10, 100, 500, 1000].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setWagerPerBall(Math.max(minWager, Math.min(maxWager, amount)))}
+                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
+                        className={`py-2 text-center text-xs font-bold transition-all touch-manipulation ${
+                          wagerPerBall === amount
+                            ? 'text-cyan-300'
+                            : 'text-gray-500 hover:text-gray-400'
+                        } ${
+                          (isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        style={{
+                          boxShadow: 'inset 2px 2px 4px rgba(0, 0, 0, 0.3), inset -2px -2px 4px rgba(255, 255, 255, 0.03)',
+                        }}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Balls Preset Buttons */}
+                  <div className="grid grid-cols-4 gap-0">
+                    {[1, 10, 50, 100].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => setBuyBallsCount(count)}
+                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
+                        className={`py-2 text-center text-xs font-bold transition-all touch-manipulation ${
+                          buyBallsCount === count
+                            ? 'text-cyan-300'
+                            : 'text-gray-500 hover:text-gray-400'
+                        } ${
+                          (isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        style={{
+                          boxShadow: 'inset 2px 2px 4px rgba(0, 0, 0, 0.3), inset -2px -2px 4px rgba(255, 255, 255, 0.03)',
+                        }}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Payment Method Toggle */}
                   <div className="col-span-2">
                     <label className="block text-cyan-300/80 text-center text-sm lg:text-lg font-bold mb-1 lg:mb-2">Payment Method</label>
@@ -1222,10 +1302,10 @@ const Home: React.FC = () => {
                       <button
                         onClick={() => setUsePLS(false)}
                         disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
-                        className={`py-2 lg:py-3 rounded-lg text-xs lg:text-sm font-bold transition-all touch-manipulation ${
+                        className={`py-2 lg:py-3 rounded-lg text-sm font-bold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           !usePLS
                             ? 'text-cyan-300 shadow-lg'
-                            : 'text-white/40 hover:text-white/60 active:text-white/80'
+                            : 'text-white/40 hover:text-white/60 active:text-white'
                         } ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         style={{
                           boxShadow: !usePLS
@@ -1237,15 +1317,20 @@ const Home: React.FC = () => {
                         }}
                       >
                         MORBIUS
+                        <img
+                          src="/morbius/MorbiusLogo (3).png"
+                          alt="Morbius"
+                          className="w-8 h-8 object-contain"
+                        />
                       </button>
                       <button
                         onClick={() => setUsePLS(true)}
-                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
-                        className={`py-2 lg:py-3 rounded-lg text-xs lg:text-sm font-bold transition-all touch-manipulation ${
+                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance || priceError || isLoadingPrice}
+                        className={`py-2 lg:py-3 rounded-lg text-sms font-bold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           usePLS
                             ? 'text-purple-300 shadow-lg'
-                            : 'text-white/40 hover:text-white/60 active:text-white/80'
-                        } ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            : 'text-white/40 hover:text-white/60 active:text-white'
+                        } ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance || priceError || isLoadingPrice) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         style={{
                           boxShadow: usePLS
                             ? 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.03)'
@@ -1256,6 +1341,11 @@ const Home: React.FC = () => {
                         }}
                       >
                         PLS
+                        <img
+                          src="/Pulse Branding/Logo/ball.png"
+                          alt="PLS"
+                          className="w-8 h-8 object-contain"
+                        />
                       </button>
                     </div>
                   </div>
@@ -1336,6 +1426,15 @@ const Home: React.FC = () => {
               </div>
             </div>
           )}
+          {/* Real-Time Performance Chart - Equal height to buy section */}
+          <div className="flex-1 min-h-0">
+            <RealTimeBetChart
+              ref={chartRef}
+              sessionStartTime={chartSessionStartTime.current}
+              contractWagerPerBall={wagerPerBall}
+              freePlayWager={currentWagerRef.current}
+            />
+          </div>
         </div>
 
         {/* RIGHT COLUMN - PLINKO BOARD */}
@@ -1361,28 +1460,30 @@ const Home: React.FC = () => {
                 </button>
                 <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-400/30 scrollbar-track-transparent hover:scrollbar-thumb-cyan-400/50 scroll-smooth flex-1">
                   {history.length > 0 ? history.slice(0, 3).map((item, index) => {
-                    // Determine color based on risk level and multiplier
+                    // Determine color based on multiplier (matching bucket colors)
                     let bgColor = '';
-                    const isDark = item.multiplier < 1;
 
-                    if (item.risk === 'GREEN') {
-                      bgColor = isDark ? 'bg-[rgb(100,140,45)]' : 'bg-[rgb(140,185,60)]';
-                    } else if (item.risk === 'YELLOW') {
-                      bgColor = isDark ? 'bg-[rgb(20,100,200)]' : 'bg-[rgb(30,144,255)]';
-                    } else if (item.risk === 'RED') {
-                      bgColor = isDark ? 'bg-[rgb(160,35,35)]' : 'bg-[rgb(210,50,50)]';
+                    if (item.multiplier >= 10) {
+                      // High multiplier - purple gradient (matches high-value buckets)
+                      bgColor = 'bg-gradient-to-r from-purple-600 to-purple-800';
+                    } else if (item.multiplier >= 2) {
+                      // Medium multiplier - cyan/blue gradient (matches medium-value buckets)
+                      bgColor = 'bg-gradient-to-r from-cyan-500 to-blue-600';
+                    } else {
+                      // Low multiplier - blue gradient (matches low-value buckets)
+                      bgColor = 'bg-gradient-to-r from-blue-600 to-cyan-600';
                     }
 
                     return (
                       <div
                         key={item.id}
-                        className={`${index === 0 ? 'history-item-enter' : ''} ${bgColor} px-1.5 py-0.5 text-[10px] font-black min-w-fit text-white transition-all duration-300 rounded`}
+                        className={`${index === 0 ? 'history-item-enter' : ''} ${bgColor} px-1.5 py-0.5 md:px-2 md:py-1 lg:px-3 lg:py-1.5 text-[10px] md:text-xs lg:text-sm font-black min-w-fit text-white transition-all duration-300 rounded`}
                       >
                         {item.multiplier}x
                       </div>
                     );
                   }) : (
-                    <div className="text-[9px] text-cyan-300/60 font-bold uppercase tracking-wide px-1 italic">Waiting...</div>
+                    <div className="text-[12px] md:text-[10px] lg:text-smxsw text-cyan-300/60 font-bold uppercase tracking-wide px-1 italic">Waiting...</div>
                   )}
                 </div>
               </div>
@@ -1396,6 +1497,7 @@ const Home: React.FC = () => {
                 lastDrop={lastDrop}
                 selectedRiskLevel={buyRiskLevel}
                 soundEnabled={soundEnabled}
+                onSoundToggle={setSoundEnabled}
               />
             </div>
           </div>
@@ -1956,12 +2058,26 @@ const Home: React.FC = () => {
       {/* Slot Machine Confirmation Modal */}
       {isConfirmingTransaction && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-w-4xl w-full">
+          <div className="min-w-60 max-w-lg">
             <SlotMachine
               isSpinning={isConfirmingTransaction}
               confirmationStage={confirmationStage}
               onSpinComplete={() => {
                 // Optional: handle spin complete if needed
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Slot Machine Test Modal */}
+      {showSlotMachineTest && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="min-w-60 max-w-lg">
+            <SlotMachine
+              onClose={() => setShowSlotMachineTest(false)}
+              onSpinComplete={(result) => {
+                console.log('Slot result:', result);
               }}
             />
           </div>

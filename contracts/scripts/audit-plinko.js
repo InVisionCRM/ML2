@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 
 // ======================================================
-// 1. PRODUCTION CONSTANTS (Sync these with constants.ts)
+// 1. PRODUCTION CONSTANTS (Synced with simulate-plinko.js and app/PLINKO/constants.ts)
 // ======================================================
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 1000;
@@ -15,30 +15,30 @@ const ROWS = 16;
 const PEG_SPACING_X = 48;
 const PEG_SPACING_Y = 48;
 const START_Y = 60;
-const BUCKET_Y = 820; 
-const PEG_RADIUS = 5.5;
+const BUCKET_Y = 820;
+const PEG_RADIUS = 6;
 const BALL_RADIUS = 15;
 
 const PHYSICS = {
-    GRAVITY: 1,
+    GRAVITY: 1.6,
     ENGINE_ITERATIONS: 10,
     SUB_STEPS: 4,
-    BALL_DENSITY: 0.01,
-    BALL_RESTITUTION: 0.4,
-    BALL_FRICTION: 0.01,
-    BALL_FRICTION_AIR: 0.045,
+    BALL_DENSITY: 0.9,
+    BALL_RESTITUTION: 0.6,
+    BALL_FRICTION: 0.005,
+    BALL_FRICTION_AIR: 0.03,
     PEG_RESTITUTION: 0.5,
     PEG_FRICTION: 0,
     FIXED_TIME_STEP: 16.666,
-    SPAWN_RANGE_X: 4,
+    SPAWN_RANGE_X: 5,
     INITIAL_V_X_VARIANCE: 0.05,
-    INITIAL_V_Y: 3,
+    INITIAL_V_Y: 1,
 };
 
 const MULTIPLIERS = {
-    GREEN:  [7, 5.5, 2.7, 2, 1.5, 1.1, 1, 0.8, 0.5, 0.8, 1, 1.1, 1.5, 2, 2.7, 5.5, 7],
-    YELLOW: [15, 7, 3.5, 2, 1.5, 1, 0.8, 0.5, 0.2, 0.5, 0.8, 1, 1.5, 2, 3.5, 7, 15],
-    RED:    [35, 15, 7, 3.5, 1.5, 0.8, 0.2, 0.2, 0.2, 0.2, 0.2, 0.8, 1.5, 3.5, 7, 15, 35]
+    GREEN:  [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+    YELLOW: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110],
+    RED:    [1000, 120, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 120, 1000]
 };
 
 // ======================================================
@@ -55,7 +55,7 @@ if (!isMainThread) {
     engine.positionIterations = PHYSICS.ENGINE_ITERATIONS;
     engine.velocityIterations = PHYSICS.ENGINE_ITERATIONS;
 
-    // Build Static Peg Board
+    // Build Static Peg Board (matches simulate-plinko.js exactly)
     let bottomRowStartX = 0;
     for (let r = 0; r < ROWS; r++) {
         const rowPegCount = r + 3;
@@ -63,7 +63,11 @@ if (!isMainThread) {
         const startX = (WORLD_WIDTH - rowWidth) / 2;
         if (r === ROWS - 1) bottomRowStartX = startX;
         for (let c = 0; c < rowPegCount; c++) {
-            Matter.World.add(engine.world, Matter.Bodies.circle(startX + c * PEG_SPACING_X, START_Y + r * PEG_SPACING_Y, PEG_RADIUS, { isStatic: true }));
+            Matter.World.add(engine.world, Matter.Bodies.circle(startX + c * PEG_SPACING_X, START_Y + r * PEG_SPACING_Y, PEG_RADIUS, {
+                isStatic: true,
+                restitution: PHYSICS.PEG_RESTITUTION,
+                friction: 0
+            }));
         }
     }
 

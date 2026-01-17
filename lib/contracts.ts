@@ -20,14 +20,14 @@ export const LOTTERY_ADDRESS = '0xD66b4489fbfF99A8d62f969203899840F2ec69c5' as c
 // Keno contract (CryptoKeno - refactored version without add-ons)
 export const KENO_ADDRESS = '0x734A1460b4131F8cFE4950894Be89d1a852c957A' as const
 
-// Plinko contract (15-bucket casino-style game with RISK LEVELS + VARIABLE WAGERS)
-// V5.1: Testing version - reserve check disabled for testing
-export const PLINKO_ADDRESS = '0x212cb1Ea69F59E1F48e9C344053696c4adEbb845' as const
+// Plinko contract (17-bucket casino-style game with RISK LEVELS + VARIABLE WAGERS)
+// V6: Weighted bucket distribution (binomial) - matches physics simulation RTP
+export const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb' as const
 
 // Contract deployment info
 export const LOTTERY_DEPLOY_BLOCK = 25329129
 export const KENO_DEPLOY_BLOCK = 25341670 // Deployed Dec 21, 2025
-export const PLINKO_DEPLOY_BLOCK = 25453189 // Deployed Jan 5, 2026 - V5 with VARIABLE WAGERS
+export const PLINKO_DEPLOY_BLOCK = 25551380 // V7: Fixed 0-indexed bucket multiplier lookup
 
 // Lottery constants
 export const TICKET_PRICE = BigInt(100_000_000_000_000_000_000) // 100 tokens (18 decimals)

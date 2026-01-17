@@ -88,7 +88,7 @@ export function TicketPurchaseBuilder({
   // Handle signature confirmation for high-value transactions
   const handleSignatureConfirm = async (): Promise<boolean> => {
     try {
-      const totalCost = paymentMethod === 'PLS' ? plsValueWei : morbiusCostWei
+      const totalCost = paymentMethod === 'PLS' ? plsValueWei : MORBIUSCost
       const amount = paymentMethod === 'PLS'
         ? `${formatEther(totalCost)} PLS`
         : `${formatUnits(totalCost, TOKEN_DECIMALS)} MORBIUS`
@@ -477,7 +477,7 @@ export function TicketPurchaseBuilder({
     }
 
     // Check if signature verification is needed for high-value transactions
-    const totalCost = paymentMethod === 'PLS' ? plsValueWei : morbiusCostWei
+    const totalCost = paymentMethod === 'PLS' ? plsValueWei : MORBIUSCost
     const isHighValue = Number(totalCost) > 100 * 10**18 // > 100 MORBIUS or equivalent PLS
 
     if (isHighValue) {
@@ -576,6 +576,7 @@ export function TicketPurchaseBuilder({
   const canAddToCart = workingTicket.length === NUMBERS_PER_TICKET
 
   return (
+    <>
     <Card className="relative overflow-hidden bg-gradient-to-br from-slate-950 to-slate-900/70 border-white/10 shadow-2xl p-0 w-full max-w-full">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.08),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.08),transparent_30%)]" />
 
@@ -1019,8 +1020,9 @@ export function TicketPurchaseBuilder({
       title="Confirm Large Purchase"
       description="This transaction exceeds our security threshold. Please sign to confirm your purchase."
       action="Confirm Purchase"
-      amount={`${paymentMethod === 'PLS' ? formatEther(plsValueWei) + ' PLS' : formatUnits(morbiusCostWei, TOKEN_DECIMALS) + ' MORBIUS'}`}
+      amount={`${paymentMethod === 'PLS' ? formatEther(plsValueWei) + ' PLS' : formatUnits(MORBIUSCost, TOKEN_DECIMALS) + ' MORBIUS'}`}
       risk="high"
     />
+    </>
   )
 }

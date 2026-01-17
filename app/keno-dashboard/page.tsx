@@ -18,7 +18,7 @@ import { formatEther } from "viem";
 import { GlowingStarsBackgroundCard } from "../../components/ui/glowing-stars";
 import { Meteors } from "../../components/ui/meteors";
 import { DottedGlowBackground } from "../../components/ui/dotted-glow-background";
-import { Footer } from "@/components/shared/footer";
+import Footer from '@/components/PLINKO/Footer';
 import { PixelImage } from "../../components/ui/pixel-image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";

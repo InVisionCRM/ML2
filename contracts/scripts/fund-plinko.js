@@ -8,10 +8,16 @@ async function main() {
   const balance = await hre.ethers.provider.getBalance(deployer.address);
   console.log("PLS Balance:", hre.ethers.formatEther(balance), "PLS");
 
-  // Config
-  const PLINKO_ADDRESS = "0x9037Be0f7D97214F836198EB18D58F5A9b033d31"; // V5.1 - Testing deployment
+  // Config - Get from command line or use defaults
+  const args = process.argv.slice(2);
+  const amountArg = args.find(arg => arg.startsWith('--amount='));
+  const networkArg = args.find(arg => arg.startsWith('--network='));
+
+  const PLINKO_ADDRESS = "0x328F7Afefb8F561B5A832954257c01B3723054Fb"; // Latest deployment
   const MORBIUS_TOKEN = "0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1";
-  const FUNDING_AMOUNT = hre.ethers.parseEther("1000"); // 1,000 MORBIUS - small amount for testing
+  const FUNDING_AMOUNT = amountArg
+    ? hre.ethers.parseEther(amountArg.split('=')[1])
+    : hre.ethers.parseEther("10000"); // Default 10,000 MORBIUS
 
   console.log("\nConfig:");
   console.log("PLINKO_ADDRESS    :", PLINKO_ADDRESS);

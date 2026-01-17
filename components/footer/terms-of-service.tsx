@@ -35,15 +35,6 @@ export function TermsOfServiceModal({ open, onOpenChange }: TermsOfServiceModalP
             By accessing and using Morbius.io, you accept and agree to be bound by these terms. Your continued use constitutes acceptance of these terms.
           </p>
 
-          <h3 className="text-lg font-semibold mt-6 mb-2">Description of Service</h3>
-          <p>Morbius.io provides:</p>
-          <ul className="space-y-1 ml-4">
-            <li>• Lottery games with prize pools</li>
-            <li>• Keno number selection games</li>
-            <li>• Plinko physics-based games</li>
-            <li>• MORBIUS and PLS token integration</li>
-          </ul>
-
           <h3 className="text-lg font-semibold mt-6 mb-2">User Responsibilities</h3>
           <ul className="space-y-1 ml-4">
             <li>• Must be at least 18 years old</li>

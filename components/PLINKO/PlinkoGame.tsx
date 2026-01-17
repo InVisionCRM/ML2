@@ -28,9 +28,15 @@ interface PlinkoGameProps {
   lastDrop: any;
   selectedRiskLevel: RiskLevel;
   soundEnabled?: boolean;
+  onSoundToggle?: (enabled: boolean) => void;
 }
 
-const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRiskLevel, soundEnabled = true }) => {
+// Bucket odds based on binomial distribution for 16 rows (2^16 = 65536 total paths)
+const BUCKET_ODDS: number[] = [
+  1, 16, 120, 560, 1820, 4368, 8008, 11440, 12870, 11440, 8008, 4368, 1820, 560, 120, 16, 1
+].map(paths => (paths / 65536) * 100);
+
+const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRiskLevel, soundEnabled = true, onSoundToggle }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Matter.Engine>(Matter.Engine.create());
@@ -40,6 +46,23 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const animatingBucket = useRef<number | null>(null);
   const animatingBucketStartTime = useRef<number | null>(null);
+
+  // Hover state for bucket tooltips
+  const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const scaleRef = useRef<number>(1);
+  const offsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const bucketsRef = useRef<{ x: number; y: number; index: number }[]>([]);
+
+  // Sound state management
+  const [internalSoundEnabled, setInternalSoundEnabled] = useState(soundEnabled);
+
+  // Sound toggle handler
+  const handleSoundToggle = () => {
+    const newState = !internalSoundEnabled;
+    setInternalSoundEnabled(newState);
+    onSoundToggle?.(newState);
+  };
 
   // Seed database for deterministic physics replay
   const seedDatabaseRef = useRef<SeedDatabase | null>(null);
@@ -83,7 +106,7 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
 
   // Sound functions
   const playSound = (soundPath: string) => {
-    if (!soundEnabled) return;
+    if (!internalSoundEnabled) return;
     try {
       const audio = new Audio(soundPath);
       audio.volume = 0.3;
@@ -161,16 +184,14 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
     Matter.World.add(engine.world, pegs);
 
     // Build 17 Buckets (Centered under last row gaps)
-    // CRITICAL: Bucket positioning must EXACTLY match the seed generator!
-    const bucketWidth = PEG_SPACING_X; // 48px - same as generator
-    const bucketHeight = 50; // Same as generator's tierHeight
-    const bucketsTotalWidth = 17 * bucketWidth;
-    const bucketsStartX = (WORLD_WIDTH - bucketsTotalWidth) / 2; // Center buckets in world
-    const bucketCenterY = BUCKET_Y + bucketHeight / 2; // 820 + 25 = 845 (matches generator!)
+    // CRITICAL: Bucket positioning must EXACTLY match simulate-plinko.js and generate-plinko-seeds.js!
+    const bucketWidth = PEG_SPACING_X; // 48px
+    const bucketHeight = 50;
 
     for (let i = 0; i < 17; i++) {
-      const x = bucketsStartX + i * bucketWidth + bucketWidth / 2; // Same formula as generator
-      Matter.World.add(engine.world, Matter.Bodies.rectangle(x, bucketCenterY, bucketWidth, bucketHeight, {
+      // Use bottomRowStartX (from peg calculation) - matches simulate-plinko.js exactly
+      const x = bottomRowStartX + (i * PEG_SPACING_X) + (PEG_SPACING_X / 2);
+      Matter.World.add(engine.world, Matter.Bodies.rectangle(x, BUCKET_Y, bucketWidth - 6, bucketHeight, {
         isStatic: true,
         isSensor: true,
         label: 'bucket',
@@ -178,7 +199,7 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
         render: { visible: false }
       }));
     }
-    console.log(`🪣 Buckets created: startX=${bucketsStartX}, centerY=${bucketCenterY}, width=${bucketWidth}`);
+    console.log(`🪣 Buckets created: bottomRowStartX=${bottomRowStartX}, Y=${BUCKET_Y}, width=${bucketWidth - 6}`);
 
     // Collision Detection
     Matter.Events.on(engine, 'collisionStart', (event) => {
@@ -267,18 +288,25 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
         (dimensions.height * 0.92) / contentHeight
       );
 
+      // Store scale and offset for mouse hit detection
+      scaleRef.current = scale;
+      const worldCenterX = WORLD_WIDTH / 2;
+      const worldCenterY = (START_Y + BUCKET_Y) / 2 - 10;
+      offsetRef.current = {
+        x: dimensions.width / 2 - worldCenterX * scale,
+        y: dimensions.height / 2 - worldCenterY * scale
+      };
+
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       ctx.save();
-      
+
       // Sharpness Scaling
       ctx.scale(dpr, dpr);
 
       // CENTER CAMERA MATH
       ctx.translate(dimensions.width / 2, dimensions.height / 2);
       ctx.scale(scale, scale);
-      
-      const worldCenterX = WORLD_WIDTH / 2;
-      const worldCenterY = (START_Y + BUCKET_Y) / 2 - 10; // Adjust for visible chute
+
       ctx.translate(-worldCenterX, -worldCenterY);
 
       // DRAW BUCKETS
@@ -337,7 +365,7 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
           gradient.addColorStop(1, 'rgba(37, 99, 235, 0.6)');
         } else {
           // Low multiplier - blue gradient
-          gradient.addColorStop(0, 'rgba(42, 107, 200, 0.8)');
+          gradient.addColorStop(0, 'rgba(36, 126, 156, 0.8)');
           gradient.addColorStop(1, 'rgba(6, 182, 212, 0.5)');
         }
 
@@ -381,34 +409,32 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
       const chuteHeight = 30;
       const chuteY = -10; // Position above the pegs
 
-      // Create gradient for chute background
+      // Create gradient for chute background - dark shadows at top, lighter at bottom
       const chuteGradient = ctx.createLinearGradient(
-        worldCenterX - chuteWidth/2, chuteY,
-        worldCenterX + chuteWidth/2, chuteY + chuteHeight
+        worldCenterX, chuteY,  // top center
+        worldCenterX, chuteY + chuteHeight  // bottom center
       );
-      chuteGradient.addColorStop(0, 'rgba(139, 92, 246, 0.8)'); // Purple top
-      chuteGradient.addColorStop(1, 'rgba(59, 130, 246, 0.6)'); // Blue bottom
+      // Match Plinko board background colors with inset effect
+      chuteGradient.addColorStop(0, 'rgb(0, 0, 0)'); // Dark top
+      chuteGradient.addColorStop(1, 'rgba(40, 40, 40, 0.7)'); // Lighter bottom
 
       ctx.fillStyle = chuteGradient;
       ctx.fillRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
 
-      // Add border
-      ctx.strokeStyle = 'rgba(139, 92, 246, 1)';
-      ctx.lineWidth = 2;
+      // Add inset border to match board styling
+      ctx.strokeStyle = 'rgba(25, 27, 29, 0.31)';
+      ctx.lineWidth = 1;
       ctx.strokeRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
 
-      // Add glow effect
-      ctx.shadowColor = 'rgba(139, 92, 246, 0.5)';
-      ctx.shadowBlur = 10;
+      
+      // Add inset shadow effect to match board
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 3;
       ctx.strokeRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
       ctx.shadowBlur = 0;
 
-      // Add "DROP ZONE" text
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('DROP ZONE', worldCenterX, chuteY + chuteHeight/2);
 
       ctx.restore();
 
@@ -609,6 +635,23 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
   return (
     <div ref={containerRef} className="w-full h-full relative bg-transparent">
       <canvas ref={canvasRef} />
+
+      {/* Sound Toggle Button */}
+      <button
+        onClick={handleSoundToggle}
+        className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800/80 hover:bg-gray-700/80 border border-gray-600/50 transition-all duration-200 backdrop-blur-sm z-10"
+        title={internalSoundEnabled ? 'Disable Sound' : 'Enable Sound'}
+      >
+        {internalSoundEnabled ? (
+          <svg className="w-4 h-4 text-cyan-300" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v1.79l2.48 2.25.02-.01zm-6.5 0c0 .83.25 1.59.67 2.24l.53-.53c-.25-.44-.4-.96-.4-1.71 0-.76.15-1.27.4-1.71l-.53-.53c-.42.65-.67 1.41-.67 2.24zm3.5-9.5l-7 7H3v6h4l7 7V2.5z"/>
+          </svg>
+        )}
+      </button>
     </div>
   );
 };

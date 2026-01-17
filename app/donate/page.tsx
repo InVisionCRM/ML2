@@ -12,7 +12,7 @@ import { LOTTERY_6OF55_V2_ABI } from '@/abi/lottery6of55-v2'
 import { useCurrentRound, useMegaMillionsBank } from '@/hooks/use-lottery-6of55'
 import { toast } from 'sonner'
 import { Heart, Coins, Trophy, Users, Sparkles } from 'lucide-react'
-import { Footer } from '@/components/shared/footer'
+import Footer from '@/components/PLINKO/Footer'
 
 export default function DonatePage() {
   const { address, isConnected } = useAccount()

@@ -96,22 +96,22 @@ const DEFAULT_PHYSICS: PhysicsConfig = {
   PEG_SPACING_X: 48,
   PEG_SPACING_Y: 48,
   START_Y: 60,
-  BUCKET_Y: 880,
-  PEG_RADIUS: 5.5,
-  BALL_RADIUS: 17,
-  GRAVITY: 1.2,
+  BUCKET_Y: 820,
+  PEG_RADIUS: 6,
+  BALL_RADIUS: 15,
+  GRAVITY: 1.6,
   ENGINE_ITERATIONS: 10,
   SUB_STEPS: 4,
-  BALL_DENSITY: 0.8,
+  BALL_DENSITY: 0.9,
   BALL_RESTITUTION: 0.6,
   BALL_FRICTION: 0.005,
-  BALL_FRICTION_AIR: 0.02,
-  PEG_RESTITUTION: 0.1,
+  BALL_FRICTION_AIR: 0.03,
+  PEG_RESTITUTION: 0.5,
   PEG_FRICTION: 0,
   FIXED_TIME_STEP: 16.666,
-  SPAWN_RANGE_X: 12,
+  SPAWN_RANGE_X: 5,
   INITIAL_V_X_VARIANCE: 0.05,
-  INITIAL_V_Y: 3,
+  INITIAL_V_Y: 1,
 };
 
 interface SimulationState {
@@ -266,10 +266,9 @@ export default function PlinkoSimulator() {
     for (let i = 0; i < totalDrops; i++) {
       const rng = seedrandom(`sim-${riskLevel}-${i}`);
 
-      // Gap spawning with center option
+      // Gap spawning - 50/50 left/right (matches simulate-plinko.js exactly)
       const gapOffset = physics.PEG_SPACING_X / 2;
-      const sideRand = rng();
-      const side = sideRand > 0.66 ? 1 : sideRand > 0.33 ? -1 : 0; // 33% left, 33% right, 33% center
+      const side = rng() > 0.5 ? 1 : -1; // 50% left, 50% right (no center)
       const spawnX =
         physics.WORLD_WIDTH / 2 +
         side * gapOffset +

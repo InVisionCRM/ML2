@@ -1,5 +1,6 @@
-// Auto-generated from Plinko.sol V5.1 (Testing - Reserve check disabled)
-export const PLINKO_ABI = [
+// Auto-generated from Plinko.sol V7 (Fixed 0-indexed bucket multiplier lookup)
+export const PLINKO_ABI = 
+[
   {
     "inputs": [
       {

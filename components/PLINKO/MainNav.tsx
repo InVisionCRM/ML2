@@ -17,10 +17,9 @@ interface MainNavProps {
   onShowHistory?: () => void; // Opens full history modal
   onBuyBalls?: () => void; // Opens buy balls modal (contract mode only)
   ballCount?: number; // Contract ball balance (contract mode only)
-  onDropBall?: () => void; // Drop ball function
 }
 
-export default function MainNav({ balance, soundEnabled, onSoundToggle, freePlayEnabled, onFreePlayToggle, onShowHistory, onBuyBalls, ballCount, onDropBall }: MainNavProps) {
+export default function MainNav({ balance, soundEnabled, onSoundToggle, freePlayEnabled, onFreePlayToggle, onShowHistory, onBuyBalls, ballCount }: MainNavProps) {
   const [howToPlayOpen, setHowToPlayOpen] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,9 +71,9 @@ export default function MainNav({ balance, soundEnabled, onSoundToggle, freePlay
               {isConnected && address ? (
                 <button
                   onClick={() => disconnect()}
-                  className="flex items-center gap-2 px-4 py-1 rounded-sm text-blue-500 text-sm font-bold transition-all hover:scale-105 active:scale-95"
+                  className="flex items-center border-2 border-cyan-500/30 gap-2 px-4 py-1 rounded-sm text-blue-500 text-sm font-bold transition-all hover:scale-105 active:scale-95"
                   style={{
-                    background: 'linear-gradient(145deg,rgba(26, 26, 46, 0),rgba(22, 33, 62, 0))',
+                    background: 'linear-gradient(145deg,rgba(111, 14, 132, 0.69),rgba(22, 33, 62, 0.6))',
                   }}
                 >
                   <span className="text-white">{address.slice(-4)}</span>
@@ -97,18 +96,6 @@ export default function MainNav({ balance, soundEnabled, onSoundToggle, freePlay
                 </ConnectButton.Custom>
               )}
 
-              {/* Drop Ball Button */}
-              {onDropBall && (
-                <button
-                  onClick={onDropBall}
-                  className="px-3 py-1 rounded-sm text-white text-sm font-bold transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: 'linear-gradient(145deg,rgba(147, 51, 234, 0.3),rgba(139, 69, 193, 0.3))',
-                  }}
-                >
-                  Drop Ball
-                </button>
-              )}
 
               {/* Hamburger Menu */}
               <div className="relative">

@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 import plinkoAbi from '@/abi/plinko.json';
 
 // Plinko contract address
-const PLINKO_CONTRACT = process.env.NEXT_PUBLIC_PLINKO_ADDRESS || '0x512C6E89046dD1417d32a970D878CC411a46C689';
+const PLINKO_CONTRACT = process.env.NEXT_PUBLIC_PLINKO_ADDRESS || '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
 
-import { Footer } from '@/components/shared/footer';
+import Footer from '@/components/PLINKO/Footer';
 
 export default function PlinkoStatsPage() {
   const { address } = useAccount();

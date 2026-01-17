@@ -7,7 +7,7 @@ async function main() {
 
   // Config
   const RPC_URL = 'https://rpc.pulsechain.com';
-  const PLINKO_ADDRESS = '0x212cb1Ea69F59E1F48e9C344053696c4adEbb845';
+  const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
   const MORBIUS_ADDRESS = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1';
   const FUNDING_AMOUNT = ethers.parseEther('10000'); // 10,000 MORBIUS
   const PRIVATE_KEY = process.env.PRIVATE_KEY;

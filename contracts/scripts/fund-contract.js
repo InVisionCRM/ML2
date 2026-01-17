@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const RPC_URL = 'https://rpc.pulsechain.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const PLINKO_ADDRESS = '0x9037Be0f7D97214F836198EB18D58F5A9b033d31';
+const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
 const MORBIUS_ADDRESS = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1';
 
 const ERC20_ABI = [

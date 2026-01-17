@@ -32,7 +32,7 @@ import { LiveKenoBoard } from '@/components/CryptoKeno/live-keno-board'
 import { KenoPrizePoolModal } from '@/components/CryptoKeno/keno-prize-pool-modal'
 import { useKenoTicketRoundHistory } from '@/hooks/use-keno-ticket-round-history'
 import { ContractAddress } from '@/components/ui/contract-address'
-import { Footer } from '@/components/shared/footer'
+import Footer from '@/components/PLINKO/Footer'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 
 const ALL_NUMBERS = Array.from({ length: 80 }, (_, i) => i + 1)
@@ -558,9 +558,9 @@ export default function KenoPage() {
   }, [address, publicClient])
 
   const { data: ticketDetails } = useReadContracts({
-    contracts: ticketIds.map((id) => ({ address: KENO_ADDRESS, abi: KENO_ABI, functionName: 'getTicket', args: [id] })),
+    contracts: ticketIds.map((id) => ({ address: KENO_ADDRESS, abi: KENO_ABI, functionName: 'getTicket', args: [id] } as const)),
     query: { enabled: ticketIds.length > 0, refetchInterval: 10000 },
-  })
+  }) as { data: any[] | undefined }
 
   const decodeNumbers = (bitmap: bigint): number[] => {
     const arr: number[] = []

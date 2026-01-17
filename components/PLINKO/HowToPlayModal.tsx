@@ -155,23 +155,23 @@ export default function HowToPlayModal({ open, onOpenChange }: HowToPlayModalPro
                   LOW RISK Multipliers
                 </h4>
                 <div className="grid grid-cols-6 gap-1 text-xs">
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">7.0x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">5.5x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2.7x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2.0x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.5x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">16x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">9x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.4x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.4x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.2x</div>
                   <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.1x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.0x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">0.8x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1x</div>
                   <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">0.5x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">0.8x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.0x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1x</div>
                   <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.1x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.5x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2.0x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2.7x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">5.5x</div>
-                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">7.0x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.2x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.4x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">1.4x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">2x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">9x</div>
+                  <div className="bg-[#AFFC41]/20 p-2 rounded text-center font-bold text-[#AFFC41]">16x</div>
                 </div>
               </div>
 
@@ -182,23 +182,23 @@ export default function HowToPlayModal({ open, onOpenChange }: HowToPlayModalPro
                   MEDIUM RISK Multipliers
                 </h4>
                 <div className="grid grid-cols-6 gap-1 text-xs">
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">15.0x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">7.0x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">3.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">2.0x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">110x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">41x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">10x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">5x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">3x</div>
                   <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1.0x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.8x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1x</div>
                   <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.2x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.3x</div>
                   <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">0.8x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1.0x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1x</div>
                   <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">1.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">2.0x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">3.5x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">7.0x</div>
-                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">15.0x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">3x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">5x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">10x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">41x</div>
+                  <div className="bg-[#4392F1]/20 p-2 rounded text-center font-bold text-[#4392F1]">110x</div>
                 </div>
               </div>
 
@@ -209,23 +209,23 @@ export default function HowToPlayModal({ open, onOpenChange }: HowToPlayModalPro
                   HIGH RISK Multipliers
                 </h4>
                 <div className="grid grid-cols-6 gap-1 text-xs">
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">35.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">15.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">7.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">3.5x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">2.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.8x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">1000x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">120x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">26x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">9x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">4x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">2x</div>
                   <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.2x</div>
                   <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.2x</div>
                   <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.2x</div>
                   <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.2x</div>
                   <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.2x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">0.8x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">2.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">3.5x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">7.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">15.0x</div>
-                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">35.0x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">2x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">4x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">9x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">26x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">120x</div>
+                  <div className="bg-[#FF331F]/20 p-2 rounded text-center font-bold text-[#FF331F]">1000x</div>
                 </div>
               </div>
             </div>

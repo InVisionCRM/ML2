@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Footer } from '@/components/shared/footer'
+import Footer from '@/components/PLINKO/Footer'
 import { HomeHeader } from '@/components/home/header'
 import { formatEther, parseAbiItem } from 'viem'
 import { PLINKO_ADDRESS, PLINKO_DEPLOY_BLOCK } from '@/lib/contracts'
@@ -158,15 +158,6 @@ export default function PlinkoVerifierPage() {
           </p>
         </div>
 
-        {/* Current System Notice */}
-        <Alert className="mb-8 border-yellow-400/20 bg-yellow-950/20">
-          <AlertTriangle className="h-4 w-4 text-yellow-400" />
-          <AlertDescription className="text-yellow-200">
-            <strong>Note:</strong> Our current Plinko implementation uses blockchain blockhash for randomness.
-            While transparent, it's not fully "provably fair" as results can't be verified before playing.
-            We're working on implementing a full provably fair system soon!
-          </AlertDescription>
-        </Alert>
 
         {/* Verification Input */}
         <Card className="p-6 mb-8 bg-gradient-to-br from-slate-950 to-slate-900/20 backdrop-blur-lg border-white/10">

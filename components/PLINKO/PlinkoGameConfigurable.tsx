@@ -62,10 +62,9 @@ const PlinkoGameConfigurable = forwardRef<PlinkoGameHandle, PlinkoGameConfigurab
 
         const rng = seedrandom(`test-${dropCounterRef.current++}`);
 
-        // Gap spawning with center option
+        // Gap spawning - 50/50 left/right (matches simulate-plinko.js exactly)
         const gapOffset = physics.PEG_SPACING_X / 2;
-        const sideRand = rng();
-        const side = sideRand > 0.66 ? 1 : sideRand > 0.33 ? -1 : 0; // 33% left, 33% right, 33% center
+        const side = rng() > 0.5 ? 1 : -1; // 50% left, 50% right (no center)
         const spawnX = physics.WORLD_WIDTH / 2 + side * gapOffset + (rng() - 0.5) * physics.SPAWN_RANGE_X;
         const initialVelX = (rng() - 0.5) * physics.INITIAL_V_X_VARIANCE;
 
@@ -335,34 +334,30 @@ const PlinkoGameConfigurable = forwardRef<PlinkoGameHandle, PlinkoGameConfigurab
         const chuteHeight = 30;
         const chuteY = -10; // Position above the pegs
 
-        // Create gradient for chute background
+        // Create inset gradient to match Plinko board background
         const chuteGradient = ctx.createLinearGradient(
-          worldCenterX - chuteWidth/2, chuteY,
-          worldCenterX + chuteWidth/2, chuteY + chuteHeight
+          worldCenterX, chuteY,  // top center
+          worldCenterX, chuteY + chuteHeight  // bottom center
         );
-        chuteGradient.addColorStop(0, 'rgba(139, 92, 246, 0.8)'); // Purple top
-        chuteGradient.addColorStop(1, 'rgba(59, 130, 246, 0.6)'); // Blue bottom
+        // Match the Plinko board colors: rgba(20, 20, 20, 0.8) to rgba(40, 40, 40, 0.6)
+        chuteGradient.addColorStop(0, 'rgba(20, 20, 20, 0.9)'); // Dark top
+        chuteGradient.addColorStop(1, 'rgba(40, 40, 40, 0.7)'); // Lighter bottom
 
         ctx.fillStyle = chuteGradient;
         ctx.fillRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
 
-        // Add border
-        ctx.strokeStyle = 'rgba(139, 92, 246, 1)';
-        ctx.lineWidth = 2;
+        // Add inset border to match board styling
+        ctx.strokeStyle = 'rgba(60, 60, 60, 0.6)';
+        ctx.lineWidth = 1;
         ctx.strokeRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
 
-        // Add glow effect
-        ctx.shadowColor = 'rgba(139, 92, 246, 0.5)';
-        ctx.shadowBlur = 10;
+        // Add inset shadow effect to match board
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
         ctx.strokeRect(worldCenterX - chuteWidth/2, chuteY, chuteWidth, chuteHeight);
         ctx.shadowBlur = 0;
-
-        // Add "DROP ZONE" text
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('DROP ZONE', worldCenterX, chuteY + chuteHeight/2);
 
         ctx.restore();
 

@@ -161,7 +161,7 @@ export function HomeHeader({ showBackArrow = false, backArrowHref = '/', backArr
                         {gamesSubmenuOpen && (
                           <div className="bg-black/20 border-t border-white/10">
                             <Link
-                              href="/"
+                              href="/lottery"
                               onClick={() => {
                                 setMenuOpen(false)
                                 setGamesSubmenuOpen(false)
