@@ -73,6 +73,7 @@ export function useAuth() {
 
     // Utilities
     address,
-    isConnected
+    isConnected,
+    signMessageAsync
   }
 }

@@ -13,6 +13,7 @@ import { CustomApprovalModal } from '@/components/PLINKO/CustomApprovalModal';
 import SlotMachine from '@/components/PLINKO/SlotMachine';
 import RealTimeBetChart, { RealTimeBetChartRef } from '@/components/PLINKO/RealTimeBetChart';
 import { usePlinkoHistory } from '@/hooks/use-plinko-history';
+import { PlinkoHistoryFilter } from '@/lib/plinko-types';
 import { usePlayerInfo, useWagerLimits, usePlinkoWrite, useWatchBallDropped } from '@/hooks/use-plinko-contract';
 import { PLINKO_ADDRESS, MORBIUS_TOKEN_ADDRESS } from '@/lib/contracts';
 import { PLINKO_ABI } from '@/abi/plinko';
@@ -836,12 +837,15 @@ const Home: React.FC = () => {
 
       console.log(`Dropping ${ballsToUpdate} balls with ${risk} risk (contract level: ${contractRiskLevel})`);
 
-      // Use dropMultipleBalls to drop ALL balls in ONE transaction
+      // Use buyBallsAndDrop - V5 requires buying and dropping in same transaction
+      // Convert wager to wei (assuming wager is in MORBIUS tokens)
+      const wagerPerBallWei = parseEther(wager.toString());
+
       const txHash = await writeContractAsync({
         address: PLINKO_ADDRESS,
         abi: PLINKO_ABI,
-        functionName: 'dropMultipleBalls',
-        args: [BigInt(ballsToUpdate), Number(contractRiskLevel)],
+        functionName: 'buyBallsAndDrop',
+        args: [BigInt(ballsToUpdate), wagerPerBallWei, Number(contractRiskLevel)],
       });
 
       // Wait for transaction confirmation with polling
@@ -867,7 +871,7 @@ const Home: React.FC = () => {
       setConfirmationStage(null);
 
       // Check if transaction succeeded
-      if (dropReceipt.status !== 1) {
+      if (dropReceipt.status !== 'success') {
         throw new Error('Multi-ball drop transaction failed');
       }
       console.log(`Successfully dropped ${ballsToUpdate} balls!`);
@@ -881,7 +885,7 @@ const Home: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to drop balls: ${errorMessage}`);
     }
-  }, [address, isConnected, contractBallBalance, writeContractAsync, publicClient, playerInfo]);
+  }, [address, isConnected, contractBallBalance, wager, writeContractAsync, publicClient, playerInfo]);
 
   const dropBall = useCallback((risk: RiskLevel) => {
     // Update selected risk level
@@ -1325,7 +1329,7 @@ const Home: React.FC = () => {
                       </button>
                       <button
                         onClick={() => setUsePLS(true)}
-                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance || priceError || isLoadingPrice}
+                        disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance || !!priceError || isLoadingPrice}
                         className={`py-2 lg:py-3 rounded-lg text-sms font-bold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           usePLS
                             ? 'text-purple-300 shadow-lg'
@@ -1829,7 +1833,14 @@ const Home: React.FC = () => {
           }
         }}
         onFilterChange={(filter) => {
-          plinkoHistory.updateFilter(filter);
+          const convertedFilter: Partial<PlinkoHistoryFilter> = {
+            ...filter,
+            dateFrom: filter.dateFrom ? new Date(filter.dateFrom).getTime() : undefined,
+            dateTo: filter.dateTo ? new Date(filter.dateTo).getTime() : undefined,
+            minWager: filter.minBet,
+            maxWager: filter.maxBet,
+          };
+          plinkoHistory.updateFilter(convertedFilter);
         }}
       />
 

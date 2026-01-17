@@ -18,6 +18,7 @@ import {
 import { KENO_ABI } from '@/lib/keno-abi'
 import { usePlayerLifetime, usePlayerRoundHistory, useWatchTicketsPurchased } from '@/hooks/use-lottery-6of55'
 import { usePlinkoHistory } from '@/hooks/use-plinko-history'
+import { PlinkoHistoryFilter } from '@/lib/plinko-types'
 import Footer from '@/components/PLINKO/Footer'
 import { PlinkoHistoryModal } from '@/components/PLINKO/PlinkoHistoryModal'
 import { usePublicClient as useLotteryPublicClient } from 'wagmi'
@@ -54,6 +55,27 @@ export default function LotteryPurchaseShowcase() {
     isConnected: plinkoConnected,
     playerKey: plinkoPlayerKey
   } = usePlinkoHistory()
+
+  // Wrapper function to convert string dates to numbers for PlinkoHistoryFilter
+  const handlePlinkoFilterChange = useCallback((filter: {
+    dateFrom?: string;
+    dateTo?: string;
+    minBet?: number;
+    maxBet?: number;
+    minWin?: number;
+    maxWin?: number;
+    minMultiplier?: number;
+    maxMultiplier?: number;
+  }) => {
+    const convertedFilter: Partial<PlinkoHistoryFilter> = {
+      ...filter,
+      dateFrom: filter.dateFrom ? new Date(filter.dateFrom).getTime() : undefined,
+      dateTo: filter.dateTo ? new Date(filter.dateTo).getTime() : undefined,
+      minWager: filter.minBet,
+      maxWager: filter.maxBet,
+    }
+    updatePlinkoFilter(convertedFilter)
+  }, [updatePlinkoFilter])
 
   // Debug logging for data comparison
   console.log('🔍 Showcase Page Debug:', {
@@ -728,7 +750,7 @@ export default function LotteryPurchaseShowcase() {
             abi: LOTTERY_6OF55_V2_ABI,
             functionName: 'getRound',
             args: [BigInt(roundId)],
-          })
+          }) as { state: bigint; winningNumbers: bigint[] }
 
           // Fetch player's tickets for this round
           const playerTickets = await lotteryClient.readContract({
@@ -1134,7 +1156,7 @@ export default function LotteryPurchaseShowcase() {
               await clearPlinkoHistory()
             }
           }}
-          onFilterChange={updatePlinkoFilter}
+          onFilterChange={handlePlinkoFilterChange}
         />
       </div>
 

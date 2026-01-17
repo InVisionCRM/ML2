@@ -557,8 +557,8 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
       let seedNum: number;
       try {
         seedNum = typeof contractSeed === 'bigint'
-          ? Number(contractSeed % 50n)
-          : Number(BigInt(contractSeed) % 50n);
+          ? Number(contractSeed % BigInt(50))
+          : Number(BigInt(contractSeed) % BigInt(50));
       } catch (e) {
         console.error('❌ Failed to convert seed to number:', e);
         seedNum = Math.floor(Math.random() * 50);

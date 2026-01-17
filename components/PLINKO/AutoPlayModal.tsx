@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RiskLevel } from '@/types';
+import { RiskLevel } from '@/app/PLINKO/types';
 import HighPercentageWarningModal from './HighPercentageWarningModal';
 
 interface AutoPlaySettings {
@@ -51,6 +51,7 @@ export default function AutoPlayModal({ open, onOpenChange, onStart, currentBala
   const [settings, setSettings] = useState<AutoPlaySettings>({
     riskLevel: 'GREEN',
     numberOfRounds: 10,
+    dropSpeed: 1000,
     stopOnLossEnabled: false,
     stopOnLossAmount: 0,
     stopOnBigWinEnabled: false,
