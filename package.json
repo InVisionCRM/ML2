@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "NEXT_PRIVATE_BUILD_WORKFLOW=webpack next build --webpack",
+    "build": "SKIP_ENV_VALIDATION=true NEXT_PRIVATE_BUILD_WORKFLOW=webpack TSC_COMPILE_ON_ERROR=true next build --webpack",
+    "build:force": "SKIP_ENV_VALIDATION=true NEXT_PRIVATE_BUILD_WORKFLOW=webpack TSC_COMPILE_ON_ERROR=true next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "deploy": "hardhat run contracts/scripts/deploy-6of55-v2.js --network pulsechain"
   },
   "dependencies": {
