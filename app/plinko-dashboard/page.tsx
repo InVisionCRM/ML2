@@ -81,6 +81,7 @@ export default function PlinkoDashboardPage() {
           onShowHistory={() => window.location.href = '/plinko-stats'}
           onShowSimulator={() => window.location.href = '/plinko-simulator'}
           onShowPaytable={() => window.location.href = '/PLINKO'}
+          onShowVerifier={() => window.location.href = '/plinko-verifier'}
           burnedAmount={burnedAmount}
           isLoadingBurned={isLoadingBurned}
         />
@@ -262,6 +263,7 @@ const SkeletonPlayPlinko = () => {
       transition: {
         duration: 2,
         repeat: Infinity,
+        ease: "easeInOut",
       },
     },
   };

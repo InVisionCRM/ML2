@@ -227,6 +227,7 @@ const SkeletonHowToPlay = () => {
       rotate: 2,
       transition: {
         duration: 0.3,
+        ease: "easeOut",
       },
     },
   };
@@ -243,6 +244,7 @@ const SkeletonHowToPlay = () => {
       rotate: -5,
       transition: {
         duration: 0.4,
+        ease: "easeOut",
       },
     },
   };
@@ -259,6 +261,7 @@ const SkeletonHowToPlay = () => {
       rotate: 8,
       transition: {
         duration: 0.35,
+        ease: "easeOut",
         delay: 0.05,
       },
     },
@@ -276,6 +279,7 @@ const SkeletonHowToPlay = () => {
       rotate: -3,
       transition: {
         duration: 0.45,
+        ease: "easeOut",
         delay: 0.1,
       },
     },

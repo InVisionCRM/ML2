@@ -631,12 +631,16 @@ export function TicketPurchaseBuilder({
               {/* Quick Actions - Inline */}
               <div className="flex gap-2">
                 <RippleButton
+                  size="sm"
+                  variant="outline"
                   className="border-white/30 text-white text-xs px-2 h-7"
                   onClick={handleQuickPick}
                 >
                   Quick Pick
                 </RippleButton>
                 <RippleButton
+                  size="sm"
+                  variant="outline"
                   className="border-white/30 text-white text-xs px-2 h-7"
                   onClick={() => setWorkingTicket([])}
                   disabled={workingTicket.length === 0}
@@ -652,6 +656,8 @@ export function TicketPurchaseBuilder({
             <label className="text-white/70 text-sm">Rounds for this ticket</label>
             <div className="flex items-center gap-2">
               <RippleButton
+                size="sm"
+                variant="outline"
                 className="border-white/30 text-white h-8 w-8 p-0"
                 onClick={() => setWorkingRounds(Math.max(1, workingRounds - 1))}
                 disabled={workingRounds <= 1}
@@ -668,6 +674,8 @@ export function TicketPurchaseBuilder({
                 title="Number of rounds for this ticket"
               />
               <RippleButton
+                size="sm"
+                variant="outline"
                 className="border-white/30 text-white h-8 w-8 p-0"
                 onClick={() => setWorkingRounds(Math.min(100, workingRounds + 1))}
                 disabled={workingRounds >= 100}
@@ -678,6 +686,8 @@ export function TicketPurchaseBuilder({
                 {[5, 10, 25, 50].map((v) => (
                   <RippleButton
                     key={v}
+                    size="sm"
+                    variant="outline"
                     className="border-white/30 text-white text-xs px-2 h-7"
                     onClick={() => setWorkingRounds(v)}
                   >
@@ -692,6 +702,7 @@ export function TicketPurchaseBuilder({
           <div className="flex gap-2">
             {editingIndex !== null && (
               <RippleButton
+                variant="outline"
                 className="border-white/30 text-white"
                 onClick={handleCancelEdit}
               >
@@ -975,6 +986,7 @@ export function TicketPurchaseBuilder({
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
               <RippleButton
+                variant="outline"
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500"
                 onClick={() => {
                   window.open(`https://scan.pulsechain.com/tx/${successTxHash}`, '_blank')
@@ -983,6 +995,7 @@ export function TicketPurchaseBuilder({
                 View Txn
               </RippleButton>
               <RippleButton
+                variant="outline"
                 className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20"
                 onClick={() => setShowSuccessModal(false)}
               >

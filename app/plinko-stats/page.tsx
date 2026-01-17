@@ -30,6 +30,7 @@ export default function PlinkoStatsPage() {
     abi: plinkoAbi,
     functionName: 'getPlayerInfo',
     args: address ? [address] : undefined,
+    enabled: !!address,
   });
 
   // Game Configuration
@@ -71,24 +72,22 @@ export default function PlinkoStatsPage() {
   });
 
   // Calculate derived stats
-  const stats = globalStats as readonly [bigint, bigint, bigint, bigint, bigint] | undefined;
-  const totalDrops = stats?.[0] ? Number(stats[0]) : 0;
-  const totalBallsSold = stats?.[1] ? Number(stats[1]) : 0;
-  const totalRevenue = stats?.[2] ? Number(stats[2]) / 1e18 : 0;
-  const totalPayouts = stats?.[3] ? Number(stats[3]) / 1e18 : 0;
-  const reserveBalance = stats?.[4] ? Number(stats[4]) / 1e18 : 0;
+  const totalDrops = globalStats?.[0] ? Number(globalStats[0]) : 0;
+  const totalBallsSold = globalStats?.[1] ? Number(globalStats[1]) : 0;
+  const totalRevenue = globalStats?.[2] ? Number(globalStats[2]) / 1e18 : 0;
+  const totalPayouts = globalStats?.[3] ? Number(globalStats[3]) / 1e18 : 0;
+  const reserveBalance = globalStats?.[4] ? Number(globalStats[4]) / 1e18 : 0;
 
   const netProfit = totalRevenue - totalPayouts;
   const houseEdge = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
   const averagePayoutPerDrop = totalDrops > 0 ? totalPayouts / totalDrops : 0;
 
   // Player derived stats
-  const playerData = playerStats as readonly [bigint, bigint, bigint, bigint, bigint] | undefined;
-  const playerBallBalance = playerData?.[0] ? Number(playerData[0]) : 0;
-  const playerTotalDrops = playerData?.[1] ? Number(playerData[1]) : 0;
-  const playerTotalWon = playerData?.[2] ? Number(playerData[2]) / 1e18 : 0;
-  const playerBiggestWin = playerData?.[3] ? Number(playerData[3]) / 1e18 : 0;
-  const playerTotalPurchased = playerData?.[4] ? Number(playerData[4]) / 1e18 : 0;
+  const playerBallBalance = playerStats?.[0] ? Number(playerStats[0]) : 0;
+  const playerTotalDrops = playerStats?.[1] ? Number(playerStats[1]) : 0;
+  const playerTotalWon = playerStats?.[2] ? Number(playerStats[2]) / 1e18 : 0;
+  const playerBiggestWin = playerStats?.[3] ? Number(playerStats[3]) / 1e18 : 0;
+  const playerTotalPurchased = playerStats?.[4] ? Number(playerStats[4]) / 1e18 : 0;
 
   const playerNetProfit = playerTotalWon - playerTotalPurchased;
   const playerWinRate = playerTotalPurchased > 0 ? (playerTotalWon / playerTotalPurchased) * 100 : 0;
@@ -325,7 +324,7 @@ export default function PlinkoStatsPage() {
             </h3>
 
             <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-15 gap-4">
-              {(multipliers as readonly bigint[] | undefined)?.map((multiplier: bigint, index: number) => (
+              {multipliers?.map((multiplier: bigint, index: number) => (
                 <div key={index} className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
                   <div className="text-sm text-gray-500 font-medium mb-1">Bucket {index + 1}</div>
                   <div className="text-lg font-semibold text-gray-900">

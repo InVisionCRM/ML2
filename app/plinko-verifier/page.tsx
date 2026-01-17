@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import Footer from '@/components/PLINKO/Footer'
 import { HomeHeader } from '@/components/home/header'
-import { formatEther, parseAbiItem, encodeEventTopics } from 'viem'
+import { formatEther, parseAbiItem } from 'viem'
 import { PLINKO_ADDRESS, PLINKO_DEPLOY_BLOCK } from '@/lib/contracts'
 import { PLINKO_ABI } from '@/abi/plinko'
 import { CheckCircle, AlertTriangle, Info, Shield, Hash, Eye } from 'lucide-react'
@@ -62,8 +63,8 @@ export default function PlinkoVerifierPage() {
 
       // Get block details
       const block = await publicClient.getBlock({ blockNumber: tx.blockNumber })
-      const previousBlockHash = tx.blockNumber > BigInt(0) ?
-        (await publicClient.getBlock({ blockNumber: tx.blockNumber - BigInt(1) })).hash : undefined
+      const previousBlockHash = tx.blockNumber > 0n ?
+        (await publicClient.getBlock({ blockNumber: tx.blockNumber - 1n })).hash : undefined
 
       // Parse BallDropped events
       const ballDroppedEvents: BallDropEvent[] = []
@@ -71,10 +72,8 @@ export default function PlinkoVerifierPage() {
       if (receipt.logs) {
         for (const log of receipt.logs) {
           try {
-            const eventTopics = encodeEventTopics({
-              abi: [parseAbiItem('event BallDropped(address indexed player,uint256 seed,uint8 bucket,uint256 multiplier,uint256 payout,uint8 riskLevel)')],
-            })
-            if (log.topics[0] === eventTopics[0]) {
+            const event = parseAbiItem('event BallDropped(address indexed player,uint256 seed,uint8 bucket,uint256 multiplier,uint256 payout,uint8 riskLevel)')
+            if (log.topics[0] === event.signature) {
               const decoded = {
                 player: `0x${log.topics[1]?.slice(26)}` as `0x${string}`,
                 seed: BigInt(log.data.slice(0, 66)),
