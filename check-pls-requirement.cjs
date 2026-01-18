@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 
 async function main() {
   const RPC_URL = 'https://rpc.pulsechain.com';
-  const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
+  const PLINKO_ADDRESS = '0x37B1db8F06870BFFeFed862C06535BEFc4383ff8';
   const ROUTER_ADDRESS = '0x98bf93ebf5c380C0e6Ae8e192A7e2AE08edAcc02'; // PulseX Router V2
   
   const provider = new ethers.JsonRpcProvider(RPC_URL);

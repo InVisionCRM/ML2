@@ -7,7 +7,7 @@ interface PaymentBadgesProps {
 
 export function PaymentBadges({ className }: PaymentBadgesProps) {
   return (
-    <div className={cn("absolute top-4 right-4 grid grid-cols-4 gap-1", className)}>
+    <div className={cn("absolute top-4 left-4 flex gap-2", className)}>
       {/* Morbius Badge */}
       <Badge
         variant="outline"

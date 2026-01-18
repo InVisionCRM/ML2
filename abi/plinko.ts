@@ -1,6 +1,5 @@
-// Auto-generated from Plinko.sol V7 (Fixed 0-indexed bucket multiplier lookup)
-export const PLINKO_ABI = 
-[
+// Auto-generated from Plinko.sol V8 (Burns tokens instead of deployer fee)
+export const PLINKO_ABI = [
   {
     "inputs": [
       {
@@ -16,11 +15,6 @@ export const PLINKO_ABI =
       {
         "internalType": "address",
         "name": "_pulseXRouter",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_deployerRecipient",
         "type": "address"
       },
       {
@@ -75,11 +69,6 @@ export const PLINKO_ABI =
   {
     "inputs": [],
     "name": "InvalidMultipliers",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidRecipient",
     "type": "error"
   },
   {
@@ -241,19 +230,6 @@ export const PLINKO_ABI =
     "inputs": [
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "newRecipient",
-        "type": "address"
-      }
-    ],
-    "name": "DeployerRecipientUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -379,7 +355,20 @@ export const PLINKO_ABI =
   },
   {
     "inputs": [],
-    "name": "DEPLOYER_FEE_BPS",
+    "name": "BURN_ADDRESS",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "BURN_FEE_BPS",
     "outputs": [
       {
         "internalType": "uint256",
@@ -634,19 +623,6 @@ export const PLINKO_ABI =
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "deployerRecipient",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1046,19 +1022,6 @@ export const PLINKO_ABI =
       }
     ],
     "name": "setBucketMultipliers",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newRecipient",
-        "type": "address"
-      }
-    ],
-    "name": "setDeployerRecipient",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

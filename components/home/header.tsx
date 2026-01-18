@@ -40,15 +40,8 @@ export function HomeHeader({ showBackArrow = false, backArrowHref = '/', backArr
               </Link>
             )}
             <Link href="/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="text-left">
-              <h1 className="text-xl font-bold text-white leading-none hidden sm:inline">MORBIUS.IO</h1>
-              <img
-                src="/MORBIUS/MORBIUSLogo (3).png"
-                alt="MORBIUS.io"
-                className="h-6 w-auto sm:hidden inline"
-              />
-            </div>
-          </Link>
+              <h1 className="text-xl font-bold text-white leading-none">Morbius.io</h1>
+            </Link>
           </div>
 
           {/* Right: Auth + Wallet + Hamburger */}

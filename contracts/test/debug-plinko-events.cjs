@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 
 async function main() {
   const RPC_URL = 'https://rpc.pulsechain.com';
-  const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb'; // Current address from lib/contracts.ts
+  const PLINKO_ADDRESS = '0x37B1db8F06870BFFeFed862C06535BEFc4383ff8'; // Current address from lib/contracts.ts
   const BALL_DROPPED_TOPIC = '0x30783330098d3f5ba08918f162dd444f105033a06e699dfcfc7f8571286cda34';
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);

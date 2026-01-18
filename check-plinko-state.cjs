@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 
 async function main() {
   const RPC_URL = 'https://rpc.pulsechain.com';
-  const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
+  const PLINKO_ADDRESS = '0x37B1db8F06870BFFeFed862C06535BEFc4383ff8';
   const MORBIUS_ADDRESS = '0xB7d4eB5fDfE3d4d3B5C16a44A49948c6EC77c6F1';
   const USER_ADDRESS = '0x70444750eedF1B2c9b777cbF096a5919A14895e5'; // Replace with your wallet
 

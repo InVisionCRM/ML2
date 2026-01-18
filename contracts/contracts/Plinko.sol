@@ -39,9 +39,12 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
 
        uint8 public constant TOTAL_BUCKETS = 17;
     uint256 public constant BPS_DENOMINATOR = 10000;
-    uint256 public constant DEPLOYER_FEE_BPS = 500; // 5%
+    uint256 public constant BURN_FEE_BPS = 1000; // 10% burn
     uint256 public constant WPLS_SWAP_BUFFER_PCT = 15000; // 50% buffer for PLS purchases
     uint256 public constant MIN_BALL_PRICE = 1 * 10**18; // 1 MORBIUS minimum
+
+    // Burn address for deflationary tokenomics
+    address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
     // Risk levels
     uint8 public constant RISK_LOW = 0;
@@ -58,7 +61,6 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
 
     uint256 public minWagerPerBall;
     uint256 public maxWagerPerBall;
-    address public deployerRecipient;
     uint256 public contractReserve; // Available funds for payouts
 
     // Risk level multiplier arrays (all in basis points)
@@ -112,7 +114,6 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
     event BallPriceUpdated(uint256 newPrice);
     event MaxBallPriceUpdated(uint256 newMaxPrice);
     event MultipliersUpdated(uint256[TOTAL_BUCKETS] newMultipliers);
-    event DeployerRecipientUpdated(address newRecipient);
     event EmergencyWithdraw(uint256 amount);
     event ContractFunded(address indexed funder, uint256 amount);
 
@@ -125,7 +126,6 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
     error InvalidWagerAmount();
     error InvalidMultipliers();
     error ExceedsReserve();
-    error InvalidRecipient();
     error InvalidRiskLevel();
 
     // ============ Constructor ============
@@ -134,14 +134,12 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
         address _morbiusToken,
         address _wplsToken,
         address _pulseXRouter,
-        address _deployerRecipient,
         uint256 _minWager,
         uint256 _maxWager
     ) Ownable(msg.sender) {
         MORBIUS_TOKEN = IERC20(_morbiusToken);
         WPLS_TOKEN = IWrappedPulse(_wplsToken);
         pulseXRouter = IPulseXRouter(_pulseXRouter);
-        deployerRecipient = _deployerRecipient;
         minWagerPerBall = _minWager;
         maxWagerPerBall = _maxWager;
 
@@ -227,12 +225,12 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
 
         uint256 gross = count * wagerPerBall;
 
-        // Simple fee split: 5% deployer, 95% to contract reserve
-        uint256 deployerFee = (gross * DEPLOYER_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 toContract = gross - deployerFee;
+        // Fee split: 10% burn, 90% to contract reserve
+        uint256 burnFee = (gross * BURN_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 toContract = gross - burnFee;
 
-        // Transfer deployer fee
-        MORBIUS_TOKEN.safeTransferFrom(msg.sender, deployerRecipient, deployerFee);
+        // Transfer burn fee to burn address
+        MORBIUS_TOKEN.safeTransferFrom(msg.sender, BURN_ADDRESS, burnFee);
 
         // Transfer rest to contract (payout reserve)
         MORBIUS_TOKEN.safeTransferFrom(msg.sender, address(this), toContract);
@@ -331,12 +329,12 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
 
         uint256 morbiusReceived = swapResult[1];
 
-        // Simple fee split: 5% deployer, 95% to contract reserve
-        uint256 deployerFee = (morbiusReceived * DEPLOYER_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 toContract = morbiusReceived - deployerFee;
+        // Fee split: 10% burn, 90% to contract reserve
+        uint256 burnFee = (morbiusReceived * BURN_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 toContract = morbiusReceived - burnFee;
 
-        // Transfer deployer fee
-        MORBIUS_TOKEN.safeTransfer(deployerRecipient, deployerFee);
+        // Transfer burn fee to burn address
+        MORBIUS_TOKEN.safeTransfer(BURN_ADDRESS, burnFee);
 
         // Update purchase balances and stats
         playerTotalPurchased[msg.sender] += morbiusReceived;
@@ -526,16 +524,6 @@ contract Plinko is Ownable, ReentrancyGuard, Pausable {
         emit MultipliersUpdated(newMultipliers);
     }
 
-    /**
-     * @notice Update deployer fee recipient
-     * @param newRecipient New deployer wallet address
-     */
-    function setDeployerRecipient(address newRecipient) external onlyOwner {
-        if (newRecipient == address(0)) revert InvalidRecipient();
-
-        deployerRecipient = newRecipient;
-        emit DeployerRecipientUpdated(newRecipient);
-    }
 
     /**
      * @notice Pause the contract (emergency)

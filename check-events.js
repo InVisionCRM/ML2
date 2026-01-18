@@ -1,7 +1,7 @@
 import hre from "hardhat";
 
 async function main() {
-  const PLINKO_ADDRESS = "0x328F7Afefb8F561B5A832954257c01B3723054Fb";
+  const PLINKO_ADDRESS = "0x37B1db8F06870BFFeFed862C06535BEFc4383ff8";
 
   console.log("Checking Plinko contract events...");
 

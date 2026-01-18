@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import plinkoAbi from '@/abi/plinko.json';
 
 // Plinko contract address
-const PLINKO_CONTRACT = process.env.NEXT_PUBLIC_PLINKO_ADDRESS || '0x328F7Afefb8F561B5A832954257c01B3723054Fb';
+const PLINKO_CONTRACT = process.env.NEXT_PUBLIC_PLINKO_ADDRESS || '0x37B1db8F06870BFFeFed862C06535BEFc4383ff8';
 
 import Footer from '@/components/PLINKO/Footer';
 

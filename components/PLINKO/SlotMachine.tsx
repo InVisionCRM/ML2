@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { LoaderOne } from '@/components/ui/loader';
+import { AudioManager } from '@/hooks/use-audio';
 
 // Casino symbols with casino-themed icons
 const SYMBOLS = [
@@ -25,17 +26,24 @@ interface SlotMachineProps {
   onClose?: () => void;
 }
 
-// Sound generator using Web Audio API
+// Sound generator using shared Web Audio API context (mobile-friendly)
 class SlotSoundEngine {
-  private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
 
+  private getContext(): AudioContext | null {
+    return AudioManager.getContext();
+  }
+
   init() {
-    if (this.audioContext) return;
+    const ctx = this.getContext();
+    if (!ctx || this.masterGain) return;
+
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.masterGain = this.audioContext.createGain();
-      this.masterGain.connect(this.audioContext.destination);
+      // Unlock audio for mobile browsers
+      AudioManager.unlock();
+
+      this.masterGain = ctx.createGain();
+      this.masterGain.connect(ctx.destination);
       this.masterGain.gain.value = 0.25;
     } catch (e) {
       console.warn('Web Audio API not supported');
@@ -43,43 +51,54 @@ class SlotSoundEngine {
   }
 
   private playTone(frequency: number, duration: number, type: OscillatorType = 'sine') {
-    if (!this.audioContext || !this.masterGain) return;
+    const ctx = this.getContext();
+    if (!ctx || !this.masterGain) return;
 
-    const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
+    // Ensure context is running (mobile browsers may suspend it)
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
     oscillator.connect(gainNode);
     gainNode.connect(this.masterGain);
 
     oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
 
-    gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
-    oscillator.start(this.audioContext.currentTime);
-    oscillator.stop(this.audioContext.currentTime + duration);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + duration);
   }
 
   spinStart() {
     this.init();
-    if (!this.audioContext || !this.masterGain) return;
+    const ctx = this.getContext();
+    if (!ctx || !this.masterGain) return;
 
-    const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
     oscillator.connect(gainNode);
     gainNode.connect(this.masterGain);
 
     oscillator.type = 'sawtooth';
-    oscillator.frequency.setValueAtTime(100, this.audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.3);
+    oscillator.frequency.setValueAtTime(100, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
 
-    gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+    gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
 
     oscillator.start();
-    oscillator.stop(this.audioContext.currentTime + 0.4);
+    oscillator.stop(ctx.currentTime + 0.4);
   }
 
   tick() {

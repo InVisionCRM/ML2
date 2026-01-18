@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import seedrandom from 'seedrandom';
+import { useAudio } from '@/hooks/use-audio';
 import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
@@ -57,11 +58,19 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
   // Sound state management
   const [internalSoundEnabled, setInternalSoundEnabled] = useState(soundEnabled);
 
-  // Sound toggle handler
+  // Use the audio hook for mobile-friendly sound playback
+  const { playSound, unlockAudio } = useAudio(internalSoundEnabled);
+
+  // Sound toggle handler - also unlocks audio on mobile when enabling
   const handleSoundToggle = () => {
     const newState = !internalSoundEnabled;
     setInternalSoundEnabled(newState);
     onSoundToggle?.(newState);
+
+    // Unlock audio when user enables sound (user gesture)
+    if (newState) {
+      unlockAudio();
+    }
   };
 
   // Seed database for deterministic physics replay
@@ -104,19 +113,6 @@ const PlinkoGame: React.FC<PlinkoGameProps> = ({ onScore, lastDrop, selectedRisk
       });
   }, []);
 
-  // Sound functions
-  const playSound = (soundPath: string) => {
-    if (!internalSoundEnabled) return;
-    try {
-      const audio = new Audio(soundPath);
-      audio.volume = 0.3;
-      audio.play().catch(() => {
-        // Silently fail if audio can't play
-      });
-    } catch (error) {
-      // Silently fail if audio system fails
-    }
-  };
 
   // 1. Handle Resize & High-DPI (Retina) Resolution
   useEffect(() => {

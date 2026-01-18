@@ -21,13 +21,13 @@ export const LOTTERY_ADDRESS = '0xD66b4489fbfF99A8d62f969203899840F2ec69c5' as c
 export const KENO_ADDRESS = '0x734A1460b4131F8cFE4950894Be89d1a852c957A' as const
 
 // Plinko contract (17-bucket casino-style game with RISK LEVELS + VARIABLE WAGERS)
-// V6: Weighted bucket distribution (binomial) - matches physics simulation RTP
-export const PLINKO_ADDRESS = '0x328F7Afefb8F561B5A832954257c01B3723054Fb' as const
+// V8: New deployment on PulseChain Mainnet
+export const PLINKO_ADDRESS = '0x37B1db8F06870BFFeFed862C06535BEFc4383ff8' as const
 
 // Contract deployment info
 export const LOTTERY_DEPLOY_BLOCK = 25329129
 export const KENO_DEPLOY_BLOCK = 25341670 // Deployed Dec 21, 2025
-export const PLINKO_DEPLOY_BLOCK = 25551380 // V7: Fixed 0-indexed bucket multiplier lookup
+export const PLINKO_DEPLOY_BLOCK = 25557180 // V8: New deployment block 25,557,180
 
 // Lottery constants
 export const TICKET_PRICE = BigInt(100_000_000_000_000_000_000) // 100 tokens (18 decimals)
