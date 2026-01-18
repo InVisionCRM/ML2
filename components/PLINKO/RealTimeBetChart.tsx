@@ -10,6 +10,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { PlinkoHistoryModal } from './PlinkoHistoryModal';
+import { PlinkoDrop, PlinkoPlayerStats } from '@/lib/plinko-types';
 
 interface BetDataPoint {
   dropNumber: number;
@@ -26,6 +28,14 @@ interface RealTimeBetChartProps {
   contractWagerPerBall?: number;
   freePlayWager?: number;
   onNewDataPoint?: (dataPoint: BetDataPoint) => void;
+  // Optional props for history modal
+  drops?: PlinkoDrop[];
+  stats?: PlinkoPlayerStats | null;
+  isConnected?: boolean;
+  playerKey?: string;
+  onExport?: () => void;
+  onClear?: () => void;
+  onFilterChange?: (filter: any) => void;
 }
 
 export interface RealTimeBetChartRef {
@@ -36,7 +46,14 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
   sessionStartTime = Date.now(),
   contractWagerPerBall = 0,
   freePlayWager = 0,
-  onNewDataPoint
+  onNewDataPoint,
+  drops = [],
+  stats = null,
+  isConnected = false,
+  playerKey = '',
+  onExport = () => {},
+  onClear = () => {},
+  onFilterChange = () => {}
 }, ref) => {
   const [betHistory, setBetHistory] = useState<BetDataPoint[]>([]);
   const [currentStats, setCurrentStats] = useState({
@@ -44,6 +61,7 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
     totalWagered: 0,
     totalWon: 0
   });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   // Function to add data points from external calls
   const addDataPoint = useCallback((multiplier: number, bucketIndex: number, contractData?: any) => {
@@ -134,6 +152,18 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
         border: '1px inset rgba(60, 60, 60, 0.5)',
       }}
     >
+      {/* History Button */}
+      <div className="mb-1 flex items-center gap-2">
+        <button
+          onClick={() => setHistoryModalOpen(true)}
+          className="flex items-center gap-1 px-2 py-1 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 rounded text-cyan-300 text-xs font-medium transition-colors"
+          title="View History"
+        >
+          <i className="fas fa-history text-xs"></i>
+          History
+        </button>
+      </div>
+
       {/* Header with Stats */}
       <div className="mb-1">
         <div className="grid grid-cols-3 items-center justify-center text-center">
@@ -172,17 +202,17 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={pnlData} margin={{ top: 0, right: 0, left: 0, bottom: 5 }}>
+            <AreaChart data={pnlData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
               <defs>
-                {/* Green gradient for positive values */}
+                {/* Cyan gradient for positive values */}
                 <linearGradient id="positiveGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity={0.6}/>
-                  <stop offset="100%" stopColor="#10B981" stopOpacity={0.05}/>
+                  <stop offset="0%" stopColor="#0891b2" stopOpacity={0.6}/>
+                  <stop offset="100%" stopColor="#0891b2" stopOpacity={0.05}/>
                 </linearGradient>
-                {/* Red gradient for negative values */}
+                {/* Blue gradient for negative values */}
                 <linearGradient id="negativeGradient" x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity={0.6}/>
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity={0.05}/>
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.6}/>
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.05}/>
                 </linearGradient>
               </defs>
 
@@ -247,6 +277,19 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* History Modal */}
+      <PlinkoHistoryModal
+        open={historyModalOpen}
+        onOpenChange={setHistoryModalOpen}
+        drops={drops}
+        stats={stats}
+        isConnected={isConnected}
+        playerKey={playerKey}
+        onExport={onExport}
+        onClear={onClear}
+        onFilterChange={onFilterChange}
+      />
 
     </div>
   );

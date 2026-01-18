@@ -12,13 +12,13 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="bg-black/75 backdrop-blur-sm border-t border-black/10 py-1 px-1 mt-auto">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2">
+      <footer className="bg-black/75 backdrop-blur-sm border-t border-black/10 py-4 px-4 mt-auto">
+        <div className="container mx-auto max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {/* Column 1 - More From Morbius.io */}
-            <div>
-              <h3 className="text-purple-500 font-bold text-xs mb-1">More From Morbius.io!</h3>
-              <ul className="space-y-0.5">
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-purple-500 font-bold text-xs mb-2 md:mb-1">More From Morbius.io!</h3>
+              <ul className="space-y-1 md:space-y-0.5 text-center md:text-left">
                 <li>
                   <a href="#" className="text-gray-700 hover:text-green-600 transition-colors text-xs">
                     Lottery
@@ -48,9 +48,9 @@ export default function Footer() {
             </div>
 
             {/* Column 2 - Quick Links */}
-            <div>
-              <h3 className="text-purple-500 font-bold text-xs mb-1">Quick Links</h3>
-              <ul className="space-y-0.5">
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-purple-500 font-bold text-xs mb-2 md:mb-1">Quick Links</h3>
+              <ul className="space-y-1 md:space-y-0.5 text-center md:text-left">
                 <li>
                   <a href="/home" className="text-gray-700 hover:text-green-600 transition-colors text-xs">
                     Home
@@ -96,9 +96,9 @@ export default function Footer() {
             </div>
 
             {/* Column 3 - Resources */}
-            <div>
-              <h3 className="text-purple-500 font-bold text-xs mb-1">Resources</h3>
-              <ul className="space-y-0.5">
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-purple-500 font-bold text-xs mb-2 md:mb-1">Resources</h3>
+              <ul className="space-y-1 md:space-y-0.5 text-center md:text-left">
                 <li>
                   <button
                     onClick={() => setAboutOpen(true)}
@@ -131,9 +131,9 @@ export default function Footer() {
             </div>
 
             {/* Column 4 - Social Media */}
-            <div>
-              <h3 className="text-purple-500 font-bold text-xs mb-1">Connect</h3>
-              <ul className="space-y-0.5">
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-purple-500 font-bold text-xs mb-2 md:mb-1">Connect</h3>
+              <ul className="space-y-1 md:space-y-0.5 text-center md:text-left">
                 <li>
                   <a
                     href="https://x.com/Morbius_io"
@@ -172,8 +172,8 @@ export default function Footer() {
           </div>
 
           {/* Copyright */}
-          <div className="mt-1 pt-1 border-t border-black/10 text-center">
-            <p className="text-gray-600 text-[10px]">
+          <div className="mt-3 pt-2 border-t border-black/10 text-center">
+            <p className="text-gray-600 text-[10px] sm:text-xs">
               © 2025 Morbius.io. All rights reserved.
             </p>
           </div>

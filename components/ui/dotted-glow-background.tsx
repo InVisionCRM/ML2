@@ -28,6 +28,8 @@ type DottedGlowBackgroundProps = {
   opacity?: number;
   /** background radial fade opacity (0 = transparent background) */
   backgroundOpacity?: number;
+  /** edge fade opacity (0 = no edge fading, 1 = full edge fading) */
+  edgeFadeOpacity?: number;
   /** minimum per-dot speed in rad/s */
   speedMin?: number;
   /** maximum per-dot speed in rad/s */
@@ -56,6 +58,7 @@ export const DottedGlowBackground = ({
   glowColorDarkVar,
   opacity = 0.6,
   backgroundOpacity = 0,
+  edgeFadeOpacity = 0.3,
   speedMin = 0.4,
   speedMax = 1.3,
   speedScale = 1,
@@ -233,6 +236,7 @@ export const DottedGlowBackground = ({
         ctx.fillRect(0, 0, width, height);
       }
 
+
       // animate dots
       ctx.save();
       ctx.fillStyle = resolvedColor;
@@ -240,22 +244,38 @@ export const DottedGlowBackground = ({
       const time = (now / 1000) * Math.max(speedScale, 0);
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
+
+        // Calculate distance from center for edge fading
+        const centerX = width * 0.5;
+        const centerY = height * 0.5;
+        const distanceFromCenter = Math.sqrt(
+          Math.pow(d.x - centerX, 2) + Math.pow(d.y - centerY, 2)
+        );
+        const maxDistance = Math.sqrt(Math.pow(width * 0.5, 2) + Math.pow(height * 0.5, 2));
+
+        // Edge fade factor (0 at center, 1 at edges)
+        const edgeFadeFactor = Math.min(distanceFromCenter / (maxDistance * 0.8), 1);
+        const edgeFadeMultiplier = 1 - (edgeFadeFactor * edgeFadeOpacity);
+
         // Linear triangle wave 0..1..0 for linear glow/dim
         const mod = (time * d.speed + d.phase) % 2;
         const lin = mod < 1 ? mod : 2 - mod; // 0..1..0
         const a = 0.25 + 0.55 * lin; // 0.25..0.8 linearly
 
-        // draw glow when bright
-        if (a > 0.6) {
+        // Apply edge fading to the alpha
+        const finalAlpha = a * opacity * edgeFadeMultiplier;
+
+        // draw glow when bright (but only if not too faded at edges)
+        if (a > 0.6 && finalAlpha > 0.3) {
           const glow = (a - 0.6) / 0.4; // 0..1
           ctx.shadowColor = resolvedGlowColor;
-          ctx.shadowBlur = 6 * glow;
+          ctx.shadowBlur = 6 * glow * edgeFadeMultiplier;
         } else {
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
         }
 
-        ctx.globalAlpha = a * opacity;
+        ctx.globalAlpha = finalAlpha;
         ctx.beginPath();
         ctx.arc(d.x, d.y, radius, 0, Math.PI * 2);
         ctx.fill();
@@ -286,6 +306,7 @@ export const DottedGlowBackground = ({
     resolvedGlowColor,
     opacity,
     backgroundOpacity,
+    edgeFadeOpacity,
     speedMin,
     speedMax,
     speedScale,
