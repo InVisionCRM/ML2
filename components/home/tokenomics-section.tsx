@@ -43,15 +43,8 @@ export function TokenomicsSection() {
           variants={fadeIn}
         >
           <div className="text-center mb-8">
-            <h3 className="text-3xl md:text-4xl font-russo-one font-normal text-white mb-2 flex items-center justify-center gap-3">
+            <h3 className="text-3xl md:text-4xl font-russo-one font-normal text-white mb-2">
               Every Game Burns Morbius
-              <Image
-                src="/morbius/MorbiusLogo (3).png"
-                alt="Morbius"
-                width={32}
-                height={32}
-                className="inline-block"
-              />
             </h3>
           </div>
         </motion.div>

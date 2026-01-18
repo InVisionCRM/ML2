@@ -22,7 +22,7 @@ export function HomeHeader({ showBackArrow = false, backArrowHref = '/', backArr
   const { isAuthenticated, signIn, signOut, isSigning, address } = useAuth()
 
   return (
-    <header className="border-b border-white/30 bg-purple-950/10 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-white/30 bg-gradient-to-r from-purple-500/30 to-cyan-500/30 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-3 py-3 relative">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Left: Back Arrow + Morbius Logo */}
@@ -40,7 +40,7 @@ export function HomeHeader({ showBackArrow = false, backArrowHref = '/', backArr
               </Link>
             )}
             <Link href="/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <h1 className="text-xl font-bold text-white leading-none">Morbius.io</h1>
+              <h1 className="text-xl font-russo-one font-normal text-white leading-none">Morbius.io</h1>
             </Link>
           </div>
 
