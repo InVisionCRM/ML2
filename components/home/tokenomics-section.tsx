@@ -87,16 +87,8 @@ export function TokenomicsSection() {
           variants={fadeIn}
         >
           <div className="text-center mb-8">
-              <h3 className="text-3xl md:text-4xl font-russo-one font-normal text-white mb-2 flex items-center justify-center gap-3">
-                All bets in PLS
-                <Image
-                  src="/Pulse Branding/Logo/ball.png"
-                  alt="PLS"
-                  width={32}
-                  height={32}
-                  className="inline-block"
-                />
-                are converted to Morbius
+              <h3 className="text-3xl md:text-4xl font-russo-one font-normal text-white mb-2">
+                All bets in PLS are converted to Morbius
               </h3>
           </div>
           <CometCard>

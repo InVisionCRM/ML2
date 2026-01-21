@@ -1135,17 +1135,17 @@ const Home: React.FC = () => {
       {/* RESPONSIVE LAYOUT - Mobile-first approach */}
       <div className="flex relative pt-16 px-2 gap-2 flex-col lg:flex-row lg:px-3 lg:gap-3 pb-[50px] min-h-[calc(100vh-4rem)]">
         {/* LEFT COLUMN - BUY SECTION + CHART - Mobile-first responsive */}
-        <div className="order-2 lg:order-1 lg:flex lg:w-[400px] xl:w-[400px] 2xl:w-[400px] lg:flex-col lg:justify-center lg:p-1 lg:overflow-y-auto lg:relative lg:z-20 lg:gap-4">
+        <div className="order-2 lg:order-1 lg:flex lg:w-[320px] xl:w-[360px] 2xl:w-[400px] lg:flex-col lg:p-1 lg:overflow-y-auto lg:relative lg:z-20 lg:self-stretch">
           {!freePlayEnabled && (
             <div
-              className="relative rounded-2xl overflow-hidden"
+              className="relative rounded-2xl overflow-hidden h-full flex flex-col"
               style={{
                 background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
                 boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -3px 6px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.5)',
                 border: '1px inset rgba(60, 60, 60, 0.5)',
               }}
             >
-              <div className="relative z-10 max-[799px]:p-3 min-[800px]:p-5">
+              <div className="relative z-10 p-3 lg:p-3 xl:p-4 2xl:p-5 flex-1 flex flex-col justify-center">
                 {/* Multiplier Table Button - Top Right */}
                 <button
                   onClick={() => setShowMultiplierTable(true)}
@@ -1177,10 +1177,10 @@ const Home: React.FC = () => {
 
 
                 {/* Grid Layout - Mobile-first responsive */}
-                <div className="grid grid-cols-2 gap-2 lg:gap-3 mb-3 lg:mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-2 lg:mb-3">
                   {/* Risk Level Selection */}
                   <div className="col-span-2">
-                    <label className="block text-cyan-300/80 text-center text-sm lg:text-md font-bold mb-1 lg:mb-2">Risk Level</label>
+                    <label className="block text-cyan-300/80 text-center text-xs lg:text-sm font-bold mb-1">Risk Level</label>
                     <RadioGroup
                       value={buyRiskLevel}
                       onValueChange={(value) => setBuyRiskLevel(value as RiskLevel)}
@@ -1193,7 +1193,7 @@ const Home: React.FC = () => {
                           <label
                             key={risk}
                             htmlFor={`buy-${risk}`}
-                            className={`flex-1 cursor-pointer rounded-lg max-[799px]:p-2 min-[800px]:p-3 text-center transition ${
+                            className={`flex-1 cursor-pointer rounded-lg p-2 text-center transition ${
                               isSelected
                                 ? 'bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 text-cyan-300 shadow-lg'
                                 : 'text-white/40 hover:text-white/60'
@@ -1214,7 +1214,7 @@ const Home: React.FC = () => {
 
                   {/* Wager Per Ball */}
                   <div>
-                    <label className="block text-center text-cyan-300/80 text-md font-bold  max-[799px]:mb-1 min-[800px]:mb-2">Wager/Ball</label>
+                    <label className="block text-center text-cyan-300/80 text-sm lg:text-sm xl:text-md font-bold mb-1">Wager/Ball</label>
                     <input
                       type="number"
                       min={minWager}
@@ -1225,7 +1225,7 @@ const Home: React.FC = () => {
                         setWagerPerBall(Math.max(minWager, Math.min(maxWager, value)));
                       }}
                       disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
-                      className={`w-full max-[799px]:h-10 min-[800px]:h-12 rounded-lg px-3 text-cyan-300 text-center max-[799px]:text-base min-[800px]:text-lg font-bold focus:outline-none bg-transparent border-none ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-full h-9 lg:h-10 xl:h-11 rounded-lg px-2 text-cyan-300 text-center text-base lg:text-base xl:text-lg font-bold focus:outline-none bg-transparent border-none ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       style={{
                         boxShadow: 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.03)',
                       }}
@@ -1234,7 +1234,7 @@ const Home: React.FC = () => {
 
                   {/* Number of Balls */}
                   <div>
-                    <label className="block text-center text-cyan-300/80 text-md font-bold max-[799px]:mb-1 min-[800px]:mb-2">Balls</label>
+                    <label className="block text-center text-cyan-300/80 text-sm lg:text-sm xl:text-md font-bold mb-1">Balls</label>
                     <input
                       type="number"
                       min="1"
@@ -1242,7 +1242,7 @@ const Home: React.FC = () => {
                       value={buyBallsCount}
                       onChange={(e) => setBuyBallsCount(parseInt(e.target.value) || 1)}
                       disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
-                      className={`w-full max-[799px]:h-10 min-[800px]:h-12 rounded-lg px-3 text-cyan-300 text-center max-[799px]:text-base min-[800px]:text-lg font-bold focus:outline-none bg-transparent border-none ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-full h-9 lg:h-10 xl:h-11 rounded-lg px-2 text-cyan-300 text-center text-base lg:text-base xl:text-lg font-bold focus:outline-none bg-transparent border-none ${(isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       style={{
                         boxShadow: 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.03)',
                       }}
@@ -1297,12 +1297,12 @@ const Home: React.FC = () => {
 
                   {/* Payment Method Toggle */}
                   <div className="col-span-2">
-                    <label className="block text-cyan-300/80 text-center text-sm lg:text-lg font-bold mb-1 lg:mb-2">Payment Method</label>
-                    <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                    <label className="block text-cyan-300/80 text-center text-sm font-bold mb-1 lg:mb-2">Payment Method</label>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setUsePLS(false)}
                         disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance}
-                        className={`py-2 lg:py-3 rounded-lg text-sm font-bold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                        className={`py-2 rounded-lg text-xs lg:text-sm font-bold transition-all touch-manipulation flex items-center justify-center gap-1.5 ${
                           !usePLS
                             ? 'text-cyan-300 shadow-lg'
                             : 'text-white/40 hover:text-white/60 active:text-white'
@@ -1320,13 +1320,13 @@ const Home: React.FC = () => {
                         <img
                           src="/morbius/MorbiusLogo (3).png"
                           alt="Morbius"
-                          className="w-8 h-8 object-contain"
+                          className="w-6 h-6 lg:w-7 lg:h-7 object-contain"
                         />
                       </button>
                       <button
                         onClick={() => setUsePLS(true)}
                         disabled={isConfirmingTransaction || !!pendingPurchase || isApproving || isLoadingAllowance || priceError || isLoadingPrice}
-                        className={`py-2 lg:py-3 rounded-lg text-sms font-bold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                        className={`py-2 rounded-lg text-xs lg:text-sm font-bold transition-all touch-manipulation flex items-center justify-center gap-1.5 ${
                           usePLS
                             ? 'text-purple-300 shadow-lg'
                             : 'text-white/40 hover:text-white/60 active:text-white'
@@ -1344,7 +1344,7 @@ const Home: React.FC = () => {
                         <img
                           src="/Pulse Branding/Logo/ball.png"
                           alt="PLS"
-                          className="w-8 h-8 object-contain"
+                          className="w-6 h-6 lg:w-7 lg:h-7 object-contain"
                         />
                       </button>
                     </div>
@@ -1368,10 +1368,10 @@ const Home: React.FC = () => {
 
 
                 {/* Total Cost and Buy Button Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                   {/* Total Cost Display */}
                   <div
-                    className="rounded-lg max-[799px]:p-3 min-[800px]:p-4"
+                    className="rounded-lg p-2 lg:p-3"
                     style={{
                       background: usePLS
                         ? 'linear-gradient(145deg, rgba(168, 85, 247, 0.05), rgba(147, 51, 234, 0.05))'
@@ -1385,7 +1385,7 @@ const Home: React.FC = () => {
                         <div className="text-cyan-300/60 text-sm">Loading...</div>
                       ) : (
                         <>
-                          <div className={`text-xl lg:text-3xl font-black ${usePLS ? 'text-purple-300' : 'text-cyan-300'}`}>
+                          <div className={`text-lg lg:text-xl xl:text-2xl font-black ${usePLS ? 'text-purple-300' : 'text-cyan-300'}`}>
                             {usePLS
                               ? (() => {
                                   const morbiusCost = parseEther(wagerPerBall.toString()) * BigInt(buyBallsCount);
@@ -1404,7 +1404,7 @@ const Home: React.FC = () => {
                   <button
                   onClick={() => buyBalls(buyBallsCount, wagerPerBall, usePLS)}
                   disabled={!isConnected || isLoadingAllowance || isApproving || !!pendingPurchase || isConfirmingTransaction}
-                  className={`w-full font-bold max-[799px]:py-3 min-[800px]:py-4 rounded-lg max-[799px]:text-sm min-[800px]:text-base transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full font-bold py-2 lg:py-3 rounded-lg text-sm transition disabled:opacity-50 disabled:cursor-not-allowed ${
                     usePLS ? 'text-purple-300' : 'text-cyan-300'
                   }`}
                   style={{
@@ -1426,15 +1426,6 @@ const Home: React.FC = () => {
               </div>
             </div>
           )}
-          {/* Real-Time Performance Chart - Equal height to buy section */}
-          <div className="flex-1 min-h-0">
-            <RealTimeBetChart
-              ref={chartRef}
-              sessionStartTime={chartSessionStartTime.current}
-              contractWagerPerBall={wagerPerBall}
-              freePlayWager={currentWagerRef.current}
-            />
-          </div>
         </div>
 
         {/* RIGHT COLUMN - PLINKO BOARD */}
@@ -1541,6 +1532,19 @@ const Home: React.FC = () => {
           */}
         </div>
       </div>
+
+      {/* FULL-WIDTH CHART - Below 2-column layout */}
+      <div className="hidden lg:block px-3 -mt-2">
+        <div className="h-64 xl:h-72 2xl:h-80">
+          <RealTimeBetChart
+            ref={chartRef}
+            sessionStartTime={chartSessionStartTime.current}
+            contractWagerPerBall={wagerPerBall}
+            freePlayWager={currentWagerRef.current}
+          />
+        </div>
+      </div>
+
       {/* CONTROLS - Below buy section */}
       <div className="fixed bottom-[20px] left-0 right-0 z-20 pointer-events-none">
         <div

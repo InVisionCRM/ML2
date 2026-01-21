@@ -145,7 +145,7 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
 
   return (
     <div
-      className="w-full h-full rounded-lg pt-1 pr-1 pb-0.5 pl-1"
+      className="w-full h-full rounded-lg pt-1 pr-1 pb-1 pl-1 flex flex-col"
       style={{
         background: 'linear-gradient(145deg,rgb(16, 26, 35),rgb(35, 36, 41))',
         boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 -2px 4px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.5)',
@@ -192,7 +192,7 @@ const RealTimeBetChart = React.forwardRef<RealTimeBetChartRef, RealTimeBetChartP
       </div>
 
       {/* Chart */}
-      <div className="h-64 w-full">
+      <div className="h-full min-h-[200px] w-full flex-1">
         {betHistory.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-cyan-300/60">
