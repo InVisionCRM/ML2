@@ -41,7 +41,7 @@
     "lucide-react": "^0.555.0",
     "matter-js": "^0.20.0",
     "motion": "^12.26.2",
-    "next": "16.1.4",
+    "next": "^16.0.10",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-element-to-jsx-string": "^17.0.1",
