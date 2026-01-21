@@ -25,6 +25,7 @@
 /contracts/cache
 /contracts/artifacts
 /contracts/.env
+/docs
 
 # misc
 .DS_Store
